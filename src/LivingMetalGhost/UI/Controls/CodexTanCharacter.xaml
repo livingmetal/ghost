@@ -1,0 +1,188 @@
+<UserControl x:Class="LivingMetalGhost.UI.Controls.CodexTanCharacter"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root"
+             Width="260"
+             Height="330"
+             IsHitTestVisible="False">
+    <UserControl.Resources>
+        <Storyboard x:Key="IdleMotion" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="CharacterTransform"
+                             Storyboard.TargetProperty="Y"
+                             From="0"
+                             To="-5"
+                             Duration="0:0:1.8" />
+        </Storyboard>
+        <Storyboard x:Key="ThinkingMotion" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="AntennaRotate"
+                             Storyboard.TargetProperty="Angle"
+                             From="-8"
+                             To="8"
+                             AutoReverse="True"
+                             Duration="0:0:0.35" />
+            <DoubleAnimation Storyboard.TargetName="ThinkingDotOne"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0.25"
+                             To="1"
+                             AutoReverse="True"
+                             Duration="0:0:0.45" />
+            <DoubleAnimation Storyboard.TargetName="ThinkingDotTwo"
+                             Storyboard.TargetProperty="Opacity"
+                             BeginTime="0:0:0.15"
+                             From="0.25"
+                             To="1"
+                             AutoReverse="True"
+                             Duration="0:0:0.45" />
+            <DoubleAnimation Storyboard.TargetName="ThinkingDotThree"
+                             Storyboard.TargetProperty="Opacity"
+                             BeginTime="0:0:0.30"
+                             From="0.25"
+                             To="1"
+                             AutoReverse="True"
+                             Duration="0:0:0.45" />
+        </Storyboard>
+        <Storyboard x:Key="SpeakingMotion" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetName="SpeakingMouth"
+                             Storyboard.TargetProperty="Height"
+                             From="5"
+                             To="12"
+                             Duration="0:0:0.16" />
+        </Storyboard>
+    </UserControl.Resources>
+
+    <Grid RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <TranslateTransform x:Name="CharacterTransform" />
+        </Grid.RenderTransform>
+
+        <Ellipse Width="168"
+                 Height="24"
+                 Margin="0,292,0,0"
+                 VerticalAlignment="Top"
+                 Fill="#260D1C24" />
+
+        <Canvas Width="250" Height="315">
+            <Path Fill="#242C39"
+                  Stroke="#111722"
+                  StrokeThickness="4"
+                  Data="M73,169 C46,186 41,234 52,286 L198,286 C209,234 204,186 177,169 C153,154 97,154 73,169 Z" />
+            <Path Fill="#34445A"
+                  Data="M74,177 C60,196 59,240 65,274 L185,274 C191,240 190,196 176,177 C151,164 99,164 74,177 Z" />
+
+            <Path Fill="#E96A42"
+                  Stroke="#111722"
+                  StrokeThickness="4"
+                  Data="M73,180 L105,199 L97,286 L55,286 C48,239 50,200 73,180 Z" />
+            <Path Fill="#E96A42"
+                  Stroke="#111722"
+                  StrokeThickness="4"
+                  Data="M177,180 L145,199 L153,286 L195,286 C202,239 200,200 177,180 Z" />
+
+            <Path Fill="#F5C8A9"
+                  Stroke="#111722"
+                  StrokeThickness="4"
+                  Data="M72,75 C72,39 96,18 126,18 C160,18 180,42 178,79 L174,128 C171,158 151,177 124,177 C97,177 77,158 74,128 Z" />
+
+            <Path Fill="#283449"
+                  Stroke="#111722"
+                  StrokeThickness="4"
+                  Data="M68,81 C64,42 88,8 128,8 C166,8 190,38 181,83 C169,71 157,52 150,35 C132,55 108,68 68,81 Z" />
+            <Path Fill="#283449"
+                  Stroke="#111722"
+                  StrokeThickness="4"
+                  Data="M69,74 C57,82 56,114 73,124 L78,91 Z" />
+            <Path Fill="#283449"
+                  Stroke="#111722"
+                  StrokeThickness="4"
+                  Data="M180,72 C194,82 193,113 175,124 L171,89 Z" />
+
+            <Grid Width="44"
+                  Height="34"
+                  Canvas.Left="103"
+                  Canvas.Top="-3"
+                  RenderTransformOrigin="0.5,1">
+                <Grid.RenderTransform>
+                    <RotateTransform x:Name="AntennaRotate" />
+                </Grid.RenderTransform>
+                <Path Stroke="#111722"
+                      StrokeThickness="5"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      Data="M22,28 L22,10" />
+                <Path Fill="#F1C84B"
+                      Stroke="#111722"
+                      StrokeThickness="3"
+                      Data="M9,8 L22,1 L35,8 L22,15 Z" />
+            </Grid>
+
+            <Border Width="83"
+                    Height="48"
+                    Canvas.Left="84"
+                    Canvas.Top="205"
+                    CornerRadius="8"
+                    Background="#101820"
+                    BorderBrush="#0B0E12"
+                    BorderThickness="3">
+                <StackPanel Margin="9,7">
+                    <TextBlock FontFamily="Consolas"
+                               FontSize="12"
+                               Foreground="#70E1C1"
+                               Text="&gt; CODEX" />
+                    <Rectangle Height="3"
+                               Margin="0,6,18,0"
+                               Fill="#E96A42" />
+                </StackPanel>
+            </Border>
+
+            <Path Stroke="#111722"
+                  StrokeThickness="5"
+                  StrokeStartLineCap="Round"
+                  Data="M91,106 C99,100 107,100 114,106" />
+            <Path Stroke="#111722"
+                  StrokeThickness="5"
+                  StrokeStartLineCap="Round"
+                  Data="M137,106 C144,100 152,100 160,106" />
+
+            <Ellipse x:Name="LeftEye"
+                     Width="8"
+                     Height="12"
+                     Canvas.Left="100"
+                     Canvas.Top="106"
+                     Fill="#111722" />
+            <Ellipse x:Name="RightEye"
+                     Width="8"
+                     Height="12"
+                     Canvas.Left="145"
+                     Canvas.Top="106"
+                     Fill="#111722" />
+
+            <Path x:Name="IdleMouth"
+                  Stroke="#A2473B"
+                  StrokeThickness="4"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  Data="M116,139 C123,144 131,144 138,139" />
+            <Ellipse x:Name="SpeakingMouth"
+                     Width="15"
+                     Height="7"
+                     Canvas.Left="118"
+                     Canvas.Top="136"
+                     Fill="#A2473B"
+                     Visibility="Collapsed" />
+
+            <StackPanel x:Name="ThinkingDots"
+                        Canvas.Left="98"
+                        Canvas.Top="139"
+                        Orientation="Horizontal"
+                        Visibility="Collapsed">
+                <Ellipse x:Name="ThinkingDotOne" Width="7" Height="7" Margin="2" Fill="#A2473B" />
+                <Ellipse x:Name="ThinkingDotTwo" Width="7" Height="7" Margin="2" Fill="#A2473B" />
+                <Ellipse x:Name="ThinkingDotThree" Width="7" Height="7" Margin="2" Fill="#A2473B" />
+            </StackPanel>
+
+            <Ellipse Width="20" Height="9" Canvas.Left="79" Canvas.Top="128" Fill="#4DE96A42" />
+            <Ellipse Width="20" Height="9" Canvas.Left="153" Canvas.Top="128" Fill="#4DE96A42" />
+        </Canvas>
+    </Grid>
+
+</UserControl>
