@@ -28,12 +28,14 @@ public sealed class ConversationService
     {
         var config = _configLoader.Load();
         var llm = advanced ? config.AdvancedLlm : config.Llm;
-        var provider = _providerFactory.Create(llm.Provider);
+        var options = LlmOptions.FromSettings(llm);
+        var provider = _providerFactory.Create(options.Provider);
         var response = await provider.GenerateAsync(new LlmRequest
         {
             UserText = text,
             UserTitle = config.App.UserTitle,
-            Model = llm.Model,
+            Model = options.Model,
+            Options = options,
             SystemPrompt = BuildSystemPrompt(config),
             History = GetHistorySnapshot()
         }, cancellationToken);
@@ -54,7 +56,9 @@ public sealed class ConversationService
     public async Task<SkillResult> StartConversationAsync(CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
-        var provider = _providerFactory.Create(config.Llm.Provider);
+        // 먼저 말 걸기는 가벼운 기본 대화이므로 항상 기본 llm 설정을 사용한다.
+        var options = LlmOptions.FromSettings(config.Llm);
+        var provider = _providerFactory.Create(options.Provider);
         var response = await provider.GenerateAsync(new LlmRequest
         {
             UserText =
@@ -62,7 +66,8 @@ public sealed class ConversationService
                 "질문, 가벼운 안부, 작업 집중 확인, 휴식 제안 중 하나를 자연스럽게 선택해. " +
                 "설명이나 따옴표 없이 실제로 사용자에게 말할 문장만 출력해.",
             UserTitle = config.App.UserTitle,
-            Model = config.Llm.Model,
+            Model = options.Model,
+            Options = options,
             SystemPrompt = BuildSystemPrompt(config),
             History = GetHistorySnapshot()
         }, cancellationToken);

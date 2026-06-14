@@ -2,295 +2,513 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="LivingMetalGhost Settings"
-        Width="540"
-        Height="820"
+        Width="580"
+        Height="900"
         WindowStartupLocation="CenterOwner"
         Background="#F4EFE5"
         ResizeMode="NoResize"
         Loaded="Window_OnLoaded">
+
+    <Window.Resources>
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Bahnschrift" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#18212D" />
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#2A3540" />
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="#64707E" />
+        </Style>
+        <Style x:Key="PresetBtn" TargetType="Button">
+            <Setter Property="Padding" Value="11,5" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#B8B0A4" />
+            <Setter Property="Background" Value="#E8E3D8" />
+            <Setter Property="Foreground" Value="#2A3540" />
+        </Style>
+    </Window.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Margin="24">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+        <StackPanel Margin="22,18,22,22">
 
-            <StackPanel>
-                <TextBlock FontFamily="Bahnschrift"
-                           FontSize="26"
-                           FontWeight="SemiBold"
-                           Foreground="#18212D"
-                           Text="SETTINGS" />
-                <TextBlock Margin="0,4,0,0"
-                           Foreground="#64707E"
-                           Text="AI 연결과 캐릭터 표시 방식을 설정합니다." />
-                <TextBlock Margin="0,16,0,0"
-                           FontWeight="SemiBold"
-                           Text="캐릭터" />
-                <ComboBox Margin="0,6,0,0"
-                          Padding="10,7"
-                          ItemsSource="{Binding Characters}"
-                          DisplayMemberPath="DisplayName"
-                          SelectedValuePath="Id"
-                          SelectedValue="{Binding SelectedCharacterId, UpdateSourceTrigger=PropertyChanged}" />
-                <Grid Margin="0,5,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock VerticalAlignment="Center"
-                               FontSize="11"
-                               Foreground="#64707E"
-                               Text="캐릭터마다 외형, 성격, 표시 프리셋을 따로 저장합니다." />
-                    <Button Grid.Column="1"
-                            Padding="10,5"
-                            Command="{Binding RestoreCharacterTemplateCommand}"
-                            Content="기본값 복원" />
-                </Grid>
+            <!-- ─── 타이틀 ─── -->
+            <TextBlock FontFamily="Bahnschrift"
+                       FontSize="26" FontWeight="SemiBold"
+                       Foreground="#18212D" Text="SETTINGS" />
+            <TextBlock Margin="0,4,0,0" Foreground="#64707E"
+                       Text="AI 연결과 캐릭터 표시 방식을 설정합니다." />
 
-                <StackPanel Margin="0,14,0,0">
-                    <TextBlock FontWeight="SemiBold"
-                               Text="보여주는 비율" />
-                    <ComboBox Margin="0,6,0,0"
-                              Padding="10,7"
-                              ItemsSource="{Binding AvailableCharacterFramingPresets}"
-                              DisplayMemberPath="DisplayName"
-                              SelectedValuePath="Id"
-                              SelectedValue="{Binding SelectedCharacterFramingPresetId, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Margin="0,5,0,0"
-                               FontSize="11"
-                               Foreground="#64707E"
-                               Text="캐릭터 크기는 캐릭터를 우클릭한 뒤 '크기 조정'으로 변경합니다." />
-                </StackPanel>
-
-                <TextBlock Margin="0,14,0,0"
-                           FontWeight="SemiBold"
-                           Text="외형 설정" />
-                <TextBox Margin="0,6,0,0"
-                         Height="82"
-                         Padding="10"
-                         AcceptsReturn="True"
-                         TextWrapping="Wrap"
-                         VerticalScrollBarVisibility="Auto"
-                         Text="{Binding CharacterAppearance, UpdateSourceTrigger=PropertyChanged}" />
-
-                <TextBlock Margin="0,12,0,0"
-                           FontWeight="SemiBold"
-                           Text="배경 설정" />
-                <TextBox Margin="0,6,0,0"
-                         Height="82"
-                         Padding="10"
-                         AcceptsReturn="True"
-                         TextWrapping="Wrap"
-                         VerticalScrollBarVisibility="Auto"
-                         Text="{Binding CharacterBackground, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBlock Margin="0,5,0,0"
-                           FontSize="11"
-                           Foreground="#64707E"
-                           TextWrapping="Wrap"
-                           Text="AI가 캐릭터의 외형과 맥락을 참고할 때 사용하는 설정입니다." />
-            </StackPanel>
-
-            <Grid Grid.Row="1" Margin="0,22,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Margin="0,0,18,0">
-                    <TextBlock FontWeight="SemiBold" Text="사용자 호칭" />
-                    <TextBox Margin="0,6,0,0"
-                             Padding="10,8"
-                             Text="{Binding UserTitle, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Margin="0,4,0,0"
-                               FontSize="11"
-                               Foreground="#64707E"
-                               Text="예: 사용자님, 대장님, 박사님" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Width="225">
-                    <CheckBox Content="무작위로 먼저 말 걸기"
-                              IsChecked="{Binding EnableProactiveChat}" />
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="54" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="54" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox Padding="7,5"
-                                 Text="{Binding ProactiveChatMinMinutes, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Column="1"
-                                   Margin="7,0"
-                                   VerticalAlignment="Center"
-                                   Text="~" />
-                        <TextBox Grid.Column="2"
-                                 Padding="7,5"
-                                 Text="{Binding ProactiveChatMaxMinutes, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Column="3"
-                                   Margin="7,0,0,0"
-                                   VerticalAlignment="Center"
-                                   Text="분" />
-                    </Grid>
-                    <TextBlock Margin="0,4,0,0"
-                               FontSize="11"
-                               Foreground="#64707E"
-                               Text="지정 범위 안에서 다음 대화 시점을 고릅니다." />
-                </StackPanel>
-            </Grid>
-
-            <StackPanel Grid.Row="2" Margin="0,18,0,0">
-                <TextBlock FontWeight="SemiBold" Text="캐릭터 성격과 말투" />
-                <TextBox Margin="0,6,0,0"
-                         Height="112"
-                         Padding="10"
-                         AcceptsReturn="True"
-                         TextWrapping="Wrap"
-                         VerticalScrollBarVisibility="Auto"
-                         Text="{Binding PersonalityPrompt, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBlock Margin="0,5,0,0"
-                           FontSize="11"
-                           Foreground="#64707E"
-                           TextWrapping="Wrap"
-                           Text="캐릭터별 프롬프트를 직접 조정할 수 있습니다." />
-            </StackPanel>
-
-            <Separator Grid.Row="3" Margin="0,20,0,18" />
-
-            <Grid Grid.Row="4">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+            <!-- ═══════════════════════════════════════════
+                 캐릭터
+            ════════════════════════════════════════════ -->
+            <Border Margin="0,20,0,0" CornerRadius="10" ClipToBounds="True"
+                    BorderBrush="#CBBFB2" BorderThickness="1">
                 <StackPanel>
-                    <TextBlock FontWeight="SemiBold" Text="Provider" />
-                    <ComboBox Margin="0,6,8,0"
-                              Padding="8,6"
-                              ItemsSource="{Binding Providers}"
-                              SelectedItem="{Binding Provider}" />
+                    <Border Padding="14,10" Background="#EDE8DF">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="캐릭터" />
+                    </Border>
+                    <Border Padding="14,12,14,14" Background="#FAF8F4">
+                        <StackPanel>
+                            <ComboBox Padding="10,7"
+                                      ItemsSource="{Binding Characters}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Id"
+                                      SelectedValue="{Binding SelectedCharacterId, UpdateSourceTrigger=PropertyChanged}" />
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}"
+                                           Text="캐릭터마다 외형·성격·표시 프리셋을 따로 저장합니다." />
+                                <Button Grid.Column="1" Padding="10,5"
+                                        Command="{Binding RestoreCharacterTemplateCommand}"
+                                        Content="기본값 복원" />
+                            </Grid>
+
+                            <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="보여주는 비율" />
+                            <ComboBox Margin="0,6,0,0" Padding="10,7"
+                                      ItemsSource="{Binding AvailableCharacterFramingPresets}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Id"
+                                      SelectedValue="{Binding SelectedCharacterFramingPresetId, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}"
+                                       Text="캐릭터 크기는 우클릭 → '크기 조정'으로 변경합니다." />
+
+                            <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="외형 설정" />
+                            <TextBox Margin="0,6,0,0" Height="76" Padding="10"
+                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     Text="{Binding CharacterAppearance, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="배경 설정" />
+                            <TextBox Margin="0,6,0,0" Height="76" Padding="10"
+                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     Text="{Binding CharacterBackground, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                       Text="AI가 캐릭터의 외형과 맥락을 참고할 때 사용합니다." />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-                <StackPanel Grid.Column="1"
-                            Margin="8,22,0,0"
-                            VerticalAlignment="Top"
-                            Orientation="Horizontal">
-                    <Button Padding="12,7"
-                            Command="{Binding ApplyGeminiFreePresetCommand}"
-                            Content="Gemini 무료 프리셋" />
-                    <Button Margin="6,0,0,0"
-                            Padding="12,7"
-                            Command="{Binding ApplyCodexPresetCommand}"
-                            Content="Codex 전용" />
+            </Border>
+
+            <!-- ═══════════════════════════════════════════
+                 개인화
+            ════════════════════════════════════════════ -->
+            <Border Margin="0,12,0,0" CornerRadius="10" ClipToBounds="True"
+                    BorderBrush="#CBBFB2" BorderThickness="1">
+                <StackPanel>
+                    <Border Padding="14,10" Background="#EDE8DF">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="개인화" />
+                    </Border>
+                    <Border Padding="14,12,14,14" Background="#FAF8F4">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="사용자 호칭" />
+                                    <TextBox Margin="0,6,0,0" Padding="10,8"
+                                             Text="{Binding UserTitle, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}"
+                                               Text="예: 사용자님, 대장님, 박사님" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Width="210">
+                                    <CheckBox Content="무작위로 먼저 말 걸기"
+                                              IsChecked="{Binding EnableProactiveChat}" />
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="50" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="50" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Padding="7,5"
+                                                 Text="{Binding ProactiveChatMinMinutes, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Grid.Column="1" Margin="6,0" VerticalAlignment="Center" Text="~" />
+                                        <TextBox Grid.Column="2" Padding="7,5"
+                                                 Text="{Binding ProactiveChatMaxMinutes, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Grid.Column="3" Margin="6,0,0,0" VerticalAlignment="Center" Text="분" />
+                                    </Grid>
+                                    <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}"
+                                               Text="이 범위에서 다음 대화 시점을 고릅니다." />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="캐릭터 성격과 말투" />
+                            <TextBox Margin="0,6,0,0" Height="100" Padding="10"
+                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     Text="{Binding PersonalityPrompt, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                       Text="캐릭터별 프롬프트를 직접 조정할 수 있습니다." />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-            </Grid>
+            </Border>
 
-            <StackPanel Grid.Row="5" Margin="0,14,0,0">
-                <TextBlock FontWeight="SemiBold" Text="Model" />
-                <TextBox Margin="0,6,0,0"
-                         Padding="10,8"
-                         Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}" />
-            </StackPanel>
+            <!-- ═══════════════════════════════════════════
+                 기본 대화  (초록 계열 — 가볍고 일상적)
+            ════════════════════════════════════════════ -->
+            <Border Margin="0,12,0,0" CornerRadius="10" ClipToBounds="True"
+                    BorderBrush="#AABFAA" BorderThickness="1">
+                <StackPanel>
+                    <Border Padding="14,10" Background="#D4E8D4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="기본 대화" />
+                                <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}"
+                                           Text="가벼운 일상 대화. Gemini 권장." />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Style="{StaticResource PresetBtn}"
+                                        Command="{Binding ApplyGeminiFreePresetCommand}"
+                                        Content="Gemini 프리셋" />
+                                <Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0"
+                                        Command="{Binding ApplyCodexPresetCommand}"
+                                        Content="Codex (레거시)" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Padding="14,12,14,14" Background="#F6FAF6">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="160" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,10,0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Provider" />
+                                    <ComboBox Margin="0,6,0,0" Padding="8,6"
+                                              ItemsSource="{Binding Providers}"
+                                              SelectedItem="{Binding Provider}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Model" />
+                                    <TextBox Margin="0,6,0,0" Padding="10,8"
+                                             Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
 
-            <StackPanel Grid.Row="6" Margin="0,14,0,0">
-                <TextBlock FontWeight="SemiBold" Text="Base URL" />
-                <TextBox Margin="0,6,0,0"
-                         Padding="10,8"
-                         Text="{Binding BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" />
+                            <TextBox Margin="0,6,0,0" Padding="10,8"
+                                     Text="{Binding BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
 
-                <TextBlock Margin="0,14,0,0"
-                           FontWeight="SemiBold"
-                           Text="Codex 실행 경로" />
-                <TextBox Margin="0,6,0,0"
-                         Padding="10,8"
-                         Text="{Binding CodexExecutable, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="API Key" />
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <PasswordBox x:Name="ApiKeyPasswordBox" Padding="10,8"
+                                             PasswordChanged="ApiKeyPasswordBox_OnPasswordChanged" />
+                                <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7"
+                                        Command="{Binding ClearApiKeyCommand}" Content="Key 제거" />
+                            </Grid>
+                            <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}"
+                                       Text="{Binding ApiKeyStatus}" />
 
-                <TextBlock Margin="0,14,0,0"
-                           FontWeight="SemiBold"
-                           Text="Codex 작업 폴더" />
-                <TextBox Margin="0,6,0,0"
-                         Padding="10,8"
-                         Text="{Binding CodexWorkingDirectory, UpdateSourceTrigger=PropertyChanged}" />
+                            <Expander Margin="0,14,0,0" Header="Codex 채팅 설정 (레거시, 접혀 있음)">
+                                <StackPanel Margin="2,10,2,2">
+                                    <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                               Text="Provider를 'Codex'로 설정할 때만 사용됩니다. 신규 설치는 고급 대화의 LmBot 또는 에이전트를 권장합니다." />
+                                    <TextBlock Margin="0,10,0,0" Style="{StaticResource FieldLabel}" Text="Codex 실행 경로" />
+                                    <TextBox Margin="0,6,0,0" Padding="10,8"
+                                             Text="{Binding CodexExecutable, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Margin="0,10,0,0" Style="{StaticResource FieldLabel}" Text="Codex 작업 폴더" />
+                                    <TextBox Margin="0,6,0,0" Padding="10,8"
+                                             Text="{Binding CodexWorkingDirectory, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="90" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}" Text="Codex 제한 시간(초)" />
+                                        <TextBox Grid.Column="1" Padding="8,6"
+                                                 Text="{Binding CodexTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Expander>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
 
-                <Grid Margin="0,12,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="90" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock VerticalAlignment="Center"
-                               FontSize="11"
-                               Foreground="#64707E"
-                               Text="Codex 제한 시간(초)" />
-                    <TextBox Grid.Column="1"
-                             Padding="8,6"
-                             Text="{Binding CodexTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
-                </Grid>
-            </StackPanel>
+            <!-- ═══════════════════════════════════════════
+                 고급 대화  (보라 계열 — 강한 모델)
+            ════════════════════════════════════════════ -->
+            <Border Margin="0,12,0,0" CornerRadius="10" ClipToBounds="True"
+                    BorderBrush="#9B96C0" BorderThickness="1">
+                <StackPanel>
+                    <Border Padding="14,10" Background="#CCCAE0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="고급 대화 (Advanced)" />
+                                <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}"
+                                           Text="채팅창 헤더 더블클릭으로 켜는 고급 모드. API Key는 기본 대화와 공유." />
+                            </StackPanel>
+                            <!-- 프리셋: ChatGPT · Claude -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Style="{StaticResource PresetBtn}"
+                                        ToolTip="OpenAI API를 사용합니다 (API Key 필요)"
+                                        Command="{Binding ApplyAdvancedOpenAiPresetCommand}"
+                                        Content="ChatGPT" />
+                                <Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0"
+                                        ToolTip="설치된 Claude 앱 또는 claude CLI를 사용합니다"
+                                        Command="{Binding ApplyInstalledAppsPresetCommand}"
+                                        Content="Claude" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Padding="14,12,14,14" Background="#F7F7FC">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="160" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,10,0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Provider" />
+                                    <ComboBox Margin="0,6,0,0" Padding="8,6"
+                                              ItemsSource="{Binding AdvancedProviders}"
+                                              SelectedItem="{Binding AdvancedProvider}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Model" />
+                                    <TextBox Margin="0,6,0,0" Padding="10,8"
+                                             Text="{Binding AdvancedModel, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
 
-            <StackPanel Grid.Row="7" Margin="0,14,0,0">
-                <TextBlock FontWeight="SemiBold" Text="API Key" />
-                <Grid Margin="0,6,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <PasswordBox x:Name="ApiKeyPasswordBox"
-                                 Padding="10,8"
-                                 PasswordChanged="ApiKeyPasswordBox_OnPasswordChanged" />
-                    <Button Grid.Column="1"
-                            Margin="8,0,0,0"
-                            Padding="12,7"
-                            Command="{Binding ClearApiKeyCommand}"
-                            Content="Key 제거" />
-                </Grid>
-                <TextBlock Margin="0,5,0,0"
-                           FontSize="11"
-                           Foreground="#64707E"
-                           Text="{Binding ApiKeyStatus}" />
-            </StackPanel>
+                            <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" />
+                            <TextBox Margin="0,6,0,0" Padding="10,8"
+                                     Text="{Binding AdvancedBaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                       Text="Gemini: googleapis.com/v1beta/openai/  ·  OpenAI: api.openai.com/v1/  ·  LmBot: 사용 안 함" />
 
-            <Border Grid.Row="8"
-                    Margin="0,18,0,0"
-                    Padding="12"
-                    CornerRadius="10"
-                    Background="#FFFDF8"
-                    BorderBrush="#D8D0C3"
-                    BorderThickness="1">
-                <TextBlock TextWrapping="Wrap"
-                           Foreground="#303A45"
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,5,0">
+                                    <TextBlock Style="{StaticResource Hint}" Text="Temperature" />
+                                    <TextBox Margin="0,4,0,0" Padding="8,6"
+                                             Text="{Binding AdvancedTemperature, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="5,0">
+                                    <TextBlock Style="{StaticResource Hint}" Text="Max Tokens" />
+                                    <TextBox Margin="0,4,0,0" Padding="8,6"
+                                             Text="{Binding AdvancedMaxOutputTokens, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="5,0,0,0">
+                                    <TextBlock Style="{StaticResource Hint}" Text="제한 시간(초)" />
+                                    <TextBox Margin="0,4,0,0" Padding="8,6"
+                                             Text="{Binding AdvancedTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 설치된 앱 서브패널 — Provider = Installed-Apps 일 때만 표시 -->
+                            <StackPanel Margin="0,16,0,0">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AdvancedProvider}" Value="Installed-Apps">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <Border Padding="13,11" CornerRadius="8"
+                                        Background="#EEEAFF" BorderBrush="#9B96C0" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold" Foreground="#3D2080"
+                                                   Text="설치된 앱 (Installed Apps)" />
+                                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                                   Text="Windows에 설치된 ChatGPT 또는 Claude 앱으로 고급 대화를 처리합니다. Claude CLI(claude) 또는 chatgpt CLI가 PATH에 있으면 CLI를 우선 사용합니다." />
+
+                                        <Grid Margin="0,12,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Margin="0,0,10,0">
+                                                <TextBlock Style="{StaticResource FieldLabel}" Text="우선 앱" />
+                                                <ComboBox Margin="0,6,0,0" Padding="8,6"
+                                                          ItemsSource="{Binding InstalledAppsPreferredApps}"
+                                                          SelectedItem="{Binding InstalledAppsPreferredApp}" />
+                                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}"
+                                                           Text="auto: Claude 우선, 없으면 ChatGPT  ·  claude: Claude 고정  ·  chatgpt: ChatGPT 고정" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1" VerticalAlignment="Bottom"
+                                                    Padding="12,7"
+                                                    Command="{Binding DetectInstalledAppsCommand}"
+                                                    Content="앱 감지" />
+                                        </Grid>
+
+                                        <Border Margin="0,10,0,0" Padding="10,8" CornerRadius="6"
+                                                Background="#F4F2FF" BorderBrush="#C8C4E0" BorderThickness="1">
+                                            <TextBlock TextWrapping="Wrap" FontSize="11"
+                                                       Foreground="#3D2080"
+                                                       Text="{Binding InstalledAppsStatus}" />
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══════════════════════════════════════════
+                 코드 작업 에이전트  (주황/갈색 — 도구)
+            ════════════════════════════════════════════ -->
+            <Border Margin="0,12,0,0" CornerRadius="10" ClipToBounds="True"
+                    BorderBrush="#C0AA90" BorderThickness="1">
+                <StackPanel>
+                    <Border Padding="14,10" Background="#E2D5C4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="코드 작업 에이전트 (Agents)" />
+                                <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}"
+                                           Text="코드 수정·빌드·저장소 작업. 기본은 제안만 하며 파일을 건드리지 않습니다." />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Style="{StaticResource PresetBtn}"
+                                        Command="{Binding ApplyClaudeCodeAgentPresetCommand}"
+                                        Content="Claude Code" />
+                                <Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0"
+                                        Command="{Binding ApplyCodexAgentPresetCommand}"
+                                        Content="Codex CLI" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Padding="14,12,14,14" Background="#FBF9F6">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,6,0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="기본 에이전트" />
+                                    <ComboBox Margin="0,6,0,0" Padding="8,6"
+                                              ItemsSource="{Binding AgentExecutors}"
+                                              SelectedItem="{Binding AgentDefaultExecutor}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="승인 모드" />
+                                    <ComboBox Margin="0,6,0,0" Padding="8,6"
+                                              ItemsSource="{Binding AgentApprovalModes}"
+                                              SelectedItem="{Binding AgentApprovalMode}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- 실행 허용 경고 박스 -->
+                            <Border Margin="0,12,0,0" Padding="13,10" CornerRadius="8"
+                                    Background="#FFF3EA" BorderBrush="#F0C090" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold" Foreground="#7A3A10"
+                                                   Text="⚠  실제 실행 허용" />
+                                        <TextBlock Margin="0,3,8,0" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                                   Text="켜면 apply/execute 모드에서 파일 수정·명령 실행이 가능합니다. 꺼두면 항상 제안(suggest)만 합니다." />
+                                    </StackPanel>
+                                    <CheckBox Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                              IsChecked="{Binding AgentEnableExecution}" />
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="작업 루트 (Workspace Root)" />
+                            <TextBox Margin="0,6,0,0" Padding="10,8"
+                                     Text="{Binding AgentWorkspaceRoot, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}"
+                                       Text="이 폴더 밖의 파일은 수정할 수 없습니다. 예: C:\dev\myproject" />
+
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,6,0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Claude Code 실행 경로" />
+                                    <TextBox Margin="0,6,0,0" Padding="10,8"
+                                             Text="{Binding ClaudeCodeExecutable, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="Codex CLI 실행 경로" />
+                                    <TextBox Margin="0,6,0,0" Padding="10,8"
+                                             Text="{Binding AgentCodexExecutable, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="90" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}"
+                                           Text="에이전트 제한 시간(초)" />
+                                <TextBox Grid.Column="1" Padding="8,6"
+                                         Text="{Binding AgentTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ─── 상태 메시지 ─── -->
+            <Border Margin="0,14,0,0" Padding="14,12" CornerRadius="10"
+                    Background="#FFFDF8" BorderBrush="#D8D0C3" BorderThickness="1"
+                    MinHeight="42">
+                <TextBlock TextWrapping="Wrap" Foreground="#303A45"
                            Text="{Binding StatusMessage}" />
             </Border>
 
-            <StackPanel Grid.Row="9"
-                        Margin="0,18,0,0"
-                        HorizontalAlignment="Right"
-                        Orientation="Horizontal">
-                <Button MinWidth="110"
-                        Padding="14,8"
-                        Command="{Binding TestConnectionCommand}"
-                        Content="연결 테스트" />
-                <Button MinWidth="100"
-                        Margin="8,0,0,0"
-                        Padding="14,8"
-                        Background="#E96A42"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Command="{Binding SaveCommand}"
-                        Content="저장" />
-            </StackPanel>
+            <!-- ─── 하단 버튼 바 ─── -->
+            <Grid Margin="0,14,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                           Text="API Key는 DPAPI로 암호화 저장됩니다. Codex/Claude Code 같은 외부 CLI는 각 도구의 별도 로그인 상태를 사용합니다." />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button MinWidth="110" Padding="14,8"
+                            Command="{Binding TestConnectionCommand}"
+                            Content="연결 테스트" />
+                    <Button MinWidth="100" Margin="8,0,0,0" Padding="14,8"
+                            Background="#E96A42" Foreground="White" BorderThickness="0"
+                            Command="{Binding SaveCommand}"
+                            Content="저장" />
+                </StackPanel>
+            </Grid>
 
-            <TextBlock Grid.Row="10"
-                       Margin="0,18,0,0"
-                       FontSize="11"
-                       Foreground="#64707E"
-                       TextWrapping="Wrap"
-                       Text="API Key는 DPAPI로 보호합니다. Codex Provider는 별도 Codex CLI 로그인 상태를 사용합니다." />
-        </Grid>
+        </StackPanel>
     </ScrollViewer>
 </Window>

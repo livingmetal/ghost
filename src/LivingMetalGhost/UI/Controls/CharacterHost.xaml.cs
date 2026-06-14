@@ -49,9 +49,11 @@ public partial class CharacterHost : UserControl
 
     private readonly DispatcherTimer _blinkTimer;
     private readonly DispatcherTimer _speakingTimer;
+    private readonly DispatcherTimer _moodCycleTimer;
     private SpriteCharacterVisualProfile? _spriteVisual;
     private ModularCharacterVisualProfile? _modularVisual;
     private int _speakingFrameIndex;
+    private int _moodCycleFrameIndex;
     private bool _isBlinking;
     private readonly Dictionary<string, Image> _modularLayerImages = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, BitmapImage> ImageCache = new(StringComparer.OrdinalIgnoreCase);
@@ -71,6 +73,12 @@ public partial class CharacterHost : UserControl
             Interval = TimeSpan.FromMilliseconds(170)
         };
         _speakingTimer.Tick += SpeakingTimer_OnTick;
+
+        _moodCycleTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(500)
+        };
+        _moodCycleTimer.Tick += MoodCycleTimer_OnTick;
     }
 
     public string CharacterId
@@ -128,6 +136,7 @@ public partial class CharacterHost : UserControl
     {
         _blinkTimer.Stop();
         _speakingTimer.Stop();
+        _moodCycleTimer.Stop();
         StopMotion();
     }
 
@@ -142,8 +151,10 @@ public partial class CharacterHost : UserControl
 
         _blinkTimer.Stop();
         _speakingTimer.Stop();
+        _moodCycleTimer.Stop();
         _isBlinking = false;
         _speakingFrameIndex = 0;
+        _moodCycleFrameIndex = 0;
         ResetVisualLayers();
         StopMotion();
 
@@ -166,9 +177,26 @@ public partial class CharacterHost : UserControl
                 return;
             }
 
+            if (_spriteVisual.MoodCycleSpritePaths.TryGetValue(Mood, out var cycleSprites) && cycleSprites.Count > 0)
+            {
+                ShowMoodCycleFrame(cycleSprites);
+                _moodCycleTimer.Start();
+                if (_spriteVisual.MoodBlinkSpritePaths.ContainsKey(Mood))
+                {
+                    ScheduleNextBlink();
+                    _blinkTimer.Start();
+                }
+                return;
+            }
+
             if (_spriteVisual.MoodSpritePaths.TryGetValue(Mood, out var poseSprite))
             {
                 ShowPose(poseSprite);
+                if (_spriteVisual.MoodBlinkSpritePaths.ContainsKey(Mood))
+                {
+                    ScheduleNextBlink();
+                    _blinkTimer.Start();
+                }
                 return;
             }
 
@@ -208,10 +236,7 @@ public partial class CharacterHost : UserControl
 
     private async void BlinkTimer_OnTick(object? sender, EventArgs e)
     {
-        if (_isBlinking ||
-            !UsesCustomCharacter() ||
-            !string.Equals(Mood, "idle", StringComparison.OrdinalIgnoreCase) ||
-            !CanBlink())
+        if (_isBlinking || !UsesCustomCharacter() || !CanBlink())
         {
             return;
         }
@@ -221,8 +246,7 @@ public partial class CharacterHost : UserControl
         ShowBlinkFrame();
         await Task.Delay(130);
 
-        if (UsesCustomCharacter() &&
-            string.Equals(Mood, "idle", StringComparison.OrdinalIgnoreCase))
+        if (UsesCustomCharacter() && CanBlink())
         {
             ShowIdleFrame();
             ScheduleNextBlink();
@@ -235,6 +259,26 @@ public partial class CharacterHost : UserControl
     private void SpeakingTimer_OnTick(object? sender, EventArgs e)
     {
         ShowSpeakingFrame();
+    }
+
+    private void MoodCycleTimer_OnTick(object? sender, EventArgs e)
+    {
+        if (_isBlinking || _spriteVisual is null)
+        {
+            return;
+        }
+
+        if (_spriteVisual.MoodCycleSpritePaths.TryGetValue(Mood, out var cycleSprites) && cycleSprites.Count > 0)
+        {
+            ShowMoodCycleFrame(cycleSprites);
+        }
+    }
+
+    private void ShowMoodCycleFrame(IReadOnlyList<string> cycleSprites)
+    {
+        var path = cycleSprites[_moodCycleFrameIndex % cycleSprites.Count];
+        _moodCycleFrameIndex++;
+        ShowPose(path);
     }
 
     private void ShowSpeakingFrame()
@@ -370,18 +414,35 @@ public partial class CharacterHost : UserControl
     {
         if (_spriteVisual is not null)
         {
-            return !string.IsNullOrWhiteSpace(_spriteVisual.BlinkSpritePath);
+            if (string.Equals(Mood, "idle", StringComparison.OrdinalIgnoreCase))
+            {
+                return !string.IsNullOrWhiteSpace(_spriteVisual.BlinkSpritePath);
+            }
+
+            return _spriteVisual.MoodBlinkSpritePaths.ContainsKey(Mood);
         }
 
         return _modularVisual is not null &&
+               string.Equals(Mood, "idle", StringComparison.OrdinalIgnoreCase) &&
                _modularVisual.States.ContainsKey(_modularVisual.BlinkStateName);
     }
 
     private void ShowBlinkFrame()
     {
-        if (_spriteVisual is not null && !string.IsNullOrWhiteSpace(_spriteVisual.BlinkSpritePath))
+        if (_spriteVisual is not null)
         {
-            ShowPose(_spriteVisual.BlinkSpritePath!);
+            if (_spriteVisual.MoodBlinkSpritePaths.TryGetValue(Mood, out var moodBlinkPath) &&
+                !string.IsNullOrWhiteSpace(moodBlinkPath))
+            {
+                ShowPose(moodBlinkPath);
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_spriteVisual.BlinkSpritePath))
+            {
+                ShowPose(_spriteVisual.BlinkSpritePath!);
+            }
+
             return;
         }
 
@@ -395,6 +456,19 @@ public partial class CharacterHost : UserControl
     {
         if (_spriteVisual is not null)
         {
+            if (_spriteVisual.MoodCycleSpritePaths.TryGetValue(Mood, out var cycleSprites) && cycleSprites.Count > 0)
+            {
+                var index = Math.Max(0, _moodCycleFrameIndex - 1) % cycleSprites.Count;
+                ShowPose(cycleSprites[index]);
+                return;
+            }
+
+            if (_spriteVisual.MoodSpritePaths.TryGetValue(Mood, out var moodSprite))
+            {
+                ShowPose(moodSprite);
+                return;
+            }
+
             HidePose();
             return;
         }

@@ -33,9 +33,34 @@
     "temperature": 0.7,
     "max_output_tokens": 2048,
     "streaming": true,
-    "timeout_seconds": 30,
-    "codex_executable": "%APPDATA%\\LivingMetalGhost\\tools\\codex-cli\\node_modules\\.bin\\codex.cmd",
-    "codex_working_directory": "",
-    "codex_timeout_seconds": 180
+    "timeout_seconds": 30
+  },
+  "advanced_llm": {
+    "provider": "installed-apps",
+    "base_url": "https://api.openai.com/v1/",
+    "model": "gpt-4o",
+    "api_key_source": "dpapi",
+    "temperature": 0.4,
+    "max_output_tokens": 4096,
+    "streaming": false,
+    "timeout_seconds": 120,
+    "installed_apps": {
+      "preferred_app": "auto"
+    }
+  },
+  "agents": {
+    "default_executor": "mock",
+    "approval_mode": "suggest",
+    "enable_execution": false,
+    "workspace_root": "",
+    "timeout_seconds": 180,
+    "claude_code": {
+      "executable": "claude",
+      "extra_args": ""
+    },
+    "codex_cli": {
+      "executable": "%APPDATA%\\LivingMetalGhost\\tools\\codex-cli\\node_modules\\.bin\\codex.cmd",
+      "extra_args": ""
+    }
   }
 }

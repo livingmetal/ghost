@@ -42,11 +42,12 @@ public sealed class CodexCliProvider : ILlmProvider
             workingDirectory
         };
 
-        if (!string.IsNullOrWhiteSpace(request.Model) &&
-            !string.Equals(request.Model, "default", StringComparison.OrdinalIgnoreCase))
+        var model = request.ResolveModel();
+        if (!string.IsNullOrWhiteSpace(model) &&
+            !string.Equals(model, "default", StringComparison.OrdinalIgnoreCase))
         {
             arguments.Add("-m");
-            arguments.Add(request.Model.Trim());
+            arguments.Add(model.Trim());
         }
 
         using var process = new Process

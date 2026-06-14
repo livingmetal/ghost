@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using LivingMetalGhost.Agents;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Security;
 using LivingMetalGhost.Core.Services;
@@ -63,9 +64,19 @@ public partial class App : Application
         services.AddSingleton<MockLlmProvider>();
         services.AddSingleton<OpenAiCompatibleProvider>();
         services.AddSingleton<CodexCliProvider>();
+        services.AddSingleton<LmBotProvider>();
+        services.AddSingleton<InstalledAppsProvider>();
+
+        // 외부 작업 에이전트 계층(Provider 와 분리).
+        services.AddSingleton<IAgentExecutorFactory, AgentExecutorFactory>();
+        services.AddSingleton<MockAgentExecutor>();
+        services.AddSingleton<ClaudeCodeExecutor>();
+        services.AddSingleton<CodexCliExecutor>();
+
         services.AddSingleton<ChatSkill>();
         services.AddSingleton<TranslateSkill>();
         services.AddSingleton<AppCommandSkill>();
+        services.AddSingleton<CodingAgentSkill>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddTransient<ConversationLogViewModel>();

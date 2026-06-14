@@ -33,6 +33,20 @@
         "concerned":  "awaken.png",
         "surprised":  "awaken.png",
         "error":      "awaken.png"
+      },
+      "mood_blink": {
+        "thinking":   "awaken-close-eye.png",
+        "listening":  "awaken-close-eye.png",
+        "happy":      "awaken-close-eye.png",
+        "soft-smile": "awaken-close-eye.png",
+        "curious":    "awaken-close-eye.png",
+        "concerned":  "awaken-close-eye.png",
+        "surprised":  "awaken-close-eye.png",
+        "error":      "awaken-close-eye.png",
+        "working":    "working-close-eye.png"
+      },
+      "mood_cycle": {
+        "working": ["working-a.png", "working-b.png"]
       }
     },
     "idle_motion": {

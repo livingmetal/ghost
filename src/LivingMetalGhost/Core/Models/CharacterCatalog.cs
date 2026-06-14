@@ -65,6 +65,8 @@ public sealed record SpriteCharacterVisualProfile(
     string? BlinkSpritePath,
     IReadOnlyList<string> SpeakingSpritePaths,
     IReadOnlyDictionary<string, string> MoodSpritePaths,
+    IReadOnlyDictionary<string, string> MoodBlinkSpritePaths,
+    IReadOnlyDictionary<string, IReadOnlyList<string>> MoodCycleSpritePaths,
     double Width,
     double Height,
     CharacterMotionProfile? IdleMotion,
@@ -279,6 +281,21 @@ public static class CharacterCatalog
                 pair => pair.Key,
                 pair => ResolvePath(rootDirectory, pair.Value),
                 StringComparer.OrdinalIgnoreCase);
+        var moodBlinkSprites = (visual.Sprites?.MoodBlink ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase))
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.Key) && !string.IsNullOrWhiteSpace(pair.Value))
+            .ToDictionary(
+                pair => pair.Key,
+                pair => ResolvePath(rootDirectory, pair.Value),
+                StringComparer.OrdinalIgnoreCase);
+        var moodCycleSprites = (visual.Sprites?.MoodCycle ?? new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase))
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.Key) && pair.Value is { Count: > 0 })
+            .ToDictionary(
+                pair => pair.Key,
+                pair => (IReadOnlyList<string>)pair.Value
+                    .Select(path => ResolvePath(rootDirectory, path))
+                    .Where(File.Exists)
+                    .ToArray(),
+                StringComparer.OrdinalIgnoreCase);
 
         return new SpriteCharacterVisualProfile(
             rootDirectory,
@@ -286,6 +303,8 @@ public static class CharacterCatalog
             ResolvePath(rootDirectory, visual.Sprites?.Blink),
             speakingSprites,
             moodSprites,
+            moodBlinkSprites,
+            moodCycleSprites,
             visual.Width <= 0 ? 300 : visual.Width,
             visual.Height <= 0 ? 380 : visual.Height,
             ToMotionProfile(visual.IdleMotion),
@@ -479,6 +498,8 @@ public static class CharacterCatalog
         public string? Blink { get; set; }
         public List<string> Speaking { get; set; } = [];
         public Dictionary<string, string> Moods { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string> MoodBlink { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, List<string>> MoodCycle { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     private sealed class CharacterMotionManifestFile

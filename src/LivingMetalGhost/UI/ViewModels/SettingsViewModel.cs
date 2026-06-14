@@ -83,6 +83,54 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool isBusy;
 
+    // --- 고급 대화(advanced_llm) ---
+    [ObservableProperty]
+    private string advancedProvider = "Mock";
+
+    [ObservableProperty]
+    private string advancedModel = string.Empty;
+
+    [ObservableProperty]
+    private string advancedBaseUrl = "https://generativelanguage.googleapis.com/v1beta/openai/";
+
+    [ObservableProperty]
+    private double advancedTemperature = 0.4;
+
+    [ObservableProperty]
+    private int advancedMaxOutputTokens = 4096;
+
+    [ObservableProperty]
+    private int advancedTimeoutSeconds = 60;
+
+    // --- 고급 대화 installed-apps 전용 ---
+    [ObservableProperty]
+    private string installedAppsPreferredApp = "auto";
+
+    [ObservableProperty]
+    private string installedAppsStatus = string.Empty;
+
+    // --- 고급 작업 에이전트(agents) ---
+    [ObservableProperty]
+    private string agentDefaultExecutor = "mock";
+
+    [ObservableProperty]
+    private string agentApprovalMode = "suggest";
+
+    [ObservableProperty]
+    private bool agentEnableExecution;
+
+    [ObservableProperty]
+    private string agentWorkspaceRoot = string.Empty;
+
+    [ObservableProperty]
+    private int agentTimeoutSeconds = 180;
+
+    [ObservableProperty]
+    private string claudeCodeExecutable = "claude";
+
+    [ObservableProperty]
+    private string agentCodexExecutable = DefaultCodexExecutable;
+
     public SettingsViewModel(
         AppConfigLoader configLoader,
         AppPaths paths,
@@ -96,8 +144,22 @@ public partial class SettingsViewModel : ObservableObject
         Reload();
     }
 
+    /// <summary>기본 대화 provider 콤보 목록.</summary>
     public IReadOnlyList<string> Providers { get; } =
-        ["Mock", "Gemini", "OpenAI-Compatible", "Codex"];
+        ["Mock", "Gemini", "OpenAI", "OpenAI-Compatible", "Codex"];
+
+    /// <summary>고급 대화 provider 콤보 목록 — ChatGPT(OpenAI) 와 Claude(Installed-Apps) 만 제공.</summary>
+    public IReadOnlyList<string> AdvancedProviders { get; } =
+        ["OpenAI", "Installed-Apps"];
+
+    public IReadOnlyList<string> InstalledAppsPreferredApps { get; } =
+        ["auto", "claude", "chatgpt"];
+
+    public IReadOnlyList<string> AgentExecutors { get; } =
+        ["mock", "claude-code", "codex-cli"];
+
+    public IReadOnlyList<string> AgentApprovalModes { get; } =
+        ["suggest", "ask", "apply", "execute"];
 
     public IReadOnlyList<CharacterProfile> Characters => CharacterCatalog.All;
 
@@ -145,6 +207,28 @@ public partial class SettingsViewModel : ObservableObject
         CodexExecutable = config.Llm.CodexExecutable;
         CodexWorkingDirectory = config.Llm.CodexWorkingDirectory;
         CodexTimeoutSeconds = Math.Clamp(config.Llm.CodexTimeoutSeconds, 30, 900);
+
+        AdvancedProvider = config.AdvancedLlm.Provider;
+        AdvancedModel = config.AdvancedLlm.Model;
+        AdvancedBaseUrl = config.AdvancedLlm.BaseUrl;
+        AdvancedTemperature = config.AdvancedLlm.Temperature;
+        AdvancedMaxOutputTokens = config.AdvancedLlm.MaxOutputTokens;
+        AdvancedTimeoutSeconds = Math.Clamp(config.AdvancedLlm.TimeoutSeconds, 15, 600);
+        InstalledAppsPreferredApp = config.AdvancedLlm.InstalledApps?.PreferredApp ?? "auto";
+        InstalledAppsStatus = string.Empty;
+
+        AgentDefaultExecutor = config.Agents.DefaultExecutor;
+        AgentApprovalMode = config.Agents.ApprovalMode;
+        AgentEnableExecution = config.Agents.EnableExecution;
+        AgentWorkspaceRoot = config.Agents.WorkspaceRoot;
+        AgentTimeoutSeconds = Math.Clamp(config.Agents.TimeoutSeconds, 30, 1800);
+        ClaudeCodeExecutable = string.IsNullOrWhiteSpace(config.Agents.ClaudeCode.Executable)
+            ? "claude"
+            : config.Agents.ClaudeCode.Executable;
+        AgentCodexExecutable = string.IsNullOrWhiteSpace(config.Agents.CodexCli.Executable)
+            ? DefaultCodexExecutable
+            : config.Agents.CodexCli.Executable;
+
         ApiKeyInput = string.Empty;
         ApiKeyStatus = _secretStore.HasApiKey ? "API Key 저장됨 (DPAPI 보호)" : "API Key 없음";
         StatusMessage = string.Empty;
@@ -196,6 +280,137 @@ public partial class SettingsViewModel : ObservableObject
             : CodexWorkingDirectory;
         CodexTimeoutSeconds = Math.Clamp(CodexTimeoutSeconds, 30, 900);
         StatusMessage = "Codex 전용 프리셋을 적용했습니다.";
+    }
+
+    [RelayCommand]
+    private void ApplyAdvancedGeminiPreset()
+    {
+        AdvancedProvider = "Gemini";
+        AdvancedModel = "gemini-2.0-flash";
+        AdvancedBaseUrl = "https://generativelanguage.googleapis.com/v1beta/openai/";
+        AdvancedTemperature = 0.4;
+        AdvancedMaxOutputTokens = 4096;
+        AdvancedTimeoutSeconds = 60;
+        StatusMessage = "고급 대화 Gemini 프리셋을 적용했습니다.";
+    }
+
+    [RelayCommand]
+    private void ApplyAdvancedOpenAiPreset()
+    {
+        AdvancedProvider = "OpenAI";
+        AdvancedModel = "gpt-4o";
+        AdvancedBaseUrl = "https://api.openai.com/v1/";
+        AdvancedTemperature = 0.4;
+        AdvancedMaxOutputTokens = 4096;
+        AdvancedTimeoutSeconds = 120;
+        StatusMessage = "고급 대화 OpenAI 프리셋을 적용했습니다. API Key를 입력하세요.";
+    }
+
+    [RelayCommand]
+    private void ApplyAdvancedLmBotPreset()
+    {
+        AdvancedProvider = "LmBot";
+        AdvancedModel = string.Empty;
+        AdvancedBaseUrl = string.Empty;
+        AdvancedTemperature = 0.7;
+        AdvancedMaxOutputTokens = 4096;
+        AdvancedTimeoutSeconds = 180;
+        StatusMessage = "고급 대화 LmBot(로컬 claude/codex) 프리셋을 적용했습니다. PATH에 claude 또는 codex를 설치해 주세요.";
+    }
+
+    [RelayCommand]
+    private void ApplyInstalledAppsPreset()
+    {
+        AdvancedProvider = "Installed-Apps";
+        AdvancedModel = string.Empty;
+        AdvancedBaseUrl = string.Empty;
+        AdvancedTemperature = 0.4;
+        AdvancedMaxOutputTokens = 4096;
+        AdvancedTimeoutSeconds = 120;
+        InstalledAppsPreferredApp = "claude";
+        StatusMessage = "Claude 프리셋을 적용했습니다. claude CLI 또는 Claude 데스크탑 앱이 필요합니다. '앱 감지'로 확인하세요.";
+    }
+
+    [RelayCommand]
+    private async Task DetectInstalledAppsAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        InstalledAppsStatus = "감지 중...";
+        InstalledAppDetector.Invalidate();
+
+        try
+        {
+            var info = await InstalledAppDetector.DetectAsync();
+            var parts = new List<string>();
+
+            if (info.HasClaudeCli)
+            {
+                parts.Add("Claude CLI 확인 ✓ (대화 가능)");
+            }
+            else if (info.ClaudeExePath is not null)
+            {
+                // 데스크탑 앱은 감지됐지만 CLI가 없으면 실제 대화에 claude CLI가 필요하다고 안내
+                parts.Add("Claude 앱 감지됨 (대화를 위해 claude CLI 필요 — npm install -g @anthropic-ai/claude-code)");
+            }
+
+            if (info.HasChatGptCli)
+            {
+                parts.Add("ChatGPT CLI 확인 ✓");
+            }
+            else if (info.ChatGptExePath is not null)
+            {
+                parts.Add("ChatGPT 앱 감지됨 (API Key 필요)");
+            }
+
+            InstalledAppsStatus = parts.Count > 0
+                ? string.Join("  ·  ", parts)
+                : "감지된 앱 없음 — ChatGPT 또는 Claude를 설치하거나 claude CLI(npm install -g @anthropic-ai/claude-code)를 설치하세요.";
+        }
+        catch (Exception ex)
+        {
+            InstalledAppsStatus = $"감지 실패: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void ApplyClaudeCodeAgentPreset()
+    {
+        AgentDefaultExecutor = "claude-code";
+        ClaudeCodeExecutable = string.IsNullOrWhiteSpace(ClaudeCodeExecutable)
+            ? "claude"
+            : ClaudeCodeExecutable;
+        AgentApprovalMode = "suggest";
+        AgentEnableExecution = false;
+        AgentWorkspaceRoot = string.IsNullOrWhiteSpace(AgentWorkspaceRoot)
+            ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+            : AgentWorkspaceRoot;
+        AgentTimeoutSeconds = Math.Clamp(AgentTimeoutSeconds, 30, 1800);
+        StatusMessage = "Claude Code 에이전트 프리셋(안전: 제안 모드)을 적용했습니다. 작업 루트를 확인하세요.";
+    }
+
+    [RelayCommand]
+    private void ApplyCodexAgentPreset()
+    {
+        AgentDefaultExecutor = "codex-cli";
+        AgentCodexExecutable = string.IsNullOrWhiteSpace(AgentCodexExecutable)
+            ? DefaultCodexExecutable
+            : AgentCodexExecutable;
+        AgentApprovalMode = "suggest";
+        AgentEnableExecution = false;
+        AgentWorkspaceRoot = string.IsNullOrWhiteSpace(AgentWorkspaceRoot)
+            ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+            : AgentWorkspaceRoot;
+        AgentTimeoutSeconds = Math.Clamp(AgentTimeoutSeconds, 30, 1800);
+        StatusMessage = "Codex CLI 에이전트 프리셋(안전: 제안 모드)을 적용했습니다. 작업 루트를 확인하세요.";
     }
 
     [RelayCommand]
@@ -266,6 +481,33 @@ public partial class SettingsViewModel : ObservableObject
             : CodexExecutable.Trim();
         config.Llm.CodexWorkingDirectory = CodexWorkingDirectory.Trim();
         config.Llm.CodexTimeoutSeconds = Math.Clamp(CodexTimeoutSeconds, 30, 900);
+
+        config.AdvancedLlm.Provider = AdvancedProvider.Trim();
+        config.AdvancedLlm.Model = AdvancedModel.Trim();
+        config.AdvancedLlm.BaseUrl = EnsureTrailingSlash(AdvancedBaseUrl.Trim());
+        config.AdvancedLlm.Temperature = Math.Clamp(AdvancedTemperature, 0.0, 2.0);
+        config.AdvancedLlm.MaxOutputTokens = Math.Clamp(AdvancedMaxOutputTokens, 256, 32768);
+        config.AdvancedLlm.TimeoutSeconds = Math.Clamp(AdvancedTimeoutSeconds, 15, 600);
+        config.AdvancedLlm.ApiKeySource = config.Llm.ApiKeySource;
+        config.AdvancedLlm.InstalledApps = new InstalledAppsSettings
+        {
+            PreferredApp = string.IsNullOrWhiteSpace(InstalledAppsPreferredApp)
+                ? "auto"
+                : InstalledAppsPreferredApp.Trim()
+        };
+
+        config.Agents.DefaultExecutor = AgentDefaultExecutor.Trim();
+        config.Agents.ApprovalMode = AgentApprovalMode.Trim();
+        config.Agents.EnableExecution = AgentEnableExecution;
+        config.Agents.WorkspaceRoot = AgentWorkspaceRoot.Trim();
+        config.Agents.TimeoutSeconds = Math.Clamp(AgentTimeoutSeconds, 30, 1800);
+        config.Agents.ClaudeCode.Executable = string.IsNullOrWhiteSpace(ClaudeCodeExecutable)
+            ? "claude"
+            : ClaudeCodeExecutable.Trim();
+        config.Agents.CodexCli.Executable = string.IsNullOrWhiteSpace(AgentCodexExecutable)
+            ? DefaultCodexExecutable
+            : AgentCodexExecutable.Trim();
+
         config.App.PersonalityPrompt = string.IsNullOrWhiteSpace(PersonalityPrompt)
             ? CharacterCatalog.Get(SelectedCharacterId).DefaultPersonality
             : PersonalityPrompt.Trim();

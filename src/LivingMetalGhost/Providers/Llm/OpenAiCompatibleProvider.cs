@@ -25,14 +25,17 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
 
     public async Task<LlmResponse> GenerateAsync(LlmRequest request, CancellationToken ct)
     {
-        var config = _configLoader.Load();
+        // Provider 는 호출자가 넘긴 옵션을 기준으로 동작한다.
+        // 옵션이 없으면(레거시 호출) 안전하게 전역 기본 설정으로 폴백한다.
+        var options = request.Options ?? LlmOptions.FromSettings(_configLoader.Load().Llm);
+
         var apiKey = _secretStore.LoadApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             throw new InvalidOperationException("설정에서 API Key를 저장해 주세요.");
         }
 
-        if (!Uri.TryCreate(config.Llm.BaseUrl, UriKind.Absolute, out var baseUri))
+        if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var baseUri))
         {
             throw new InvalidOperationException("Base URL 형식이 올바르지 않습니다.");
         }
@@ -40,7 +43,7 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
         using var httpClient = new HttpClient
         {
             BaseAddress = baseUri,
-            Timeout = TimeSpan.FromSeconds(Math.Clamp(config.Llm.TimeoutSeconds, 15, 180))
+            Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 15, 180))
         };
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
@@ -57,15 +60,16 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
 
         var output = new StringBuilder();
         var continuedAutomatically = false;
-        var maxOutputTokens = Math.Clamp(config.Llm.MaxOutputTokens, 1024, 8192);
+        var maxOutputTokens = Math.Clamp(options.MaxOutputTokens, 1024, 8192);
+        var model = request.ResolveModel();
 
         for (var attempt = 0; attempt <= MaximumContinuationRequests; attempt++)
         {
             var result = await SendRequestAsync(
                 httpClient,
-                request.Model,
+                model,
                 messages,
-                config.Llm.Temperature,
+                options.Temperature,
                 maxOutputTokens,
                 ct);
 
@@ -149,8 +153,24 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
         }
 
         using var document = JsonDocument.Parse(responseBody);
-        var choice = document.RootElement.GetProperty("choices")[0];
-        var text = choice.GetProperty("message").GetProperty("content").GetString();
+        var root = document.RootElement;
+
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            var preview = responseBody.Length > 200 ? responseBody[..200] : responseBody;
+            throw new InvalidOperationException(
+                $"API 응답 형식이 올바르지 않습니다 (루트가 객체가 아닌 {root.ValueKind}). 응답 앞부분: {preview}");
+        }
+
+        var choice = root.GetProperty("choices")[0];
+        var messageElement = choice.GetProperty("message");
+        var contentElement = messageElement.GetProperty("content");
+
+        // content가 문자열(표준 OpenAI)이면 그대로, 배열(멀티모달/Anthropic)이면 첫 text 블록을 추출
+        var text = contentElement.ValueKind == JsonValueKind.Array
+            ? ExtractTextFromContentArray(contentElement)
+            : contentElement.GetString();
+
         var finishReason = choice.TryGetProperty("finish_reason", out var finishReasonElement)
             ? finishReasonElement.GetString()
             : null;
@@ -175,6 +195,21 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
             _ => new HttpRequestException(
                 $"AI API 요청이 실패했습니다. HTTP {(int)statusCode}: {detail}")
         };
+    }
+
+    private static string? ExtractTextFromContentArray(JsonElement contentArray)
+    {
+        foreach (var block in contentArray.EnumerateArray())
+        {
+            if (block.TryGetProperty("type", out var typeEl) &&
+                string.Equals(typeEl.GetString(), "text", StringComparison.OrdinalIgnoreCase) &&
+                block.TryGetProperty("text", out var textEl))
+            {
+                return textEl.GetString();
+            }
+        }
+
+        return null;
     }
 
     private static string TryReadErrorMessage(string responseBody)

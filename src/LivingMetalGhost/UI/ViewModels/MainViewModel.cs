@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Services;
+using LivingMetalGhost.Providers.Llm;
 using LivingMetalGhost.Skills;
 
 namespace LivingMetalGhost.UI.ViewModels;
@@ -55,6 +56,16 @@ public partial class MainViewModel : ObservableObject
     private bool isAdvancedMode;
 
     [ObservableProperty]
+    private bool isLocalLmAvailable;
+
+    /// <summary>
+    /// 현재 설정된 고급 대화 provider 를 기준으로 고급 모드 토글 가능 여부.
+    /// lmbot: 로컬 CLI 감지 결과 / 그 외(API 기반): 항상 true.
+    /// </summary>
+    [ObservableProperty]
+    private bool isAdvancedModeAvailable = true;
+
+    [ObservableProperty]
     private int proactiveSettingsRevision;
 
     public MainViewModel(
@@ -70,6 +81,42 @@ public partial class MainViewModel : ObservableObject
         _conversationService = conversationService;
         _conversationLogService = conversationLogService;
         RefreshSelectedCharacter();
+        _ = RefreshLocalLmAvailabilityAsync();
+    }
+
+    public async Task RefreshLocalLmAvailabilityAsync()
+    {
+        var advancedProvider = _configLoader.Load().AdvancedLlm.Provider;
+        var isInstalledApps =
+            string.Equals(advancedProvider, "installed-apps", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(advancedProvider, "installed_apps", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(advancedProvider, "apps", StringComparison.OrdinalIgnoreCase);
+        var needsLocalLm = string.Equals(advancedProvider, "lmbot", StringComparison.OrdinalIgnoreCase);
+
+        if (isInstalledApps)
+        {
+            InstalledAppDetector.Invalidate();
+            var info = await InstalledAppDetector.DetectAsync();
+            IsLocalLmAvailable = info.IsAnyAvailable;
+            IsAdvancedModeAvailable = info.IsAnyAvailable;
+        }
+        else if (needsLocalLm)
+        {
+            LocalLmDetector.Invalidate();
+            var info = await LocalLmDetector.DetectAsync();
+            IsLocalLmAvailable = info.IsAvailable;
+            IsAdvancedModeAvailable = info.IsAvailable;
+        }
+        else
+        {
+            IsLocalLmAvailable = false;
+            IsAdvancedModeAvailable = true;
+        }
+
+        if (!IsAdvancedModeAvailable && IsAdvancedMode)
+        {
+            IsAdvancedMode = false;
+        }
     }
 
     public ObservableCollection<ChatMessage> Messages { get; } = [];
@@ -129,7 +176,7 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        CharacterMood = "thinking";
+        CharacterMood = IsAdvancedMode ? "working" : "thinking";
         CharacterStateLabel = "THINKING";
         _isResponding = true;
         Messages.Add(new ChatMessage
@@ -149,6 +196,7 @@ public partial class MainViewModel : ObservableObject
             CharacterStateLabel = CharacterMood.ToUpperInvariant();
             await DisplayAssistantResponseAsync(result.BubbleText, isProactive: false);
             await WriteLogAsync(request.RawText, result.BubbleText, isProactive: false);
+            DispatchAppCommand(result.Action);
         }
         catch (Exception ex)
         {
@@ -168,6 +216,25 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    // AppCommandSkill 이 돌려준 Action 값을 실제 동작으로 연결한다.
+    // 비파괴적 명령만 즉시 처리하고, 종료처럼 위험한 명령은 의도적으로 보류한다.
+    private void DispatchAppCommand(string? action)
+    {
+        switch (action)
+        {
+            case AppCommandActions.OpenSettings:
+                OpenSettings();
+                break;
+            case AppCommandActions.OpenLog:
+                OpenConversationLog();
+                break;
+            case AppCommandActions.ToggleAdvancedMode:
+                IsAdvancedMode = !IsAdvancedMode;
+                break;
+            // TODO: AppCommandActions.ExitApp 는 확인 절차를 둔 뒤 Application.Current.Shutdown() 연결.
+        }
+    }
+
     public async Task StartConversationAsync()
     {
         if (_isResponding)
@@ -176,8 +243,8 @@ public partial class MainViewModel : ObservableObject
         }
 
         _isResponding = true;
-        CharacterMood = "thinking";
-        CharacterStateLabel = "THINKING";
+        CharacterMood = IsAdvancedMode ? "working" : "thinking";
+        CharacterStateLabel = IsAdvancedMode ? "WORKING" : "THINKING";
 
         try
         {

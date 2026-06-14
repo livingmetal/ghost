@@ -147,7 +147,7 @@ public partial class ChatWindow : Window
 
     private void ToggleAdvancedMode()
     {
-        if (_subscribedViewModel is null)
+        if (_subscribedViewModel is null || !_subscribedViewModel.IsAdvancedModeAvailable)
         {
             return;
         }
