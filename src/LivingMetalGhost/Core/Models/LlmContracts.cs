@@ -31,6 +31,7 @@ public sealed class LlmStreamChunk
 public sealed class UserRequest
 {
     public string RawText { get; set; } = string.Empty;
+    public bool UseAdvancedModel { get; set; }
 }
 
 public sealed class SkillResult

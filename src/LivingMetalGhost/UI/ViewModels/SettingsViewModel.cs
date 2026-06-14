@@ -26,7 +26,7 @@ public partial class SettingsViewModel : ObservableObject
     private string provider = "Mock";
 
     [ObservableProperty]
-    private string selectedCharacterId = "codex-tan";
+    private string selectedCharacterId = "ssuang";
 
     [ObservableProperty]
     private string characterAppearance = string.Empty;
@@ -41,7 +41,7 @@ public partial class SettingsViewModel : ObservableObject
     private string selectedCharacterFramingPresetId = string.Empty;
 
     [ObservableProperty]
-    private string model = "mock-codex-tan";
+    private string model = "mock";
 
     [ObservableProperty]
     private string personalityPrompt =

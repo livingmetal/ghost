@@ -4,6 +4,7 @@ public sealed class AppConfig
 {
     public AppSettings App { get; set; } = new();
     public LlmSettings Llm { get; set; } = new();
+    public LlmSettings AdvancedLlm { get; set; } = new();
 }
 
 public sealed class AppSettings
@@ -38,7 +39,7 @@ public sealed class LlmSettings
 {
     public string Provider { get; set; } = "Mock";
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta/openai/";
-    public string Model { get; set; } = "mock-codex-tan";
+    public string Model { get; set; } = "mock";
     public string ApiKeySource { get; set; } = "dpapi";
     public double Temperature { get; set; } = 0.7;
     public int MaxOutputTokens { get; set; } = 2048;

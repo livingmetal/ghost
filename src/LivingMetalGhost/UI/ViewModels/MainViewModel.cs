@@ -22,7 +22,7 @@ public partial class MainViewModel : ObservableObject
     private bool _isResponding;
 
     [ObservableProperty]
-    private string bubbleText = "Codex-tan is waiting.";
+    private string bubbleText = "기다리고 있어요.";
 
     [ObservableProperty]
     private string inputText = string.Empty;
@@ -37,10 +37,10 @@ public partial class MainViewModel : ObservableObject
     private bool isCharacterSpeaking;
 
     [ObservableProperty]
-    private string selectedCharacterId = "codex-tan";
+    private string selectedCharacterId = "ssuang";
 
     [ObservableProperty]
-    private string characterDisplayName = "Codex-tan";
+    private string characterDisplayName = "쑝";
 
     [ObservableProperty]
     private string selectedCharacterSizePresetId = "normal";
@@ -50,6 +50,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string selectedCharacterFramingPresetId = "full-body";
+
+    [ObservableProperty]
+    private bool isAdvancedMode;
 
     [ObservableProperty]
     private int proactiveSettingsRevision;
@@ -120,7 +123,7 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        var request = new UserRequest { RawText = InputText.Trim() };
+        var request = new UserRequest { RawText = InputText.Trim(), UseAdvancedModel = IsAdvancedMode };
         if (string.IsNullOrWhiteSpace(request.RawText))
         {
             return;

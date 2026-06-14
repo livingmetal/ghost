@@ -318,6 +318,10 @@ public partial class MainWindow : Window
     {
         KeepOnScreen();
         ViewModel.SaveCharacterScale();
+        ResizeCharacterMenuItem.IsChecked = false;
+        ResizeAdorner.Visibility = Visibility.Collapsed;
+        ResizeThumb.Visibility = Visibility.Collapsed;
+        CharacterSurface.Cursor = Cursors.Hand;
     }
 
     private void KeepOnScreen()

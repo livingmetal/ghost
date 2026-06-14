@@ -15,7 +15,7 @@ public partial class CharacterHost : UserControl
         nameof(CharacterId),
         typeof(string),
         typeof(CharacterHost),
-        new PropertyMetadata("codex-tan", OnVisualStateChanged));
+        new PropertyMetadata("ssuang", OnVisualStateChanged));
 
     public static readonly DependencyProperty MoodProperty = DependencyProperty.Register(
         nameof(Mood),
@@ -138,7 +138,6 @@ public partial class CharacterHost : UserControl
         _modularVisual = character.Visual as ModularCharacterVisualProfile;
 
         var usesCustomVisual = _spriteVisual is not null || _modularVisual is not null;
-        CodexTan.Visibility = usesCustomVisual ? Visibility.Collapsed : Visibility.Visible;
         SpriteCharacter.Visibility = usesCustomVisual ? Visibility.Visible : Visibility.Collapsed;
 
         _blinkTimer.Stop();
@@ -150,8 +149,6 @@ public partial class CharacterHost : UserControl
 
         if (!usesCustomVisual)
         {
-            Width = 300;
-            Height = 380;
             return;
         }
 

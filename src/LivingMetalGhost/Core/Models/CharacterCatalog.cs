@@ -41,9 +41,6 @@ public sealed record CharacterPresentationProfile(
 
 public abstract record CharacterVisualProfile(string Mode);
 
-public sealed record BuiltInCharacterVisualProfile()
-    : CharacterVisualProfile("built-in");
-
 public sealed record ModularCharacterState(
     IReadOnlyDictionary<string, string?> LayerPaths);
 
@@ -81,17 +78,6 @@ public sealed record CharacterMotionProfile(
 
 public static class CharacterCatalog
 {
-    private static readonly CharacterProfile BuiltInCodexTan = new(
-        "codex-tan",
-        "Codex-tan",
-        "Built-in assistant character.",
-        "A compact mascot with a retro terminal feel.",
-        "A floating desktop coding assistant that stays near the work area.",
-        "Speak concisely, precisely, and helpfully with a pragmatic engineering tone.",
-        [],
-        CreateDefaultPresentation(),
-        new BuiltInCharacterVisualProfile());
-
     public static IReadOnlyList<CharacterProfile> All => LoadAll();
 
     public static CharacterProfile Get(string? id)
@@ -99,15 +85,12 @@ public static class CharacterCatalog
         var all = LoadAll();
         return all.FirstOrDefault(
                    character => string.Equals(character.Id, id, StringComparison.OrdinalIgnoreCase))
-               ?? BuiltInCodexTan;
+               ?? all.First();
     }
 
     private static IReadOnlyList<CharacterProfile> LoadAll()
     {
-        var characters = new Dictionary<string, CharacterProfile>(StringComparer.OrdinalIgnoreCase)
-        {
-            [BuiltInCodexTan.Id] = BuiltInCodexTan
-        };
+        var characters = new Dictionary<string, CharacterProfile>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var root in GetCharacterRoots())
         {
@@ -129,8 +112,7 @@ public static class CharacterCatalog
         }
 
         return characters.Values
-            .OrderBy(character => character.Id.Equals(BuiltInCodexTan.Id, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
-            .ThenBy(character => character.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(character => character.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
 
@@ -166,12 +148,17 @@ public static class CharacterCatalog
             return null;
         }
 
-        CharacterVisualProfile visual = manifest.Visual.Mode.ToLowerInvariant() switch
+        CharacterVisualProfile? visual = manifest.Visual.Mode.ToLowerInvariant() switch
         {
             "sprite" => BuildSpriteVisual(manifestPath, manifest.Visual),
             "modular" => BuildModularVisual(manifestPath, manifest.Visual),
-            _ => new BuiltInCharacterVisualProfile()
+            _ => null
         };
+
+        if (visual is null)
+        {
+            return null;
+        }
 
         return new CharacterProfile(
             manifest.Id.Trim(),

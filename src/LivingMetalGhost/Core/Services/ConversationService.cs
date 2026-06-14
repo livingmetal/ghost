@@ -24,15 +24,16 @@ public sealed class ConversationService
         _providerFactory = providerFactory;
     }
 
-    public async Task<SkillResult> ChatAsync(string text, CancellationToken cancellationToken)
+    public async Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
-        var provider = _providerFactory.Create(config.Llm.Provider);
+        var llm = advanced ? config.AdvancedLlm : config.Llm;
+        var provider = _providerFactory.Create(llm.Provider);
         var response = await provider.GenerateAsync(new LlmRequest
         {
             UserText = text,
             UserTitle = config.App.UserTitle,
-            Model = config.Llm.Model,
+            Model = llm.Model,
             SystemPrompt = BuildSystemPrompt(config),
             History = GetHistorySnapshot()
         }, cancellationToken);

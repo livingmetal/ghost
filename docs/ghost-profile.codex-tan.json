@@ -1,8 +1,0 @@
-{
-  "id": "codex-tan",
-  "name": "Codex-tan",
-  "display_name": "코덱스탄",
-  "description": "Codex inspired Windows desktop mascot assistant.",
-  "default_personality": "calm_architect",
-  "language": "ko-KR"
-}

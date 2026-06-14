@@ -11,12 +11,15 @@
         ShowInTaskbar="False"
         ShowActivated="False">
     <Grid Background="Transparent">
-        <Border Margin="8"
+        <Border x:Name="RootBorder"
+                Margin="8"
                 Padding="16"
                 Background="#F4EFE5"
-                BorderBrush="#1B2430"
                 BorderThickness="2"
                 CornerRadius="22">
+            <Border.BorderBrush>
+                <SolidColorBrush x:Name="BorderAccent" Color="#1B2430" />
+            </Border.BorderBrush>
             <Border.Effect>
                 <DropShadowEffect BlurRadius="20"
                                   ShadowDepth="6"
@@ -31,13 +34,15 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Grid MouseLeftButtonDown="Header_OnMouseLeftButtonDown">
+                <Grid MouseLeftButtonDown="Header_OnMouseLeftButtonDown"
+                      Cursor="SizeAll">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock FontFamily="Bahnschrift"
+                        <TextBlock x:Name="TitleLabel"
+                                   FontFamily="Bahnschrift"
                                    FontSize="20"
                                    FontWeight="SemiBold"
                                    Foreground="#18212D"
@@ -132,7 +137,8 @@
                              BorderThickness="1"
                              PreviewKeyDown="PromptTextBox_OnPreviewKeyDown"
                              Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" />
-                    <Button Grid.Column="1"
+                    <Button x:Name="SendButton"
+                            Grid.Column="1"
                             Margin="8,0,0,0"
                             MinWidth="76"
                             Padding="14,8"

@@ -1,7 +1,0 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <CornerRadius x:Key="BalloonCornerRadius">18</CornerRadius>
-    <SolidColorBrush x:Key="BalloonBackgroundBrush" Color="#FFFDF8" />
-    <SolidColorBrush x:Key="BalloonForegroundBrush" Color="#222222" />
-</ResourceDictionary>
-

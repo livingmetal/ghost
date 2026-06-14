@@ -19,6 +19,6 @@ public sealed class ChatSkill : IGhostSkill
     public bool CanHandle(UserRequest request) => true;
 
     public Task<SkillResult> HandleAsync(UserRequest request, CancellationToken ct)
-        => _conversationService.ChatAsync(request.RawText, ct);
+        => _conversationService.ChatAsync(request.RawText, request.UseAdvancedModel, ct);
 }
 
