@@ -228,9 +228,6 @@ public partial class MainViewModel : ObservableObject
             case AppCommandActions.OpenLog:
                 OpenConversationLog();
                 break;
-            case AppCommandActions.ToggleAdvancedMode:
-                IsAdvancedMode = !IsAdvancedMode;
-                break;
             // TODO: AppCommandActions.ExitApp 는 확인 절차를 둔 뒤 Application.Current.Shutdown() 연결.
         }
     }
