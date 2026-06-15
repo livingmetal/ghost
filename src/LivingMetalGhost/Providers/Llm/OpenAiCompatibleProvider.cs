@@ -29,10 +29,10 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
         // 옵션이 없으면(레거시 호출) 안전하게 전역 기본 설정으로 폴백한다.
         var options = request.Options ?? LlmOptions.FromSettings(_configLoader.Load().Llm);
 
-        var apiKey = _secretStore.LoadApiKey();
+        var apiKey = _secretStore.LoadApiKey(options.ApiKeySource);
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new InvalidOperationException("설정에서 API Key를 저장해 주세요.");
+            throw new InvalidOperationException("설정에서 현재 모드의 API Key를 저장해 주세요.");
         }
 
         if (!Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var baseUri))
