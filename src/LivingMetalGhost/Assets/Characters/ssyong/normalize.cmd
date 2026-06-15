@@ -19,9 +19,7 @@ if %errorlevel% equ 0 (
   )
 )
 
-%PY% - <<PYTEST 2> nul
-import PIL
-PYTEST
+%PY% -c "import PIL" > nul 2> nul
 if not %errorlevel% equ 0 (
   echo [INFO] Pillow가 없어 설치합니다...
   %PY% -m pip install pillow
