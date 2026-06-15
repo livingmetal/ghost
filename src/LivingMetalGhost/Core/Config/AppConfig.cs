@@ -10,13 +10,19 @@ public sealed class AppConfig
         Provider = "Gemini",
         BaseUrl = "https://generativelanguage.googleapis.com/v1beta/openai/",
         Model = "gemini-2.0-flash",
+        ApiKeySource = "dpapi:basic",
         Temperature = 0.7,
         MaxOutputTokens = 2048,
         TimeoutSeconds = 30
     };
 
     /// <summary>고급 대화/분석용 LLM 설정. 기본값은 로컬 claude/codex CLI(lmbot).</summary>
-    public LlmSettings AdvancedLlm { get; set; } = new() { Provider = "lmbot", TimeoutSeconds = 180 };
+    public LlmSettings AdvancedLlm { get; set; } = new()
+    {
+        Provider = "lmbot",
+        ApiKeySource = "dpapi:advanced",
+        TimeoutSeconds = 180
+    };
 
     /// <summary>외부 작업 에이전트(Claude Code / Codex CLI 등) 설정.</summary>
     public AgentsSettings Agents { get; set; } = new();
@@ -55,7 +61,7 @@ public sealed class LlmSettings
     public string Provider { get; set; } = "Gemini";
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta/openai/";
     public string Model { get; set; } = "gemini-2.0-flash";
-    public string ApiKeySource { get; set; } = "dpapi";
+    public string ApiKeySource { get; set; } = "dpapi:basic";
     public double Temperature { get; set; } = 0.7;
     public int MaxOutputTokens { get; set; } = 2048;
     public bool Streaming { get; set; } = true;
