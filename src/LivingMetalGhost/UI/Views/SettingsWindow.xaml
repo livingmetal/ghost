@@ -79,7 +79,7 @@
                     <Border Padding="14,10" Background="#D4E8D4">
                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <StackPanel><TextBlock Style="{StaticResource SectionTitle}" Text="기본 대화" /><TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" Text="가벼운 대화. Gemini 권장." /></StackPanel>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal"><Button Style="{StaticResource PresetBtn}" Command="{Binding ApplyGeminiFreePresetCommand}" Content="Gemini" /><Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0" Command="{Binding ApplyCodexPresetCommand}" Content="Codex" /></StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal"><Button Style="{StaticResource PresetBtn}" Command="{Binding ApplyGeminiFreePresetCommand}" Content="Gemini" /></StackPanel>
                         </Grid>
                     </Border>
                     <Border Padding="14,12,14,14" Background="#F6FAF6"><StackPanel>
