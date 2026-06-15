@@ -17,8 +17,8 @@ public sealed class DpapiSecretStore
     }
 
     public bool HasApiKey => File.Exists(_paths.ApiKeyFile);
-    public bool HasBasicApiKey => HasApiKey(BasicApiKeySource);
-    public bool HasAdvancedApiKey => HasApiKey(AdvancedApiKeySource);
+    public bool HasBasicApiKey => HasApiKeyForSource(BasicApiKeySource);
+    public bool HasAdvancedApiKey => HasApiKeyForSource(AdvancedApiKeySource);
 
     public void SaveApiKey(string apiKey)
     {
@@ -76,7 +76,7 @@ public sealed class DpapiSecretStore
         }
     }
 
-    public bool HasApiKey(string? apiKeySource)
+    public bool HasApiKeyForSource(string? apiKeySource)
     {
         return File.Exists(ResolveApiKeyPath(apiKeySource));
     }
