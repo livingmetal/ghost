@@ -15,6 +15,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Ghost\**\*" />
+    <Page Remove="Ghost\**\*" />
+    <None Remove="Ghost\**\*" />
+    <Content Remove="Ghost\**\*" />
+    <EmbeddedResource Remove="Ghost\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />

@@ -1,0 +1,17 @@
+bin/
+obj/
+dist/
+release/
+tmp/
+.appdata/
+.dotnet-home/
+.nuget/
+.userprofile/
+DesignSamples/
+.vs/
+**/_backup*/
+*.user
+*.suo
+*.pdb
+*.cache
+*.tmp
