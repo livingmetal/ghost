@@ -8,7 +8,6 @@ public static class AppCommandActions
     public const string OpenSettings = "open-settings";
     public const string ExitApp = "exit-app";
     public const string OpenLog = "open-log";
-    public const string ToggleAdvancedMode = "toggle-advanced-mode";
 }
 
 public sealed class AppCommandSkill : IGhostSkill
