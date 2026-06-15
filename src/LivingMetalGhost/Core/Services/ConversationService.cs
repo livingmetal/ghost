@@ -10,7 +10,7 @@ public sealed class ConversationService
     private const int MaximumHistoryMessages = 20;
     private const int MaximumHistoryCharacters = 24000;
     private static readonly Regex MoodTagRegex = new(
-        @"^\s*\[mood:\s*(?<mood>idle|speaking|thinking|happy|blush|flustered|displeased|angry|strict|surprised|error|listening|acknowledging|soft-smile|embarrassed-smile|concerned|confused|serious|relieved|curious|skeptical|apologetic|determined|shy|amused)\s*\]\s*",
+        @"^\s*\[mood:\s*(?<mood>[a-z0-9_-]+)\s*\]\s*",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private readonly AppConfigLoader _configLoader;
     private readonly ILlmProviderFactory _providerFactory;
@@ -27,6 +27,7 @@ public sealed class ConversationService
     public async Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
+        var character = CharacterCatalog.Get(config.App.GhostId);
         var llm = advanced ? config.AdvancedLlm : config.Llm;
         var options = LlmOptions.FromSettings(llm);
         var provider = _providerFactory.Create(options.Provider);
@@ -36,11 +37,13 @@ public sealed class ConversationService
             UserTitle = config.App.UserTitle,
             Model = options.Model,
             Options = options,
-            SystemPrompt = BuildSystemPrompt(config),
+            SystemPrompt = BuildSystemPrompt(config, character),
             History = GetHistorySnapshot()
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
         var characterText = PolishCharacterSpeech(parsed.Text);
+        var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
+                            (response.FromFallback ? "thinking" : "speaking");
 
         AddToHistory("user", text);
         AddToHistory("assistant", characterText);
@@ -48,7 +51,7 @@ public sealed class ConversationService
         return new SkillResult
         {
             BubbleText = characterText,
-            Mood = parsed.Mood ?? (response.FromFallback ? "thinking" : "speaking"),
+            Mood = characterMood,
             Action = "chat",
             UsedLlm = true
         };
@@ -57,6 +60,7 @@ public sealed class ConversationService
     public async Task<SkillResult> StartConversationAsync(CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
+        var character = CharacterCatalog.Get(config.App.GhostId);
         // 먼저 말 걸기는 가벼운 기본 대화이므로 항상 기본 llm 설정을 사용한다.
         var options = LlmOptions.FromSettings(config.Llm);
         var provider = _providerFactory.Create(options.Provider);
@@ -69,26 +73,27 @@ public sealed class ConversationService
             UserTitle = config.App.UserTitle,
             Model = options.Model,
             Options = options,
-            SystemPrompt = BuildSystemPrompt(config),
+            SystemPrompt = BuildSystemPrompt(config, character),
             History = GetHistorySnapshot()
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
         var characterText = PolishCharacterSpeech(parsed.Text);
+        var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
+                            (response.FromFallback ? "happy" : "speaking");
 
         AddToHistory("assistant", characterText);
 
         return new SkillResult
         {
             BubbleText = characterText,
-            Mood = parsed.Mood ?? (response.FromFallback ? "happy" : "speaking"),
+            Mood = characterMood,
             Action = "proactive-chat",
             UsedLlm = true
         };
     }
 
-    private string BuildSystemPrompt(AppConfig config)
+    private string BuildSystemPrompt(AppConfig config, CharacterProfile character)
     {
-        var character = CharacterCatalog.Get(config.App.GhostId);
         var legacyPersonality = config.App.PersonalityId switch
         {
             "moe_codex" => "작은 개발 보조 고스트처럼 친근하게 말하되 과장하지 말고 기술적으로 정확하게 답한다.",
@@ -114,6 +119,7 @@ public sealed class ConversationService
             ? character.DefaultBackground
             : customProfile.Background.Trim();
         var hiddenTraitDirective = BuildHiddenTraitDirective(character);
+        var spriteMoodDirective = BuildSpriteMoodDirective(character);
 
         return $"""
             You are not ChatGPT, a generic chatbot, or a detached API assistant.
@@ -147,6 +153,8 @@ public sealed class ConversationService
             - When the user's assumption is weak, point it out calmly and clearly. Be dry, direct, and useful rather than overly polite.
             - Do not force the user's title into every sentence; use it naturally when greeting, emphasizing, or directly addressing the user.
 
+            {spriteMoodDirective}
+
             Speech examples:
             User: "맥미니가 LLM에 좋은 이유가 VRAM 때문이지?"
             {character.DisplayName}: "[mood: thinking]
@@ -166,7 +174,7 @@ public sealed class ConversationService
             Line 2 and after: only {character.DisplayName}'s actual Korean dialogue.
             Do not output analysis labels, narrator text, markdown headings, or assistant-like summaries unless the user explicitly asks for a structured answer.
 
-            Allowed moods are: speaking, thinking, happy, blush, flustered, displeased, angry, strict, surprised, error, idle, listening, acknowledging, soft-smile, embarrassed-smile, concerned, confused, serious, relieved, curious, skeptical, apologetic, determined, shy, amused.
+            Mood meaning guide:
             Use blush for warm embarrassment or affection, flustered when caught off guard or visibly embarrassed, displeased for restrained irritation, and angry only for clear anger or strong frustration. Use listening for attentive waiting, acknowledging for short confirmation, soft-smile for warm approval, embarrassed-smile for shy amusement, concerned for empathetic problem awareness, confused for uncertainty or ambiguity, serious for warnings or rigorous review, relieved after something is resolved, curious for exploratory questions or discovery, skeptical for doubtful review, apologetic for admitting mistakes or limits, determined for firm execution intent, shy for bashful warmth, and amused for playful satisfaction.
             Prefer a specific emotional mood over plain speaking whenever the reply clearly leans one way.
             Choose the mood that best matches the emotional expression of the reply, then continue with the actual Korean response on the next line.
@@ -197,6 +205,24 @@ public sealed class ConversationService
             Keep the character recognizable and avoid breaking safety, coherence, or the established relationship.
             Hidden side guidance:
             {{prompts}}
+            """;
+    }
+
+    private static string BuildSpriteMoodDirective(CharacterProfile character)
+    {
+        var availableMoods = GetAvailableSpriteMoods(character.Visual);
+        var availableMoodList = string.Join(", ", availableMoods);
+
+        return $$"""
+            Sprite emotion rules:
+            - Emotional expression is rendered only through manifest-defined sprites or speaking frames.
+            - The application renders the sprite/state that matches your mood tag. You do not directly choose image files.
+            - Available sprite moods for {{character.DisplayName}} are: {{availableMoodList}}.
+            - Choose exactly one mood tag from that available sprite mood list.
+            - Do not describe facial expressions, poses, gestures, or sprite changes in the dialogue unless the user is explicitly discussing character art or sprite behavior.
+            - Pick the mood that best matches the actual reply, not the most dramatic mood.
+            - During technical conversation, prefer subtle moods such as thinking, skeptical, concerned, acknowledging, serious, curious, or speaking when they are available.
+            - Use surprised, blush, flustered, angry, or displeased only when the situation clearly justifies that expression and the mood exists in the available list.
             """;
     }
 
@@ -261,6 +287,64 @@ public sealed class ConversationService
         var mood = match.Groups["mood"].Value.Trim().ToLowerInvariant();
         var text = responseText[match.Length..].Trim();
         return (text, mood);
+    }
+
+    private static string? NormalizeMood(string? mood, CharacterVisualProfile visual)
+    {
+        if (string.IsNullOrWhiteSpace(mood))
+        {
+            return null;
+        }
+
+        var normalized = mood.Trim().ToLowerInvariant();
+        return GetAvailableSpriteMoods(visual).Contains(normalized, StringComparer.OrdinalIgnoreCase)
+            ? normalized
+            : null;
+    }
+
+    private static IReadOnlyList<string> GetAvailableSpriteMoods(CharacterVisualProfile visual)
+    {
+        var moods = new List<string>();
+
+        if (visual is ModularCharacterVisualProfile modular)
+        {
+            moods.AddRange(modular.States.Keys
+                .Where(mood => !string.IsNullOrWhiteSpace(mood))
+                .Where(mood => !string.Equals(mood, modular.BlinkStateName, StringComparison.OrdinalIgnoreCase)));
+
+            if (modular.SpeakingStates.Count > 0 || modular.SpeakingStatesByState.Count > 0)
+            {
+                moods.Add("speaking");
+            }
+        }
+        else if (visual is SpriteCharacterVisualProfile sprite)
+        {
+            if (!string.IsNullOrWhiteSpace(sprite.IdleSpritePath))
+            {
+                moods.Add("idle");
+            }
+
+            moods.AddRange(sprite.MoodSpritePaths.Keys);
+            moods.AddRange(sprite.MoodBlinkSpritePaths.Keys);
+            moods.AddRange(sprite.MoodCycleSpritePaths.Keys);
+
+            if (sprite.SpeakingSpritePaths.Count > 0)
+            {
+                moods.Add("speaking");
+            }
+        }
+
+        if (moods.Count == 0)
+        {
+            moods.Add("speaking");
+        }
+
+        return moods
+            .Where(mood => !string.IsNullOrWhiteSpace(mood))
+            .Select(mood => mood.Trim().ToLowerInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(mood => mood, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private static string PolishCharacterSpeech(string text)
