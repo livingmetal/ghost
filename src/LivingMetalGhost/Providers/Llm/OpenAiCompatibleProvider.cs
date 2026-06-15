@@ -131,14 +131,23 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
         int maxOutputTokens,
         CancellationToken cancellationToken)
     {
-        var payload = new
+        var usesReasoningStyleParameters = UsesOpenAiReasoningStyleParameters(model);
+        var payload = new Dictionary<string, object?>
         {
-            model,
-            messages,
-            temperature,
-            max_tokens = maxOutputTokens,
-            stream = false
+            ["model"] = model,
+            ["messages"] = messages,
+            ["stream"] = false
         };
+
+        if (usesReasoningStyleParameters)
+        {
+            payload["max_completion_tokens"] = maxOutputTokens;
+        }
+        else
+        {
+            payload["temperature"] = temperature;
+            payload["max_tokens"] = maxOutputTokens;
+        }
 
         using var content = new StringContent(
             JsonSerializer.Serialize(payload),
@@ -181,6 +190,14 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
         }
 
         return new CompletionResult(text.Trim(), finishReason);
+    }
+
+    private static bool UsesOpenAiReasoningStyleParameters(string model)
+    {
+        return model.StartsWith("gpt-5", StringComparison.OrdinalIgnoreCase) ||
+               model.StartsWith("o1", StringComparison.OrdinalIgnoreCase) ||
+               model.StartsWith("o3", StringComparison.OrdinalIgnoreCase) ||
+               model.StartsWith("o4", StringComparison.OrdinalIgnoreCase);
     }
 
     private static Exception CreateApiException(HttpStatusCode statusCode, string responseBody)
