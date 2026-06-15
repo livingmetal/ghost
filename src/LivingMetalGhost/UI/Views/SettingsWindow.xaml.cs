@@ -22,6 +22,7 @@ public partial class SettingsWindow : Window
         _isLoading = true;
         viewModel.Reload();
         ApiKeyPasswordBox.Clear();
+        AdvancedApiKeyPasswordBox.Clear();
         _isLoading = false;
     }
 
@@ -30,6 +31,14 @@ public partial class SettingsWindow : Window
         if (!_isLoading && DataContext is SettingsViewModel viewModel)
         {
             viewModel.ApiKeyInput = ApiKeyPasswordBox.Password;
+        }
+    }
+
+    private void AdvancedApiKeyPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_isLoading && DataContext is SettingsViewModel viewModel)
+        {
+            viewModel.AdvancedApiKeyInput = AdvancedApiKeyPasswordBox.Password;
         }
     }
 }
