@@ -41,12 +41,6 @@ public sealed class AppCommandSkill : IGhostSkill
             return null;
         }
 
-        // 고급 모드 토글은 "설정"보다 먼저 검사(예: "고급 모드 설정").
-        if (Contains(raw, "고급 모드") || Contains(raw, "고급모드") || Contains(raw, "advanced mode"))
-        {
-            return (AppCommandActions.ToggleAdvancedMode, "고급 작업 모드 전환 명령으로 해석했어요.", "serious");
-        }
-
         if (Contains(raw, "로그"))
         {
             return (AppCommandActions.OpenLog, "대화 로그 창을 여는 명령으로 해석했어요.", "acknowledging");
