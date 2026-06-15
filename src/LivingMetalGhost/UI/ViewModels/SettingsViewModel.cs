@@ -170,7 +170,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand] private void ApplyAdvancedOpenAiPreset()
     {
         AdvancedProvider = "OpenAI";
-        AdvancedModel = "gpt-4o";
+        AdvancedModel = "gpt-5.4-mini";
         AdvancedBaseUrl = "https://api.openai.com/v1/";
         AdvancedTemperature = 0.4;
         AdvancedMaxOutputTokens = 4096;
