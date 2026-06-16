@@ -40,6 +40,7 @@ public sealed class AdvancedSessionLogService
     public string CurrentSessionId { get; private set; } = string.Empty;
     public string WorkspaceRoot => _workspaceRoot;
     public string CurrentSessionFile => Path.Combine(_sessionsRoot, $"{CurrentSessionId}.jsonl");
+    public string CurrentSummaryFile => Path.Combine(_summariesRoot, $"{CurrentSessionId}.md");
     public string ProjectMemoryFile => _projectMemoryFile;
     public string PinnedContextFile => _pinnedContextFile;
     public int CurrentTurnCount => _currentTurnCount;
@@ -72,6 +73,15 @@ public sealed class AdvancedSessionLogService
         }
     }
 
+    public async Task<string> GenerateCurrentSessionSummaryAsync(CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(_summariesRoot);
+        var entries = ReadSessionEntries(CurrentSessionFile);
+        var summary = BuildSessionSummaryMarkdown(entries);
+        await File.WriteAllTextAsync(CurrentSummaryFile, summary, Encoding.UTF8, cancellationToken);
+        return CurrentSummaryFile;
+    }
+
     public string BuildWorkbenchContextText()
     {
         Directory.CreateDirectory(_workspaceRoot);
@@ -79,6 +89,7 @@ public sealed class AdvancedSessionLogService
         var pinnedLength = File.Exists(_pinnedContextFile)
             ? SafeReadAllText(_pinnedContextFile).Length
             : 0;
+        var summaryState = File.Exists(CurrentSummaryFile) ? "exists" : "none";
 
         return $"""
             Workspace: {WorkspaceId}
@@ -86,8 +97,11 @@ public sealed class AdvancedSessionLogService
             Turns: {_currentTurnCount}
             Project memory: {memoryCount} entries
             Pinned context: {pinnedLength} chars
+            Summary: {summaryState}
             Session file:
             {CurrentSessionFile}
+            Summary file:
+            {CurrentSummaryFile}
             """;
     }
 
@@ -131,6 +145,156 @@ public sealed class AdvancedSessionLogService
         {
             File.WriteAllText(_projectMemoryFile, string.Empty, Encoding.UTF8);
         }
+    }
+
+    private string BuildSessionSummaryMarkdown(IReadOnlyList<AdvancedSessionLogEntry> entries)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine($"# Advanced Session Summary");
+        builder.AppendLine();
+        builder.AppendLine($"- Workspace: {WorkspaceId}");
+        builder.AppendLine($"- Session: {CurrentSessionId}");
+        builder.AppendLine($"- Generated: {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}");
+        builder.AppendLine($"- Turns: {entries.Count}");
+        builder.AppendLine($"- Transcript: `{CurrentSessionFile}`");
+        builder.AppendLine();
+
+        if (entries.Count == 0)
+        {
+            builder.AppendLine("아직 저장된 고급모드 턴이 없습니다.");
+            return builder.ToString();
+        }
+
+        var providerModels = entries
+            .Select(entry => $"{entry.Provider}/{entry.Model}")
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (providerModels.Length > 0)
+        {
+            builder.AppendLine("## Provider / Model");
+            foreach (var providerModel in providerModels)
+            {
+                builder.AppendLine($"- {providerModel}");
+            }
+
+            builder.AppendLine();
+        }
+
+        builder.AppendLine("## Timeline");
+        foreach (var entry in entries)
+        {
+            builder.AppendLine($"### {entry.Timestamp:HH:mm:ss} · {entry.Action}");
+            builder.AppendLine($"- User: {TrimForSummary(entry.UserText, 240)}");
+            builder.AppendLine($"- Assistant: {TrimForSummary(entry.AssistantText, 360)}");
+            if (entry.UsedContext.Count > 0)
+            {
+                builder.AppendLine($"- Used context: {string.Join(", ", entry.UsedContext)}");
+            }
+
+            builder.AppendLine();
+        }
+
+        var candidateMemories = ExtractCandidateMemoryLines(entries);
+        builder.AppendLine("## Candidate Memory Lines");
+        if (candidateMemories.Count == 0)
+        {
+            builder.AppendLine("- 자동 후보 없음. Workbench에서 필요한 답변을 수동으로 프로젝트 기억에 승격하세요.");
+        }
+        else
+        {
+            foreach (var candidate in candidateMemories)
+            {
+                builder.AppendLine($"- {candidate}");
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private IReadOnlyList<AdvancedSessionLogEntry> ReadSessionEntries(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            return [];
+        }
+
+        var entries = new List<AdvancedSessionLogEntry>();
+        foreach (var line in SafeReadLines(filePath))
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            try
+            {
+                var entry = JsonSerializer.Deserialize<AdvancedSessionLogEntry>(line, _jsonOptions);
+                if (entry is not null)
+                {
+                    entries.Add(entry);
+                }
+            }
+            catch (JsonException)
+            {
+                // 손상된 줄 하나 때문에 요약 생성 전체를 막지 않는다.
+            }
+        }
+
+        return entries.OrderBy(entry => entry.Timestamp).ToArray();
+    }
+
+    private static IReadOnlyList<string> ExtractCandidateMemoryLines(IEnumerable<AdvancedSessionLogEntry> entries)
+    {
+        var keywords = new[]
+        {
+            "결론", "추천", "주의", "위험", "다음 단계", "반영", "구조", "저장", "분리", "승인", "워크벤치", "기억"
+        };
+        var candidates = new List<string>();
+
+        foreach (var entry in entries)
+        {
+            var lines = entry.AssistantText
+                .Replace("\r\n", "\n")
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            foreach (var line in lines)
+            {
+                var normalized = line.Trim().TrimStart('-', '*', ' ', '\t');
+                if (normalized.Length < 10)
+                {
+                    continue;
+                }
+
+                if (keywords.Any(keyword => normalized.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                {
+                    candidates.Add(TrimForSummary(normalized, 220));
+                }
+
+                if (candidates.Count >= 12)
+                {
+                    return candidates.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                }
+            }
+        }
+
+        return candidates.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    private static string TrimForSummary(string text, int maximumCharacters)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        var normalized = text.Replace("\r\n", " ").Replace('\n', ' ').Trim();
+        if (normalized.Length <= maximumCharacters)
+        {
+            return normalized;
+        }
+
+        return normalized[..maximumCharacters].TrimEnd() + "…";
     }
 
     private static int CountJsonlLines(string filePath)
@@ -188,6 +352,22 @@ public sealed class AdvancedSessionLogService
         catch (UnauthorizedAccessException)
         {
             return string.Empty;
+        }
+    }
+
+    private static IEnumerable<string> SafeReadLines(string filePath)
+    {
+        try
+        {
+            return File.Exists(filePath) ? File.ReadLines(filePath).ToArray() : [];
+        }
+        catch (IOException)
+        {
+            return [];
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return [];
         }
     }
 }
