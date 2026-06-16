@@ -143,9 +143,7 @@ public sealed class StoryStateStore
         var scene = string.IsNullOrWhiteSpace(state.Scene)
             ? "늦은 밤, 조용한 데이터센터 한가운데에 닫힌 콘솔 하나가 희미하게 깜박인다."
             : state.Scene.Trim();
-        var objective = string.IsNullOrWhiteSpace(state.Summary)
-            ? "첫 목표: 콘솔이 왜 깨어났는지 알아낸다."
-            : state.Summary.Trim();
+        var summary = state.Summary?.Trim() ?? string.Empty;
         var openingLine = state.OpeningLine?.Trim() ?? string.Empty;
 
         var builder = new StringBuilder();
@@ -155,7 +153,11 @@ public sealed class StoryStateStore
             builder.Append("\n\n").Append(openingLine);
         }
 
-        builder.Append("\n\n").Append(objective);
+        if (!string.IsNullOrWhiteSpace(summary))
+        {
+            builder.Append("\n\n").Append(summary);
+        }
+
         builder.Append(
             "\n\n입력 규칙:\n그냥 쓰면 대사로 처리됩니다.\n*이렇게 쓰면 행동이나 상황 설명입니다.*\n(이렇게 쓰면 속마음입니다.)");
         return builder.ToString().Trim();
@@ -184,14 +186,6 @@ public sealed class StoryStateStore
         state.OpeningLine = template.OpeningLine;
         state.Mood = template.Mood;
         state.Tension = template.Tension;
-        state.Objectives = template.Objectives
-            .Select(objective => new StoryObjective
-            {
-                Id = objective.Id,
-                Text = objective.Text,
-                Done = objective.Done
-            })
-            .ToList();
     }
 
     private StoryTemplate? ResolveActiveTemplate()
@@ -230,7 +224,7 @@ public sealed class StoryStateStore
             : state.Title;
         state.PlayerRole = string.IsNullOrWhiteSpace(state.PlayerRole) ? "아키텍쳐" : state.PlayerRole;
         state.Scene = "늦은 밤의 폐쇄망 데이터센터. 팬 소리는 낮게 깔리고, 사용되지 않아야 할 콘솔 하나가 푸른빛으로 깨어나 있다.";
-        state.Summary = "첫 목표: 콘솔이 왜 깨어났는지 확인하고, 오르키아와 함께 안전하게 접근한다.";
+        state.Summary = "정체불명의 서비스가 깨어났고, 오르키아와 함께 조심스럽게 상황을 확인한다.";
         state.Mood = "quiet_tension";
         state.Tension = Math.Clamp(state.Tension <= 0 ? 1 : state.Tension, 0, 5);
     }
