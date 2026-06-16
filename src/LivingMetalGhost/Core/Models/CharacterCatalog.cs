@@ -10,6 +10,7 @@ public sealed record CharacterProfile(
     string DefaultAppearance,
     string DefaultBackground,
     string DefaultPersonality,
+    string DefaultStoryTemplate,
     IReadOnlyList<HiddenCharacterTrait> HiddenTraits,
     CharacterPresentationProfile Presentation,
     CharacterVisualProfile Visual);
@@ -169,6 +170,7 @@ public static class CharacterCatalog
             manifest.DefaultAppearance?.Trim() ?? string.Empty,
             manifest.DefaultBackground?.Trim() ?? string.Empty,
             manifest.DefaultPersonality?.Trim() ?? string.Empty,
+            manifest.DefaultStoryTemplate?.Trim() ?? string.Empty,
             BuildHiddenTraits(manifest.HiddenTraits),
             BuildPresentation(manifest.Visual.Presentation),
             visual);
@@ -430,6 +432,7 @@ public static class CharacterCatalog
         public string? DefaultAppearance { get; set; }
         public string? DefaultBackground { get; set; }
         public string? DefaultPersonality { get; set; }
+        public string? DefaultStoryTemplate { get; set; }
         public List<CharacterHiddenTraitManifestFile> HiddenTraits { get; set; } = [];
         public CharacterVisualManifestFile? Visual { get; set; }
     }
