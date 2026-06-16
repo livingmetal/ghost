@@ -15,11 +15,7 @@ public partial class StoryWindow : Window
     {
         InitializeComponent();
         DataContextChanged += StoryWindow_OnDataContextChanged;
-        Loaded += (_, _) =>
-        {
-            SubscribeToMessages(DataContext as MainViewModel);
-            UpdateTitle();
-        };
+        Loaded += (_, _) => SubscribeToMessages(DataContext as MainViewModel);
     }
 
     public void FocusPrompt()
@@ -36,22 +32,20 @@ public partial class StoryWindow : Window
         }
 
         Activate();
-        UpdateTitle();
         FocusPrompt();
     }
 
     private void StoryWindow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         SubscribeToMessages(e.NewValue as MainViewModel);
-        UpdateTitle();
     }
 
     private void SubscribeToMessages(MainViewModel? viewModel)
     {
         if (_subscribedViewModel is not null)
         {
-            _subscribedViewModel.Messages.CollectionChanged -= Messages_OnCollectionChanged;
-            foreach (var message in _subscribedViewModel.Messages)
+            _subscribedViewModel.StoryMessages.CollectionChanged -= Messages_OnCollectionChanged;
+            foreach (var message in _subscribedViewModel.StoryMessages)
             {
                 message.PropertyChanged -= Message_OnPropertyChanged;
             }
@@ -60,20 +54,14 @@ public partial class StoryWindow : Window
         _subscribedViewModel = viewModel;
         if (_subscribedViewModel is not null)
         {
-            _subscribedViewModel.Messages.CollectionChanged += Messages_OnCollectionChanged;
-            foreach (var message in _subscribedViewModel.Messages)
+            _subscribedViewModel.StoryMessages.CollectionChanged += Messages_OnCollectionChanged;
+            foreach (var message in _subscribedViewModel.StoryMessages)
             {
                 message.PropertyChanged += Message_OnPropertyChanged;
             }
         }
 
         ScrollToLatestMessage();
-    }
-
-    private void UpdateTitle()
-    {
-        StoryTitleLabel.Text = (_subscribedViewModel?.ActiveProviderLabel ?? string.Empty)
-            .Replace("STORY:", "ROLEPLAY:", StringComparison.OrdinalIgnoreCase);
     }
 
     private void Messages_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -120,7 +108,6 @@ public partial class StoryWindow : Window
 
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
-        // 스토리 창 닫기는 롤플레잉을 끝내고 데스크톱 동반자로 돌아가는 것으로 처리한다.
         _subscribedViewModel?.SetStoryMode(false);
     }
 
@@ -132,9 +119,13 @@ public partial class StoryWindow : Window
         }
 
         e.Handled = true;
-        if (DataContext is MainViewModel viewModel && viewModel.SendCommand.CanExecute(null))
+        if (DataContext is MainViewModel viewModel)
         {
-            viewModel.SendCommand.Execute(null);
+            var command = viewModel.StorySendCommand;
+            if (command.CanExecute(null))
+            {
+                command.Execute(null);
+            }
         }
     }
 }
