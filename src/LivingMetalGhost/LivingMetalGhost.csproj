@@ -22,7 +22,7 @@
     <EmbeddedResource Remove="Ghost\**\*" />
   </ItemGroup>
 
-  <Target Name="GenerateApplicationIconFromSsyongIdle" BeforeTargets="PrepareForBuild">
+  <Target Name="GenerateApplicationIconFromSsyongIdle" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <SsyongIdlePng>$(MSBuildProjectDirectory)\Assets\Characters\ssyong\sleep.png</SsyongIdlePng>
       <GeneratedApplicationIcon>$(MSBuildProjectDirectory)\Assets\App\LivingMetalGhost.ico</GeneratedApplicationIcon>
