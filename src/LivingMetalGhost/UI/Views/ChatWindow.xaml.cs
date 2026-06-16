@@ -1,9 +1,9 @@
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.UI.ViewModels;
 
@@ -11,10 +11,12 @@ namespace LivingMetalGhost.UI.Views;
 
 public partial class ChatWindow : Window
 {
-    private static readonly Color NormalBorder = Color.FromRgb(0xEF, 0xE7, 0xDC);
+    private const int BubbleHoldMilliseconds = 5200;
+    private static readonly Color NormalBorder = Color.FromRgb(0xEE, 0xE3, 0xD8);
     private static readonly Color RoleplayBorder = Color.FromRgb(0x9B, 0x6A, 0xD6);
     private static readonly Color AdvancedBorder = Color.FromRgb(0x7B, 0x4F, 0xC8);
 
+    private readonly DispatcherTimer _bubbleDismissTimer;
     private MainViewModel? _subscribedViewModel;
 
     public ChatWindow()
@@ -23,9 +25,16 @@ public partial class ChatWindow : Window
         DataContextChanged += ChatWindow_OnDataContextChanged;
         Loaded += (_, _) =>
         {
-            SubscribeToMessages(DataContext as MainViewModel);
+            SubscribeToViewModel(DataContext as MainViewModel);
             ApplyModeVisuals();
+            HideBubble(immediate: true);
         };
+
+        _bubbleDismissTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(BubbleHoldMilliseconds)
+        };
+        _bubbleDismissTimer.Tick += (_, _) => HideBubble();
     }
 
     public void FocusPrompt()
@@ -47,34 +56,22 @@ public partial class ChatWindow : Window
 
     private void ChatWindow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        SubscribeToMessages(e.NewValue as MainViewModel);
+        SubscribeToViewModel(e.NewValue as MainViewModel);
         ApplyModeVisuals();
     }
 
-    private void SubscribeToMessages(MainViewModel? viewModel)
+    private void SubscribeToViewModel(MainViewModel? viewModel)
     {
         if (_subscribedViewModel is not null)
         {
-            _subscribedViewModel.Messages.CollectionChanged -= Messages_OnCollectionChanged;
             _subscribedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
-            foreach (var message in _subscribedViewModel.Messages)
-            {
-                message.PropertyChanged -= Message_OnPropertyChanged;
-            }
         }
 
         _subscribedViewModel = viewModel;
         if (_subscribedViewModel is not null)
         {
-            _subscribedViewModel.Messages.CollectionChanged += Messages_OnCollectionChanged;
             _subscribedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
-            foreach (var message in _subscribedViewModel.Messages)
-            {
-                message.PropertyChanged += Message_OnPropertyChanged;
-            }
         }
-
-        ScrollToLatestMessage();
     }
 
     private void ViewModel_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -85,6 +82,27 @@ public partial class ChatWindow : Window
             or nameof(MainViewModel.ActiveProviderLabel))
         {
             ApplyModeVisuals();
+        }
+
+        if (e.PropertyName is nameof(MainViewModel.BubbleText))
+        {
+            ShowBubble();
+            if (_subscribedViewModel is not { IsCharacterSpeaking: true })
+            {
+                ScheduleBubbleDismiss();
+            }
+        }
+
+        if (e.PropertyName is nameof(MainViewModel.IsCharacterSpeaking))
+        {
+            if (_subscribedViewModel is { IsCharacterSpeaking: true })
+            {
+                ShowBubble();
+            }
+            else
+            {
+                ScheduleBubbleDismiss();
+            }
         }
     }
 
@@ -118,38 +136,59 @@ public partial class ChatWindow : Window
         BorderAccent.BeginAnimation(SolidColorBrush.ColorProperty, animation);
     }
 
-    private void Messages_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private void ShowBubble()
     {
-        if (e.NewItems is not null)
+        if (_subscribedViewModel is null || string.IsNullOrWhiteSpace(_subscribedViewModel.BubbleText))
         {
-            foreach (var item in e.NewItems.OfType<ChatMessage>())
-            {
-                item.PropertyChanged += Message_OnPropertyChanged;
-            }
+            return;
         }
 
-        if (e.OldItems is not null)
+        _bubbleDismissTimer.Stop();
+        BubbleHost.Visibility = Visibility.Visible;
+        BubbleHost.BeginAnimation(OpacityProperty, new DoubleAnimation
         {
-            foreach (var item in e.OldItems.OfType<ChatMessage>())
-            {
-                item.PropertyChanged -= Message_OnPropertyChanged;
-            }
-        }
-
-        ScrollToLatestMessage();
+            To = 1,
+            Duration = TimeSpan.FromMilliseconds(180),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        });
     }
 
-    private void Message_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void ScheduleBubbleDismiss()
     {
-        if (e.PropertyName is nameof(ChatMessage.Text) or nameof(ChatMessage.DisplayText))
+        if (BubbleHost.Visibility != Visibility.Visible)
         {
-            ScrollToLatestMessage();
+            return;
         }
+
+        _bubbleDismissTimer.Stop();
+        _bubbleDismissTimer.Start();
     }
 
-    private void ScrollToLatestMessage()
+    private void HideBubble(bool immediate = false)
     {
-        Dispatcher.BeginInvoke(ConversationScrollViewer.ScrollToEnd);
+        _bubbleDismissTimer.Stop();
+        if (immediate)
+        {
+            BubbleHost.BeginAnimation(OpacityProperty, null);
+            BubbleHost.Opacity = 0;
+            BubbleHost.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var animation = new DoubleAnimation
+        {
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(220),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        animation.Completed += (_, _) =>
+        {
+            if (BubbleHost.Opacity <= 0.01)
+            {
+                BubbleHost.Visibility = Visibility.Collapsed;
+            }
+        };
+        BubbleHost.BeginAnimation(OpacityProperty, animation);
     }
 
     private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
