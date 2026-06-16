@@ -76,28 +76,34 @@ public partial class MainViewModel
         var workspace = global::LivingMetalGhost.App.Services.GetRequiredService<WorkspaceStore>().Load();
         var commandPolicy = global::LivingMetalGhost.App.Services.GetRequiredService<CommandPolicyService>();
         var decision = commandPolicy.Evaluate("git fetch origin");
-        AddApprovalIfMissing(new PendingApprovalRequest
+        var approval = new PendingApprovalRequest
         {
             Title = "원격 상태 확인",
             Command = "git fetch origin",
             WorkspaceRoot = workspace.RootPath,
             RiskLevel = decision.RiskLevel,
             Reason = decision.Reason
-        });
+        };
+
+        AddApprovalIfMissing(approval);
+        AddApprovalAgentJobIfMissing(approval);
     }
 
     private void AddGitPullApprovalIfMissing(string workspaceRoot)
     {
         var commandPolicy = global::LivingMetalGhost.App.Services.GetRequiredService<CommandPolicyService>();
         var decision = commandPolicy.Evaluate("git pull");
-        AddApprovalIfMissing(new PendingApprovalRequest
+        var approval = new PendingApprovalRequest
         {
             Title = "Pull 적용",
             Command = "git pull",
             WorkspaceRoot = workspaceRoot,
             RiskLevel = decision.RiskLevel,
             Reason = decision.Reason
-        });
+        };
+
+        AddApprovalIfMissing(approval);
+        AddApprovalAgentJobIfMissing(approval);
     }
 
     private void AddApprovalIfMissing(PendingApprovalRequest approval)
@@ -112,6 +118,29 @@ public partial class MainViewModel
 
         PendingApprovals.Add(approval);
         TrimPendingApprovals();
+    }
+
+    private void AddApprovalAgentJobIfMissing(PendingApprovalRequest approval)
+    {
+        if (ActiveAgentJobs.Any(job =>
+                job.RequiresApproval &&
+                string.Equals(job.AgentType, "approval", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(job.Title, approval.Command, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        ActiveAgentJobs.Add(new AgentJob
+        {
+            AgentType = "approval",
+            DisplayName = "승인 필요",
+            Title = approval.Command,
+            Summary = $"{approval.Title} · {approval.RiskLabel} · {approval.Reason}",
+            Status = AgentJobStatus.WaitingApproval,
+            Progress = 0.0,
+            RequiresApproval = true
+        });
+        TrimAgentJobs();
     }
 
     private void TrimPendingApprovals()
