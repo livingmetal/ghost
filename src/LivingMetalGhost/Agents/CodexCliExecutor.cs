@@ -13,18 +13,23 @@ namespace LivingMetalGhost.Agents;
 /// 안전 설계 (ClaudeCodeExecutor 와 동일):
 /// - Suggest/Ask 모드에서는 실행하지 않고 예정 작업을 "제안"으로만 돌려준다.
 /// - 실제 실행(Apply/Execute)은 config.agents.enable_execution == true 인 경우에만 허용한다.
-/// - workspace_root 가 유효해야 하며, 작업 디렉터리를 그 밖으로 벗어나지 않게 고정한다.
+/// - workspace.json 정책의 root/read/write 경로를 검증한다.
 /// - sandbox 수준: apply → workspace-write, execute → all.
 /// </summary>
 public sealed class CodexCliExecutor : IAgentExecutor
 {
     private readonly AppConfigLoader _configLoader;
     private readonly DpapiSecretStore _secretStore;
+    private readonly AgentWorkspacePolicy _workspacePolicy;
 
-    public CodexCliExecutor(AppConfigLoader configLoader, DpapiSecretStore secretStore)
+    public CodexCliExecutor(
+        AppConfigLoader configLoader,
+        DpapiSecretStore secretStore,
+        AgentWorkspacePolicy workspacePolicy)
     {
         _configLoader = configLoader;
         _secretStore = secretStore;
+        _workspacePolicy = workspacePolicy;
     }
 
     public string Name => "codex-cli";
@@ -37,9 +42,7 @@ public sealed class CodexCliExecutor : IAgentExecutor
             ? "codex"
             : Environment.ExpandEnvironmentVariables(agents.CodexCli.Executable.Trim());
 
-        var rootConfigured = string.IsNullOrWhiteSpace(request.WorkspaceRoot)
-            ? agents.WorkspaceRoot
-            : request.WorkspaceRoot;
+        var rootConfigured = _workspacePolicy.GetEffectiveRoot(request.WorkspaceRoot, agents.WorkspaceRoot);
 
         var executionAllowed =
             agents.EnableExecution &&
@@ -58,19 +61,19 @@ public sealed class CodexCliExecutor : IAgentExecutor
                     $"[Codex CLI · 제안 모드] 아래 작업을 실행할 준비가 되었지만 실행하지 않았습니다.\n" +
                     $"- 사유: {reason}\n" +
                     $"- 작업 내용: {request.Instruction}\n" +
-                    $"- 작업 루트: {(string.IsNullOrWhiteSpace(rootConfigured) ? "(미설정)" : rootConfigured)}",
+                    _workspacePolicy.BuildExecutionPolicyLabel(request, agents.WorkspaceRoot),
                 RawOutput = string.Empty,
                 ChangedFiles = Array.Empty<string>(),
                 RequiresUserReview = true
             };
         }
 
-        if (!WorkspaceGuard.TryResolveRoot(rootConfigured, out var workspaceRoot, out var rootError))
+        if (!_workspacePolicy.TryValidateForExecution(request, agents.WorkspaceRoot, out var workspaceRoot, out var policyError))
         {
             return new AgentResult
             {
                 Success = false,
-                Summary = $"[Codex CLI] 실행을 중단했습니다: {rootError}",
+                Summary = $"[Codex CLI] 실행을 중단했습니다: {policyError}",
                 RequiresUserReview = true
             };
         }
@@ -144,6 +147,19 @@ public sealed class CodexCliExecutor : IAgentExecutor
                 : lastMessage,
             apiKey);
         var success = process.ExitCode == 0;
+        var changedFiles = Array.Empty<string>();
+
+        if (!_workspacePolicy.AreChangedFilesAllowed(changedFiles, workspaceRoot, out var escapingPaths))
+        {
+            return new AgentResult
+            {
+                Success = false,
+                Summary = "[Codex CLI] 변경 파일 중 workspace 정책 밖의 경로가 있어 결과를 차단했습니다.",
+                RawOutput = string.Join(Environment.NewLine, escapingPaths),
+                ChangedFiles = changedFiles,
+                RequiresUserReview = true
+            };
+        }
 
         return new AgentResult
         {
@@ -152,7 +168,7 @@ public sealed class CodexCliExecutor : IAgentExecutor
                 ? "[Codex CLI] 작업이 완료되었습니다. 변경 사항을 검토해 주세요."
                 : $"[Codex CLI] 작업이 실패했습니다 (종료 코드 {process.ExitCode}).",
             RawOutput = rawOutput,
-            ChangedFiles = Array.Empty<string>(),
+            ChangedFiles = changedFiles,
             RequiresUserReview = true
         };
     }
