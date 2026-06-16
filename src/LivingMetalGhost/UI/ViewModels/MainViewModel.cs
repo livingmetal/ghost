@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.Providers.Llm;
 using LivingMetalGhost.Skills;
@@ -20,7 +21,9 @@ public partial class MainViewModel : ObservableObject
     private readonly SettingsViewModel _settingsViewModel;
     private readonly ConversationService _conversationService;
     private readonly ConversationLogService _conversationLogService;
+    private readonly SpriteDirector _spriteDirector;
     private bool _isResponding;
+    private CancellationTokenSource? _moodHoldCts;
 
     [ObservableProperty]
     private string bubbleText = "기다리고 있어요.";
@@ -73,16 +76,25 @@ public partial class MainViewModel : ObservableObject
         IntentRouter intentRouter,
         SettingsViewModel settingsViewModel,
         ConversationService conversationService,
-        ConversationLogService conversationLogService)
+        ConversationLogService conversationLogService,
+        SpriteDirector spriteDirector)
     {
         _configLoader = configLoader;
         _intentRouter = intentRouter;
         _settingsViewModel = settingsViewModel;
         _conversationService = conversationService;
         _conversationLogService = conversationLogService;
+        _spriteDirector = spriteDirector;
         RefreshSelectedCharacter();
         _ = RefreshLocalLmAvailabilityAsync();
     }
+
+    public ObservableCollection<ChatMessage> Messages { get; } = [];
+
+    /// <summary>고급 Workbench / Agent Dock 에 표시할 현재 작업들.</summary>
+    public ObservableCollection<AgentJob> ActiveAgentJobs { get; } = [];
+
+    public ConversationMode CurrentMode => IsAdvancedMode ? ConversationMode.Advanced : ConversationMode.Daily;
 
     public async Task RefreshLocalLmAvailabilityAsync()
     {
@@ -119,14 +131,15 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    public ObservableCollection<ChatMessage> Messages { get; } = [];
-
     public string ActiveProviderLabel
     {
         get
         {
             var config = _configLoader.Load();
-            return $"Provider: {config.Llm.Provider} / Model: {config.Llm.Model}";
+            var llm = IsAdvancedMode ? config.AdvancedLlm : config.Llm;
+            var mode = IsAdvancedMode ? "ADVANCED" : "DAILY";
+            var model = string.IsNullOrWhiteSpace(llm.Model) ? "(default)" : llm.Model;
+            return $"{mode}: {llm.Provider} / {model}";
         }
     }
 
@@ -162,6 +175,18 @@ public partial class MainViewModel : ObservableObject
         _configLoader.Save(config);
     }
 
+    partial void OnIsAdvancedModeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CurrentMode));
+        OnPropertyChanged(nameof(ActiveProviderLabel));
+
+        if (!_isResponding && !IsCharacterSpeaking)
+        {
+            var restingMood = _spriteDirector.ResolveRestingMood(CurrentMode);
+            SetCharacterMood(restingMood);
+        }
+    }
+
     [RelayCommand]
     private async Task SendAsync()
     {
@@ -176,8 +201,8 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        CharacterMood = IsAdvancedMode ? "working" : "thinking";
-        CharacterStateLabel = "THINKING";
+        CancelMoodHold();
+        SetCharacterMood(_spriteDirector.ResolveThinkingMood(CurrentMode));
         _isResponding = true;
         Messages.Add(new ChatMessage
         {
@@ -192,9 +217,10 @@ public partial class MainViewModel : ObservableObject
             var skill = _intentRouter.Route(request);
             var result = await skill.HandleAsync(request, CancellationToken.None);
             BubbleText = result.BubbleText;
-            CharacterMood = string.IsNullOrWhiteSpace(result.Mood) ? "speaking" : result.Mood;
-            CharacterStateLabel = CharacterMood.ToUpperInvariant();
-            await DisplayAssistantResponseAsync(result.BubbleText, isProactive: false);
+            var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, CurrentMode);
+            SetCharacterMood(assistantMood);
+            CaptureAgentJobs(request, result);
+            await DisplayAssistantResponseAsync(result.BubbleText, isProactive: false, assistantMood);
             await WriteLogAsync(request.RawText, result.BubbleText, isProactive: false);
             DispatchAppCommand(result.Action);
         }
@@ -202,8 +228,7 @@ public partial class MainViewModel : ObservableObject
         {
             BubbleText = $"요청을 처리하지 못했어요: {ex.Message}";
             IsCharacterSpeaking = false;
-            CharacterMood = "error";
-            CharacterStateLabel = "ERROR";
+            SetCharacterMood("error");
             Messages.Add(new ChatMessage
             {
                 Text = BubbleText,
@@ -239,25 +264,24 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        CancelMoodHold();
         _isResponding = true;
-        CharacterMood = IsAdvancedMode ? "working" : "thinking";
-        CharacterStateLabel = IsAdvancedMode ? "WORKING" : "THINKING";
+        SetCharacterMood(_spriteDirector.ResolveThinkingMood(CurrentMode));
 
         try
         {
             var result = await _conversationService.StartConversationAsync(CancellationToken.None);
             BubbleText = result.BubbleText;
-            CharacterMood = string.IsNullOrWhiteSpace(result.Mood) ? "speaking" : result.Mood;
-            CharacterStateLabel = CharacterMood.ToUpperInvariant();
-            await DisplayAssistantResponseAsync(result.BubbleText, isProactive: true);
+            var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, CurrentMode);
+            SetCharacterMood(assistantMood);
+            await DisplayAssistantResponseAsync(result.BubbleText, isProactive: true, assistantMood);
             await WriteLogAsync(string.Empty, result.BubbleText, isProactive: true);
         }
         catch (Exception ex)
         {
             BubbleText = $"먼저 말을 걸지 못했어요: {ex.Message}";
             IsCharacterSpeaking = false;
-            CharacterMood = "error";
-            CharacterStateLabel = "ERROR";
+            SetCharacterMood("error");
         }
         finally
         {
@@ -289,9 +313,10 @@ public partial class MainViewModel : ObservableObject
         window.Show();
     }
 
-    private async Task DisplayAssistantResponseAsync(string response, bool isProactive)
+    private async Task DisplayAssistantResponseAsync(string response, bool isProactive, string assistantMood)
     {
-        var chunks = SplitForPacedDisplay(response);
+        var compact = CurrentMode != ConversationMode.Advanced;
+        var chunks = SplitForPacedDisplay(response, compact);
         IsCharacterSpeaking = true;
         try
         {
@@ -310,7 +335,7 @@ public partial class MainViewModel : ObservableObject
 
                 if (index + 1 < chunks.Count)
                 {
-                    await Task.Delay(320);
+                    await Task.Delay(compact ? 220 : 320);
                 }
             }
         }
@@ -319,8 +344,99 @@ public partial class MainViewModel : ObservableObject
             IsCharacterSpeaking = false;
         }
 
-        CharacterMood = "idle";
-        CharacterStateLabel = "IDLE";
+        StartPostSpeechMoodHold(assistantMood);
+    }
+
+    private void SetCharacterMood(string mood)
+    {
+        CharacterMood = mood;
+        CharacterStateLabel = _spriteDirector.ToStateLabel(mood, CurrentMode);
+    }
+
+    private void StartPostSpeechMoodHold(string mood)
+    {
+        CancelMoodHold();
+        var cts = new CancellationTokenSource();
+        _moodHoldCts = cts;
+        _ = HoldMoodThenRestAsync(mood, CurrentMode, cts.Token);
+    }
+
+    private async Task HoldMoodThenRestAsync(string mood, ConversationMode mode, CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(_spriteDirector.GetPostSpeechHoldMilliseconds(mood, mode), ct);
+            if (!ct.IsCancellationRequested && !_isResponding && !IsCharacterSpeaking)
+            {
+                SetCharacterMood(_spriteDirector.ResolveRestingMood(CurrentMode));
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void CancelMoodHold()
+    {
+        if (_moodHoldCts is null)
+        {
+            return;
+        }
+
+        _moodHoldCts.Cancel();
+        _moodHoldCts.Dispose();
+        _moodHoldCts = null;
+    }
+
+    private void CaptureAgentJobs(UserRequest request, SkillResult result)
+    {
+        if (result.Action is "advanced-coding-duo-suggested")
+        {
+            ActiveAgentJobs.Add(new AgentJob
+            {
+                AgentType = "codex-cli",
+                DisplayName = "Codex",
+                Title = request.RawText,
+                Summary = "코드 분석 및 리팩터링 제안 생성",
+                Status = AgentJobStatus.WaitingApproval,
+                Progress = 1.0,
+                RequiresApproval = true
+            });
+            ActiveAgentJobs.Add(new AgentJob
+            {
+                AgentType = "claude-code",
+                DisplayName = "Claude Code",
+                Title = request.RawText,
+                Summary = "보안/구조 검토 제안 생성",
+                Status = AgentJobStatus.WaitingApproval,
+                Progress = 1.0,
+                RequiresApproval = true
+            });
+        }
+        else if (result.Action is "advanced-task-suggested")
+        {
+            ActiveAgentJobs.Add(new AgentJob
+            {
+                AgentType = "agent",
+                DisplayName = "Agent",
+                Title = request.RawText,
+                Summary = "고급 작업 승인을 기다리는 중",
+                Status = AgentJobStatus.WaitingApproval,
+                Progress = 0.25,
+                RequiresApproval = true
+            });
+        }
+
+        TrimAgentJobs();
+    }
+
+    private void TrimAgentJobs()
+    {
+        const int maximumVisibleJobs = 4;
+        while (ActiveAgentJobs.Count > maximumVisibleJobs)
+        {
+            ActiveAgentJobs.RemoveAt(0);
+        }
     }
 
     private static async Task TypeMessageAsync(ChatMessage message, string text)
@@ -383,10 +499,10 @@ public partial class MainViewModel : ObservableObject
         };
     }
 
-    private static IReadOnlyList<string> SplitForPacedDisplay(string response)
+    private static IReadOnlyList<string> SplitForPacedDisplay(string response, bool compact)
     {
-        const int targetLength = 130;
-        const int maximumLength = 220;
+        var targetLength = compact ? 80 : 130;
+        var maximumLength = compact ? 140 : 220;
         var normalized = response.Replace("\r\n", "\n").Trim();
         if (normalized.Length <= maximumLength)
         {
@@ -460,39 +576,13 @@ public partial class MainViewModel : ObservableObject
 
     private static void FlushChunk(StringBuilder current, List<string> chunks)
     {
-        var text = current.ToString().Trim();
-        if (!string.IsNullOrWhiteSpace(text))
+        if (current.Length == 0)
         {
-            chunks.Add(text);
+            return;
         }
 
+        chunks.Add(current.ToString().Trim());
         current.Clear();
-    }
-
-    private async Task WriteLogAsync(string userText, string assistantText, bool isProactive)
-    {
-        try
-        {
-            var config = _configLoader.Load();
-            if (!config.App.EnableLogging)
-            {
-                return;
-            }
-
-            await _conversationLogService.AppendAsync(new ConversationLogEntry
-            {
-                Timestamp = DateTimeOffset.Now,
-                UserText = userText,
-                AssistantText = assistantText,
-                Provider = config.Llm.Provider,
-                Model = config.Llm.Model,
-                IsProactive = isProactive
-            }, CancellationToken.None);
-        }
-        catch
-        {
-            // Logging must never interrupt the conversation.
-        }
     }
 
     private void RefreshSelectedCharacter()
@@ -501,19 +591,13 @@ public partial class MainViewModel : ObservableObject
         var character = CharacterCatalog.Get(config.App.GhostId);
         SelectedCharacterId = character.Id;
         CharacterDisplayName = character.DisplayName;
-        if (config.App.CharacterProfiles.TryGetValue(character.Id, out var profile))
+
+        if (config.App.CharacterProfiles is not null &&
+            config.App.CharacterProfiles.TryGetValue(character.Id, out var profile))
         {
-            CharacterScale = profile.CharacterScale <= 0
-                ? 1.0
-                : Math.Clamp(profile.CharacterScale, 0.55, 2.0);
-            SelectedCharacterSizePresetId = character.Presentation.SizePresets.Any(preset =>
-                string.Equals(preset.Id, profile.CharacterSizePresetId, StringComparison.OrdinalIgnoreCase))
-                ? profile.CharacterSizePresetId.Trim()
-                : character.Presentation.DefaultSizePresetId;
-            SelectedCharacterFramingPresetId = character.Presentation.FramingPresets.Any(preset =>
-                string.Equals(preset.Id, profile.CharacterFramingPresetId, StringComparison.OrdinalIgnoreCase))
-                ? profile.CharacterFramingPresetId.Trim()
-                : character.Presentation.DefaultFramingPresetId;
+            CharacterScale = Math.Clamp(profile.CharacterScale <= 0 ? 1.0 : profile.CharacterScale, 0.55, 2.0);
+            SelectedCharacterSizePresetId = ResolveSizePresetId(character, profile.CharacterSizePresetId);
+            SelectedCharacterFramingPresetId = ResolveFramingPresetId(character, profile.CharacterFramingPresetId);
         }
         else
         {
@@ -521,7 +605,36 @@ public partial class MainViewModel : ObservableObject
             SelectedCharacterSizePresetId = character.Presentation.DefaultSizePresetId;
             SelectedCharacterFramingPresetId = character.Presentation.DefaultFramingPresetId;
         }
+    }
 
-        BubbleText = $"{character.DisplayName}가 기다리고 있어요.";
+    private static string ResolveSizePresetId(CharacterProfile character, string configuredId)
+    {
+        return character.Presentation.SizePresets.Any(preset =>
+            string.Equals(preset.Id, configuredId, StringComparison.OrdinalIgnoreCase))
+            ? configuredId.Trim()
+            : character.Presentation.DefaultSizePresetId;
+    }
+
+    private static string ResolveFramingPresetId(CharacterProfile character, string configuredId)
+    {
+        return character.Presentation.FramingPresets.Any(preset =>
+            string.Equals(preset.Id, configuredId, StringComparison.OrdinalIgnoreCase))
+            ? configuredId.Trim()
+            : character.Presentation.DefaultFramingPresetId;
+    }
+
+    private async Task WriteLogAsync(string userText, string assistantText, bool isProactive)
+    {
+        await _conversationLogService.AppendAsync(new ConversationLogEntry
+        {
+            Timestamp = DateTimeOffset.Now,
+            CharacterId = SelectedCharacterId,
+            CharacterName = CharacterDisplayName,
+            ProviderLabel = ActiveProviderLabel,
+            UserText = userText,
+            AssistantText = assistantText,
+            Mood = CharacterMood,
+            IsProactive = isProactive
+        });
     }
 }
