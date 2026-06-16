@@ -266,6 +266,30 @@ public partial class AdvancedWorkbenchWindow : Window
         await SaveMemoryCandidateAsync(candidateText);
     }
 
+    private async void ApproveAgentJobButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_subscribedViewModel is null || sender is not FrameworkElement element ||
+            element.DataContext is not AgentJob job)
+        {
+            return;
+        }
+
+        await _subscribedViewModel.ApproveAgentJobAsync(job, CancellationToken.None);
+        RefreshContextText();
+    }
+
+    private void RejectAgentJobButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_subscribedViewModel is null || sender is not FrameworkElement element ||
+            element.DataContext is not AgentJob job)
+        {
+            return;
+        }
+
+        _subscribedViewModel.RejectAgentJob(job);
+        RefreshContextText();
+    }
+
     private async Task SaveMemoryCandidateAsync(string? candidateText)
     {
         if (_subscribedViewModel is null)
