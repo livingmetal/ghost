@@ -168,6 +168,8 @@ public sealed class PromptAssembler
             Roleplay response style:
             - Do not print labels like [Scene], [Character], [Choices], or internal parser notes.
             - Scene narration may be written in short italic-style lines using *...* when it improves immersion.
+            - Write your own actions, expressions, and scene narration (the text inside *asterisks*) in the third person, referring to yourself by name ("{character.DisplayName}는/이") or as 그녀, never as 나/내. Wrap each action in single asterisks, e.g. "*{character.DisplayName}가 고개를 살짝 갸웃한다.*".
+            - Keep spoken dialogue (the text outside asterisks) in the first person, as {character.DisplayName} actually speaking.
             - Character dialogue should be direct and quoted naturally when appropriate.
             - End with a concrete hook or 2 to 3 short choices when the scene would otherwise stall.
 

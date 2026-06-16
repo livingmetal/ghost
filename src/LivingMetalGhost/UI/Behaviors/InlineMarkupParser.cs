@@ -34,20 +34,22 @@ public static class InlineMarkupParser
                 Add(segments, text.Substring(index, open - index), italic: false);
             }
 
-            var close = text.IndexOf('*', open + 1);
+            // 연속된 별표(*, ** 등)는 하나의 구분자로 본다(마크다운식 **굵게**도 행동으로 처리).
+            var contentStart = SkipStars(text, open);
+            var close = text.IndexOf('*', contentStart);
             if (close >= 0)
             {
                 // 닫힌 쌍은 공백/줄바꿈이 별표에 붙어 있어도 항상 이탤릭으로 본다.
-                Add(segments, text.Substring(open + 1, close - open - 1), italic: true);
-                index = close + 1;
+                Add(segments, text.Substring(contentStart, close - contentStart), italic: true);
+                index = SkipStars(text, close);
                 continue;
             }
 
             // 닫는 별표가 없다(스트리밍 중이거나 외톨이 별표).
-            if (open + 1 < text.Length && !char.IsWhiteSpace(text[open + 1]))
+            if (contentStart < text.Length && !char.IsWhiteSpace(text[contentStart]))
             {
                 // 여는 별표가 글자에 붙어 있으면 타이핑 중 행동으로 보고 끝까지 즉시 이탤릭.
-                Add(segments, text.Substring(open + 1), italic: true);
+                Add(segments, text.Substring(contentStart), italic: true);
             }
             else
             {
@@ -59,6 +61,17 @@ public static class InlineMarkupParser
         }
 
         return segments;
+    }
+
+    private static int SkipStars(string text, int index)
+    {
+        var i = index;
+        while (i < text.Length && text[i] == '*')
+        {
+            i++;
+        }
+
+        return i;
     }
 
     private static void Add(List<Segment> segments, string text, bool italic)
