@@ -3,19 +3,27 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.UI.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LivingMetalGhost.UI.Views;
 
 public partial class AdvancedWorkbenchWindow : Window
 {
     private MainViewModel? _subscribedViewModel;
+    private readonly AdvancedSessionLogService _advancedSessionLogService;
 
     public AdvancedWorkbenchWindow()
     {
         InitializeComponent();
+        _advancedSessionLogService = App.Services.GetRequiredService<AdvancedSessionLogService>();
         DataContextChanged += AdvancedWorkbenchWindow_OnDataContextChanged;
-        Loaded += (_, _) => SubscribeToMessages(DataContext as MainViewModel);
+        Loaded += (_, _) =>
+        {
+            SubscribeToMessages(DataContext as MainViewModel);
+            RefreshContextText();
+        };
     }
 
     public void FocusPrompt()
@@ -31,6 +39,7 @@ public partial class AdvancedWorkbenchWindow : Window
             Show();
         }
 
+        RefreshContextText();
         Activate();
         FocusPrompt();
     }
@@ -38,6 +47,7 @@ public partial class AdvancedWorkbenchWindow : Window
     private void AdvancedWorkbenchWindow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         SubscribeToMessages(e.NewValue as MainViewModel);
+        RefreshContextText();
     }
 
     private void SubscribeToMessages(MainViewModel? viewModel)
@@ -82,6 +92,7 @@ public partial class AdvancedWorkbenchWindow : Window
             }
         }
 
+        RefreshContextText();
         ScrollToLatestMessage();
     }
 
@@ -91,6 +102,11 @@ public partial class AdvancedWorkbenchWindow : Window
         {
             ScrollToLatestMessage();
         }
+    }
+
+    private void RefreshContextText()
+    {
+        WorkbenchContextText.Text = _advancedSessionLogService.BuildWorkbenchContextText();
     }
 
     private void ScrollToLatestMessage()
