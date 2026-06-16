@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
@@ -20,6 +21,7 @@ public partial class ChatWindow : Window
     private readonly DispatcherTimer _bubbleDismissTimer;
     private readonly DispatcherTimer _windowIdleTimer;
     private MainViewModel? _subscribedViewModel;
+    private ChatMessage? _trackedAssistantMessage;
 
     public ChatWindow()
     {
@@ -56,14 +58,23 @@ public partial class ChatWindow : Window
 
     public void ShowConsole()
     {
-        if (!IsVisible)
+        if (IsVisible)
         {
-            Show();
+            HideConsole();
+            return;
         }
 
+        Show();
         Activate();
         FocusPrompt();
         RestartWindowIdleTimer();
+    }
+
+    public void HideConsole()
+    {
+        _windowIdleTimer.Stop();
+        HideBubble(immediate: true);
+        Hide();
     }
 
     private void ChatWindow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -77,12 +88,23 @@ public partial class ChatWindow : Window
         if (_subscribedViewModel is not null)
         {
             _subscribedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
+            _subscribedViewModel.Messages.CollectionChanged -= Messages_OnCollectionChanged;
+            foreach (var message in _subscribedViewModel.Messages)
+            {
+                message.PropertyChanged -= Message_OnPropertyChanged;
+            }
         }
 
+        _trackedAssistantMessage = null;
         _subscribedViewModel = viewModel;
         if (_subscribedViewModel is not null)
         {
             _subscribedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
+            _subscribedViewModel.Messages.CollectionChanged += Messages_OnCollectionChanged;
+            foreach (var message in _subscribedViewModel.Messages)
+            {
+                message.PropertyChanged += Message_OnPropertyChanged;
+            }
         }
     }
 
@@ -98,7 +120,12 @@ public partial class ChatWindow : Window
 
         if (e.PropertyName is nameof(MainViewModel.BubbleText))
         {
-            ShowBubble();
+            if (_trackedAssistantMessage is null && _subscribedViewModel is not null)
+            {
+                SetBubbleText(_subscribedViewModel.BubbleText);
+            }
+
+            ShowBubble(allowEmpty: false);
             RestartWindowIdleTimer();
             if (_subscribedViewModel is not { IsCharacterSpeaking: true })
             {
@@ -110,7 +137,7 @@ public partial class ChatWindow : Window
         {
             if (_subscribedViewModel is { IsCharacterSpeaking: true })
             {
-                ShowBubble();
+                ShowBubble(allowEmpty: true);
                 RestartWindowIdleTimer();
             }
             else
@@ -119,6 +146,65 @@ public partial class ChatWindow : Window
                 RestartWindowIdleTimer();
             }
         }
+    }
+
+    private void Messages_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems is not null)
+        {
+            foreach (var item in e.NewItems.OfType<ChatMessage>())
+            {
+                item.PropertyChanged += Message_OnPropertyChanged;
+                if (!item.IsUser)
+                {
+                    TrackAssistantMessage(item);
+                }
+            }
+        }
+
+        if (e.OldItems is not null)
+        {
+            foreach (var item in e.OldItems.OfType<ChatMessage>())
+            {
+                item.PropertyChanged -= Message_OnPropertyChanged;
+                if (ReferenceEquals(_trackedAssistantMessage, item))
+                {
+                    _trackedAssistantMessage = null;
+                }
+            }
+        }
+    }
+
+    private void Message_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not ChatMessage message || !ReferenceEquals(message, _trackedAssistantMessage))
+        {
+            return;
+        }
+
+        if (e.PropertyName is nameof(ChatMessage.Text) or nameof(ChatMessage.DisplayText) or nameof(ChatMessage.IsTyping))
+        {
+            SetBubbleText(message.DisplayText);
+            ShowBubble(allowEmpty: message.IsTyping);
+            RestartWindowIdleTimer();
+            if (!message.IsTyping && _subscribedViewModel is not { IsCharacterSpeaking: true })
+            {
+                ScheduleBubbleDismiss();
+            }
+        }
+    }
+
+    private void TrackAssistantMessage(ChatMessage message)
+    {
+        _trackedAssistantMessage = message;
+        SetBubbleText(message.DisplayText);
+        ShowBubble(allowEmpty: true);
+        RestartWindowIdleTimer();
+    }
+
+    private void SetBubbleText(string? text)
+    {
+        BubbleTextBlock.Text = text ?? string.Empty;
     }
 
     private void ApplyModeVisuals()
@@ -151,9 +237,9 @@ public partial class ChatWindow : Window
         BorderAccent.BeginAnimation(SolidColorBrush.ColorProperty, animation);
     }
 
-    private void ShowBubble()
+    private void ShowBubble(bool allowEmpty = false)
     {
-        if (_subscribedViewModel is null || string.IsNullOrWhiteSpace(_subscribedViewModel.BubbleText))
+        if (!allowEmpty && string.IsNullOrWhiteSpace(BubbleTextBlock.Text))
         {
             return;
         }
@@ -233,8 +319,7 @@ public partial class ChatWindow : Window
             return;
         }
 
-        HideBubble(immediate: true);
-        Hide();
+        HideConsole();
     }
 
     private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -253,6 +338,16 @@ public partial class ChatWindow : Window
         }
     }
 
+    private void InputPanel_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        RestartWindowIdleTimer();
+        if (e.ClickCount >= 2)
+        {
+            e.Handled = true;
+            ToggleAdvancedMode();
+        }
+    }
+
     private void ToggleAdvancedMode()
     {
         _subscribedViewModel?.ToggleAdvancedMode();
@@ -260,9 +355,7 @@ public partial class ChatWindow : Window
 
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
-        _windowIdleTimer.Stop();
-        HideBubble(immediate: true);
-        Hide();
+        HideConsole();
     }
 
     private void PromptTextBox_OnPreviewKeyDown(object sender, KeyEventArgs e)
