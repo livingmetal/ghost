@@ -12,11 +12,13 @@ namespace LivingMetalGhost.UI.Views;
 public partial class ChatWindow : Window
 {
     private const int BubbleHoldMilliseconds = 5200;
+    private const int WindowIdleHideMilliseconds = 45000;
     private static readonly Color NormalBorder = Color.FromRgb(0xEE, 0xE3, 0xD8);
     private static readonly Color RoleplayBorder = Color.FromRgb(0x9B, 0x6A, 0xD6);
     private static readonly Color AdvancedBorder = Color.FromRgb(0x7B, 0x4F, 0xC8);
 
     private readonly DispatcherTimer _bubbleDismissTimer;
+    private readonly DispatcherTimer _windowIdleTimer;
     private MainViewModel? _subscribedViewModel;
 
     public ChatWindow()
@@ -29,12 +31,21 @@ public partial class ChatWindow : Window
             ApplyModeVisuals();
             HideBubble(immediate: true);
         };
+        PreviewMouseMove += (_, _) => RestartWindowIdleTimer();
+        PreviewKeyDown += (_, _) => RestartWindowIdleTimer();
+        Deactivated += (_, _) => RestartWindowIdleTimer();
 
         _bubbleDismissTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromMilliseconds(BubbleHoldMilliseconds)
         };
         _bubbleDismissTimer.Tick += (_, _) => HideBubble();
+
+        _windowIdleTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(WindowIdleHideMilliseconds)
+        };
+        _windowIdleTimer.Tick += (_, _) => TryHideAfterIdle();
     }
 
     public void FocusPrompt()
@@ -52,6 +63,7 @@ public partial class ChatWindow : Window
 
         Activate();
         FocusPrompt();
+        RestartWindowIdleTimer();
     }
 
     private void ChatWindow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -87,6 +99,7 @@ public partial class ChatWindow : Window
         if (e.PropertyName is nameof(MainViewModel.BubbleText))
         {
             ShowBubble();
+            RestartWindowIdleTimer();
             if (_subscribedViewModel is not { IsCharacterSpeaking: true })
             {
                 ScheduleBubbleDismiss();
@@ -98,10 +111,12 @@ public partial class ChatWindow : Window
             if (_subscribedViewModel is { IsCharacterSpeaking: true })
             {
                 ShowBubble();
+                RestartWindowIdleTimer();
             }
             else
             {
                 ScheduleBubbleDismiss();
+                RestartWindowIdleTimer();
             }
         }
     }
@@ -191,6 +206,37 @@ public partial class ChatWindow : Window
         BubbleHost.BeginAnimation(OpacityProperty, animation);
     }
 
+    private void RestartWindowIdleTimer()
+    {
+        if (!IsVisible)
+        {
+            return;
+        }
+
+        _windowIdleTimer.Stop();
+        _windowIdleTimer.Start();
+    }
+
+    private void TryHideAfterIdle()
+    {
+        _windowIdleTimer.Stop();
+        if (!IsVisible)
+        {
+            return;
+        }
+
+        if (_subscribedViewModel is { IsCharacterSpeaking: true } ||
+            !string.IsNullOrWhiteSpace(PromptTextBox.Text) ||
+            IsKeyboardFocusWithin)
+        {
+            RestartWindowIdleTimer();
+            return;
+        }
+
+        HideBubble(immediate: true);
+        Hide();
+    }
+
     private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 2)
@@ -203,6 +249,7 @@ public partial class ChatWindow : Window
         if (e.ButtonState == MouseButtonState.Pressed)
         {
             DragMove();
+            RestartWindowIdleTimer();
         }
     }
 
@@ -213,11 +260,14 @@ public partial class ChatWindow : Window
 
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
+        _windowIdleTimer.Stop();
+        HideBubble(immediate: true);
         Hide();
     }
 
     private void PromptTextBox_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        RestartWindowIdleTimer();
         if (e.Key != Key.Enter || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {
             return;
