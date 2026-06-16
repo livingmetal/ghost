@@ -17,7 +17,7 @@ public partial class MainViewModel
 
         var builder = new StringBuilder();
         builder.AppendLine($"상태: {(state.Enabled ? "켜짐" : "꺼짐")}");
-        builder.AppendLine($"현재 UI 모드: {CurrentMode}");
+        builder.AppendLine($"롤플레잉 창: {(IsStoryMode ? "열림" : "닫힘")}");
         builder.AppendLine($"제목: {state.Title}");
         builder.AppendLine($"플레이어 역할: {state.PlayerRole}");
         builder.AppendLine($"분위기: {state.Mood}");
@@ -51,6 +51,12 @@ public partial class MainViewModel
         var keepEnabled = IsStoryMode && !IsAdvancedMode;
         var state = _storyStateStore.Reset(keepEnabled);
         IsStoryMode = state.Enabled;
+        StoryMessages.Clear();
+        if (IsStoryMode)
+        {
+            ShowRoleplayOpening(state);
+        }
+
         BubbleText = "롤플레잉 장면 상태를 초기화했어요.";
         RefreshModePresentation();
     }
