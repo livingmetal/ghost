@@ -21,22 +21,35 @@ function New-PngBytes {
         [int]$Size
     )
 
-    $scaleX = $Size / $Source.PixelWidth
-    $scaleY = $Size / $Source.PixelHeight
+    $scale = [Math]::Min($Size / $Source.PixelWidth, $Size / $Source.PixelHeight)
+    $drawWidth = $Source.PixelWidth * $scale
+    $drawHeight = $Source.PixelHeight * $scale
+    $x = ($Size - $drawWidth) / 2
+    $y = ($Size - $drawHeight) / 2
 
-    $transform = New-Object System.Windows.Media.ScaleTransform($scaleX, $scaleY)
-    $bitmap = New-Object System.Windows.Media.Imaging.TransformedBitmap
-    $bitmap.BeginInit()
-    $bitmap.Source = $Source
-    $bitmap.Transform = $transform
-    $bitmap.EndInit()
+    $visual = New-Object System.Windows.Media.DrawingVisual
+    $context = $visual.RenderOpen()
+    try {
+        $context.DrawImage($Source, [System.Windows.Rect]::new($x, $y, $drawWidth, $drawHeight))
+    }
+    finally {
+        $context.Close()
+    }
+
+    $bitmap = New-Object System.Windows.Media.Imaging.RenderTargetBitmap(
+        $Size,
+        $Size,
+        96,
+        96,
+        [System.Windows.Media.PixelFormats]::Pbgra32)
+    $bitmap.Render($visual)
     $bitmap.Freeze()
 
     $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
     $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
     $stream = New-Object System.IO.MemoryStream
     $encoder.Save($stream)
-    return $stream.ToArray()
+    return ,([byte[]]$stream.ToArray())
 }
 
 $image = New-Object System.Windows.Media.Imaging.BitmapImage
