@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:behaviors="clr-namespace:LivingMetalGhost.UI.Behaviors"
         Title="LivingMetalGhost Chat"
-        Width="470"
-        Height="630"
+        Width="430"
+        Height="300"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -12,101 +12,99 @@
         ShowInTaskbar="False"
         ShowActivated="False">
     <Grid Background="Transparent">
-        <Border x:Name="RootBorder"
-                Margin="8"
-                Padding="16"
-                Background="#F4EFE5"
-                BorderThickness="2"
-                CornerRadius="22">
-            <Border.BorderBrush>
-                <SolidColorBrush x:Name="BorderAccent" Color="#1B2430" />
-            </Border.BorderBrush>
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="20"
-                                  ShadowDepth="6"
-                                  Opacity="0.28"
-                                  Color="#101820" />
-            </Border.Effect>
+        <!-- ChatWindow.xaml.cs still updates these named elements when modes change.
+             They stay hidden because the daily chat surface is now bubble-first, not console-first. -->
+        <StackPanel Visibility="Collapsed">
+            <TextBlock x:Name="TitleLabel" />
+            <TextBlock x:Name="ProviderLabel" />
+        </StackPanel>
 
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+        <Grid Margin="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-                <Grid MouseLeftButtonDown="Header_OnMouseLeftButtonDown"
-                      Cursor="SizeAll">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock x:Name="TitleLabel"
-                                   FontFamily="Bahnschrift"
-                                   FontSize="20"
+            <Border x:Name="RootBorder"
+                    Grid.Row="0"
+                    MinHeight="122"
+                    MaxHeight="168"
+                    Margin="0,0,38,10"
+                    Padding="18,16,18,16"
+                    Background="#F8F3EC"
+                    BorderThickness="2"
+                    CornerRadius="22"
+                    MouseLeftButtonDown="Header_OnMouseLeftButtonDown"
+                    Cursor="SizeAll">
+                <Border.BorderBrush>
+                    <SolidColorBrush x:Name="BorderAccent" Color="#EFE7DC" />
+                </Border.BorderBrush>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18"
+                                      ShadowDepth="5"
+                                      Opacity="0.22"
+                                      Color="#221729" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock FontFamily="Bahnschrift"
+                                   FontSize="13"
                                    FontWeight="SemiBold"
-                                   Foreground="#18212D"
-                                   Text="PROMPT CONSOLE" />
-                        <TextBlock x:Name="ProviderLabel"
-                                   Margin="0,2,0,0"
-                                   FontFamily="Consolas"
-                                   FontSize="10"
-                                   Foreground="#64707E"
-                                   Text="" />
-                    </StackPanel>
-                    <Button Grid.Column="1"
-                            Width="30"
-                            Height="30"
-                            Padding="0"
-                            Background="#18212D"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Click="CloseButton_OnClick"
-                            Content="×" />
-                </Grid>
+                                   Foreground="#8E65C8"
+                                   Text="{Binding CharacterDisplayName}" />
+                        <Button Grid.Column="1"
+                                Width="22"
+                                Height="22"
+                                Padding="0"
+                                Background="Transparent"
+                                Foreground="#9D8D7F"
+                                BorderThickness="0"
+                                Click="CloseButton_OnClick"
+                                Content="×"
+                                ToolTip="대화창 닫기" />
+                    </Grid>
 
-                <Border Grid.Row="1"
-                        Margin="0,14,0,10"
-                        Padding="8"
-                        CornerRadius="16"
-                        Background="#FFFDF8"
-                        BorderBrush="#D8D0C3"
-                        BorderThickness="1">
                     <ScrollViewer x:Name="ConversationScrollViewer"
+                                  Grid.Row="1"
+                                  Margin="0,8,0,0"
+                                  MaxHeight="108"
                                   VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding Messages}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border MaxWidth="370"
-                                            Margin="5,4"
-                                            Padding="11,9"
-                                            HorizontalAlignment="Stretch">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="HorizontalAlignment" Value="Left" />
-                                                <Setter Property="Background" Value="#DDEFEA" />
-                                                <Setter Property="CornerRadius" Value="4,14,14,14" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                                        <Setter Property="HorizontalAlignment" Value="Right" />
-                                                        <Setter Property="Background" Value="#E8E2D8" />
-                                                        <Setter Property="CornerRadius" Value="14,4,14,14" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
+                                    <Border Margin="0,0,0,10"
+                                            Padding="0"
+                                            Background="Transparent">
                                         <StackPanel>
                                             <TextBlock FontSize="10"
                                                        FontWeight="SemiBold"
-                                                       Foreground="#64707E"
-                                                       Text="{Binding SpeakerName}" />
+                                                       Foreground="#9D75D2"
+                                                       Text="{Binding SpeakerName}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                                <Setter Property="Foreground" Value="#7C7168" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                             <RichTextBox Margin="0,4,0,0"
                                                          Padding="0"
                                                          FontFamily="Malgun Gothic"
-                                                         FontSize="14"
-                                                         Foreground="#202A35"
+                                                         FontSize="15"
+                                                         Foreground="#241B2B"
                                                          Background="Transparent"
                                                          BorderThickness="0"
                                                          IsReadOnly="True"
@@ -124,119 +122,113 @@
                                                     </ContextMenu>
                                                 </RichTextBox.ContextMenu>
                                             </RichTextBox>
-                                            <TextBlock Margin="0,4,0,0"
-                                                       HorizontalAlignment="Right"
-                                                       FontFamily="Consolas"
-                                                       FontSize="9"
-                                                       Foreground="#7B848D"
-                                                       Text="{Binding Timestamp, StringFormat={}{0:HH:mm}}" />
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                </Border>
+                </Grid>
+            </Border>
 
-                <Border Grid.Row="2"
-                        Margin="0,0,0,10"
-                        Padding="10,8"
-                        CornerRadius="14"
-                        Background="#171E2C"
-                        BorderBrush="#7B4FC8"
-                        BorderThickness="1">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsAdvancedMode}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <StackPanel>
-                        <TextBlock FontFamily="Bahnschrift"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="#D9CBFF"
-                                   Text="AGENT DOCK" />
-                        <TextBlock Margin="0,2,0,6"
-                                   FontSize="10"
-                                   Foreground="#8E9AAF"
-                                   Text="고급 작업 에이전트 상태. 마우스를 올리면 작업 요약을 볼 수 있습니다." />
-                        <ItemsControl ItemsSource="{Binding ActiveAgentJobs}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Width="128"
-                                            Margin="0,0,7,7"
-                                            Padding="9,7"
-                                            CornerRadius="10"
-                                            Background="#232A3B"
-                                            BorderBrush="#4A5570"
-                                            BorderThickness="1"
-                                            ToolTip="{Binding TooltipText}">
-                                        <StackPanel>
-                                            <TextBlock FontFamily="Bahnschrift"
-                                                       FontSize="12"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#FFFFFF"
-                                                       Text="{Binding DisplayName}" />
-                                            <TextBlock Margin="0,2,0,0"
-                                                       FontSize="10"
-                                                       Foreground="#AAB3C5"
-                                                       Text="{Binding StatusLabel}" />
-                                            <TextBlock Margin="0,2,0,5"
-                                                       FontSize="9"
-                                                       Foreground="#7F8AA3"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Text="{Binding Summary}" />
-                                            <ProgressBar Height="5"
-                                                         Minimum="0"
-                                                         Maximum="1"
-                                                         Value="{Binding Progress}" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
+            <Polygon Grid.Row="0"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Bottom"
+                     Margin="0,0,48,0"
+                     Points="0,0 34,18 8,34"
+                     Fill="#F8F3EC"
+                     Stroke="#EFE7DC"
+                     StrokeThickness="2" />
 
-                <Grid Grid.Row="3">
+            <Border Grid.Row="1"
+                    Margin="34,0,0,0"
+                    Padding="12,10"
+                    Background="#F7EFE7"
+                    BorderBrush="#E3D7CC"
+                    BorderThickness="1"
+                    CornerRadius="18">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="16"
+                                      ShadowDepth="4"
+                                      Opacity="0.20"
+                                      Color="#221729" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Grid.RowSpan="2"
+                               Margin="2,0,10,0"
+                               VerticalAlignment="Center"
+                               FontSize="22"
+                               Foreground="#A579D8"
+                               Text="✦" />
+
                     <TextBox x:Name="PromptTextBox"
-                             MinHeight="64"
-                             MaxHeight="120"
-                             Padding="12,10"
+                             Grid.Row="0"
+                             Grid.Column="1"
+                             MinHeight="44"
+                             MaxHeight="84"
+                             Padding="4,6"
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
                              VerticalScrollBarVisibility="Auto"
-                             BorderBrush="#A9A095"
-                             BorderThickness="1"
+                             Background="Transparent"
+                             Foreground="#241B2B"
+                             BorderThickness="0"
                              PreviewKeyDown="PromptTextBox_OnPreviewKeyDown"
-                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" />
+                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="메시지를 입력하세요. Enter 전송, Shift+Enter 줄바꿈" />
+
                     <Button x:Name="SendButton"
-                            Grid.Column="1"
-                            Margin="8,0,0,0"
-                            MinWidth="76"
-                            Padding="14,8"
-                            VerticalAlignment="Stretch"
-                            Background="#E96A42"
+                            Grid.Row="0"
+                            Grid.Column="2"
+                            Width="44"
+                            Height="44"
+                            Margin="10,0,0,0"
+                            Padding="0"
+                            VerticalAlignment="Center"
+                            Background="#9B6AD6"
                             Foreground="White"
                             BorderThickness="0"
                             Command="{Binding SendCommand}"
-                            Content="SEND" />
+                            Content="➤"
+                            FontSize="20"
+                            ToolTip="보내기" />
+
+                    <StackPanel Grid.Row="1"
+                                Grid.Column="1"
+                                Grid.ColumnSpan="2"
+                                Margin="0,8,0,0"
+                                Orientation="Horizontal">
+                        <Button Padding="10,5"
+                                Margin="0,0,6,0"
+                                Background="#EFE5DA"
+                                BorderBrush="#DACEC2"
+                                BorderThickness="1"
+                                Foreground="#6E6258"
+                                Command="{Binding SendCommand}"
+                                Content="이야기 이어가기"
+                                ToolTip="입력한 문장으로 대화를 이어갑니다." />
+                        <Button Padding="10,5"
+                                Margin="0,0,6,0"
+                                Background="#EFE5DA"
+                                BorderBrush="#DACEC2"
+                                BorderThickness="1"
+                                Foreground="#6E6258"
+                                Command="{Binding OpenSettingsCommand}"
+                                Content="설정" />
+                    </StackPanel>
                 </Grid>
-            </Grid>
-        </Border>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
