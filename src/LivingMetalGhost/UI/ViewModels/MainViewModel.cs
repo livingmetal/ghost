@@ -207,13 +207,33 @@ public partial class MainViewModel : ObservableObject
 
     public void SetStoryMode(bool enabled)
     {
-        _storyStateStore.SetEnabled(enabled);
+        var wasEnabled = IsStoryMode;
+        var state = _storyStateStore.SetEnabled(enabled);
         IsStoryMode = enabled;
+
+        if (enabled && !wasEnabled)
+        {
+            ShowRoleplayOpening(state);
+        }
     }
 
     public void ToggleStoryMode()
     {
         SetStoryMode(!IsStoryMode);
+    }
+
+    private void ShowRoleplayOpening(StoryState state)
+    {
+        var openingText = StoryStateStore.BuildOpeningText(state);
+        BubbleText = openingText;
+        Messages.Add(new ChatMessage
+        {
+            Text = openingText,
+            SpeakerName = "STORY",
+            IsProactive = true
+        });
+        SetCharacterMood(_spriteDirector.ResolveSpeakingMood("curious", ConversationMode.Story));
+        StartPostSpeechMoodHold(CharacterMood);
     }
 
     partial void OnIsAdvancedModeChanged(bool value)
@@ -560,80 +580,63 @@ public partial class MainViewModel : ObservableObject
             return [normalized];
         }
 
-        var segments = Regex.Split(
-                normalized,
-                @"(?<=\n)|(?<=[.!?…])\s+")
-            .Where(segment => !string.IsNullOrWhiteSpace(segment))
-            .Select(segment => segment.Trim())
-            .ToArray();
         var chunks = new List<string>();
-        var current = new StringBuilder();
-
-        foreach (var segment in segments)
+        var remaining = normalized;
+        while (remaining.Length > 0)
         {
-            if (segment.Length > maximumLength)
+            if (remaining.Length <= maximumLength)
             {
-                FlushChunk(current, chunks);
-                SplitLongSegment(segment, maximumLength, chunks);
+                chunks.Add(remaining.Trim());
+                break;
+            }
+
+            var splitIndex = FindSplitIndex(remaining, targetLength, maximumLength);
+            chunks.Add(remaining[..splitIndex].Trim());
+            remaining = remaining[splitIndex..].TrimStart();
+        }
+
+        return chunks;
+    }
+
+    private static int FindSplitIndex(string text, int targetLength, int maximumLength)
+    {
+        var searchLength = Math.Min(maximumLength, text.Length);
+        var preferredSeparators = new[] { "\n\n", "\n", ". ", "! ", "? ", "。", "！", "？", ", ", " " };
+        var bestIndex = -1;
+        var bestDistance = int.MaxValue;
+
+        foreach (var separator in preferredSeparators)
+        {
+            var index = text.LastIndexOf(separator, searchLength - 1, StringComparison.Ordinal);
+            if (index <= 20)
+            {
                 continue;
             }
 
-            if (current.Length > 0 &&
-                current.Length + 1 + segment.Length > maximumLength)
+            var candidate = index + separator.Length;
+            var distance = Math.Abs(candidate - targetLength);
+            if (distance < bestDistance)
             {
-                FlushChunk(current, chunks);
-            }
-
-            if (current.Length > 0)
-            {
-                current.Append(segment.StartsWith("- ", StringComparison.Ordinal) ||
-                               segment.StartsWith("* ", StringComparison.Ordinal) ||
-                               char.IsDigit(segment[0])
-                    ? '\n'
-                    : ' ');
-            }
-
-            current.Append(segment);
-            if (current.Length >= targetLength)
-            {
-                FlushChunk(current, chunks);
+                bestIndex = candidate;
+                bestDistance = distance;
             }
         }
 
-        FlushChunk(current, chunks);
-        return chunks.Count == 0 ? [normalized] : chunks;
+        return bestIndex > 0 ? bestIndex : maximumLength;
     }
 
-    private static void SplitLongSegment(string segment, int maximumLength, List<string> chunks)
+    private async Task WriteLogAsync(string userText, string assistantText, bool isProactive, string mood = "speaking")
     {
-        var remaining = segment;
-        while (remaining.Length > maximumLength)
-        {
-            var splitAt = remaining.LastIndexOfAny([' ', '\n', ',', ';'], maximumLength - 1, maximumLength);
-            if (splitAt < maximumLength / 2)
-            {
-                splitAt = maximumLength;
-            }
-
-            chunks.Add(remaining[..splitAt].Trim());
-            remaining = remaining[splitAt..].Trim();
-        }
-
-        if (!string.IsNullOrWhiteSpace(remaining))
-        {
-            chunks.Add(remaining);
-        }
-    }
-
-    private static void FlushChunk(StringBuilder current, List<string> chunks)
-    {
-        if (current.Length == 0)
-        {
-            return;
-        }
-
-        chunks.Add(current.ToString().Trim());
-        current.Clear();
+        await _conversationLogService.AppendAsync(new ConversationLogEntry(
+            DateTimeOffset.Now,
+            isProactive ? "proactive" : "user",
+            userText,
+            assistantText,
+            CurrentMode.ToString(),
+            SelectedCharacterId,
+            CharacterDisplayName,
+            ActiveProviderLabel,
+            mood), CancellationToken.None);
     }
 
     private void RefreshSelectedCharacter()
@@ -643,49 +646,16 @@ public partial class MainViewModel : ObservableObject
         SelectedCharacterId = character.Id;
         CharacterDisplayName = character.DisplayName;
 
-        if (config.App.CharacterProfiles is not null &&
-            config.App.CharacterProfiles.TryGetValue(character.Id, out var profile))
-        {
-            CharacterScale = Math.Clamp(profile.CharacterScale <= 0 ? 1.0 : profile.CharacterScale, 0.55, 2.0);
-            SelectedCharacterSizePresetId = ResolveSizePresetId(character, profile.CharacterSizePresetId);
-            SelectedCharacterFramingPresetId = ResolveFramingPresetId(character, profile.CharacterFramingPresetId);
-        }
-        else
-        {
-            CharacterScale = 1.0;
-            SelectedCharacterSizePresetId = character.Presentation.DefaultSizePresetId;
-            SelectedCharacterFramingPresetId = character.Presentation.DefaultFramingPresetId;
-        }
-    }
-
-    private static string ResolveSizePresetId(CharacterProfile character, string configuredId)
-    {
-        return character.Presentation.SizePresets.Any(preset =>
-            string.Equals(preset.Id, configuredId, StringComparison.OrdinalIgnoreCase))
-            ? configuredId.Trim()
-            : character.Presentation.DefaultSizePresetId;
-    }
-
-    private static string ResolveFramingPresetId(CharacterProfile character, string configuredId)
-    {
-        return character.Presentation.FramingPresets.Any(preset =>
-            string.Equals(preset.Id, configuredId, StringComparison.OrdinalIgnoreCase))
-            ? configuredId.Trim()
-            : character.Presentation.DefaultFramingPresetId;
-    }
-
-    private async Task WriteLogAsync(string userText, string assistantText, bool isProactive)
-    {
-        await _conversationLogService.AppendAsync(new ConversationLogEntry
-        {
-            Timestamp = DateTimeOffset.Now,
-            CharacterId = SelectedCharacterId,
-            CharacterName = CharacterDisplayName,
-            ProviderLabel = ActiveProviderLabel,
-            UserText = userText,
-            AssistantText = assistantText,
-            Mood = CharacterMood,
-            IsProactive = isProactive
-        });
+        var profile = config.App.CharacterProfiles is not null &&
+                      config.App.CharacterProfiles.TryGetValue(character.Id, out var savedProfile)
+            ? savedProfile
+            : null;
+        SelectedCharacterSizePresetId = string.IsNullOrWhiteSpace(profile?.CharacterSizePresetId)
+            ? character.DefaultSizePresetId
+            : profile.CharacterSizePresetId;
+        SelectedCharacterFramingPresetId = string.IsNullOrWhiteSpace(profile?.CharacterFramingPresetId)
+            ? character.DefaultFramingPresetId
+            : profile.CharacterFramingPresetId;
+        CharacterScale = profile?.CharacterScale is > 0 ? profile.CharacterScale : character.DefaultScale;
     }
 }
