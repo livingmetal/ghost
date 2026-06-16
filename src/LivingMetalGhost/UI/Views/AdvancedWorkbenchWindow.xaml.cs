@@ -169,7 +169,7 @@ public partial class AdvancedWorkbenchWindow : Window
         }
     }
 
-    private void MessageBubble_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private async void MessageBubble_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not FrameworkElement element || element.DataContext is not ChatMessage message)
         {
@@ -183,7 +183,14 @@ public partial class AdvancedWorkbenchWindow : Window
 
         _selectedMemoryCandidate = message;
         RefreshSelectedMemoryCandidateText();
-        e.Handled = false;
+
+        if (e.ClickCount < 2)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        await SaveMemoryCandidateAsync(message.Text);
     }
 
     private void ExitAdvancedButton_OnClick(object sender, RoutedEventArgs e)
@@ -251,6 +258,16 @@ public partial class AdvancedWorkbenchWindow : Window
                             !string.IsNullOrWhiteSpace(_selectedMemoryCandidate.Text)
             ? _selectedMemoryCandidate.Text
             : _subscribedViewModel.GetLastCompletedAssistantMessageText();
+        await SaveMemoryCandidateAsync(candidateText);
+    }
+
+    private async Task SaveMemoryCandidateAsync(string? candidateText)
+    {
+        if (_subscribedViewModel is null)
+        {
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(candidateText))
         {
             MessageBox.Show(
@@ -284,6 +301,7 @@ public partial class AdvancedWorkbenchWindow : Window
             MessageBoxButton.OK,
             MessageBoxImage.Information);
         RefreshContextText();
+        RefreshSelectedMemoryCandidateText();
     }
 
     private void PromptTextBox_OnPreviewKeyDown(object sender, KeyEventArgs e)
