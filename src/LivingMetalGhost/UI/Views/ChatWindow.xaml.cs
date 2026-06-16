@@ -12,6 +12,7 @@ namespace LivingMetalGhost.UI.Views;
 public partial class ChatWindow : Window
 {
     private static readonly Color NormalBorder  = Color.FromRgb(0x1B, 0x24, 0x30);
+    private static readonly Color StoryBorder = Color.FromRgb(0x9B, 0x6A, 0xD6);
     private static readonly Color AdvancedBorder = Color.FromRgb(0x7B, 0x4F, 0xC8);
 
     private MainViewModel? _subscribedViewModel;
@@ -78,7 +79,9 @@ public partial class ChatWindow : Window
 
     private void ViewModel_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.IsAdvancedMode))
+        if (e.PropertyName is nameof(MainViewModel.IsAdvancedMode)
+            or nameof(MainViewModel.IsStoryMode)
+            or nameof(MainViewModel.CurrentMode))
         {
             ApplyModeVisuals();
         }
@@ -86,14 +89,27 @@ public partial class ChatWindow : Window
 
     private void ApplyModeVisuals()
     {
-        var advanced = _subscribedViewModel?.IsAdvancedMode ?? false;
-        var targetColor = advanced ? AdvancedBorder : NormalBorder;
+        var mode = _subscribedViewModel?.CurrentMode ?? ConversationMode.Daily;
+        var targetColor = mode switch
+        {
+            ConversationMode.Advanced => AdvancedBorder,
+            ConversationMode.Story => StoryBorder,
+            _ => NormalBorder
+        };
 
-        TitleLabel.Text = advanced ? "GHOST WORKBENCH" : "PROMPT CONSOLE";
-        SendButton.Content = advanced ? "RUN" : "SEND";
-        SendButton.Background = new SolidColorBrush(advanced
-            ? Color.FromRgb(0x7B, 0x4F, 0xC8)
-            : Color.FromRgb(0xE9, 0x6A, 0x42));
+        TitleLabel.Text = mode switch
+        {
+            ConversationMode.Advanced => "GHOST WORKBENCH",
+            ConversationMode.Story => "STORY CONSOLE",
+            _ => "PROMPT CONSOLE"
+        };
+        SendButton.Content = mode == ConversationMode.Advanced ? "RUN" : "SEND";
+        SendButton.Background = new SolidColorBrush(mode switch
+        {
+            ConversationMode.Advanced => Color.FromRgb(0x7B, 0x4F, 0xC8),
+            ConversationMode.Story => Color.FromRgb(0x9B, 0x6A, 0xD6),
+            _ => Color.FromRgb(0xE9, 0x6A, 0x42)
+        });
 
         var animation = new ColorAnimation(targetColor, TimeSpan.FromMilliseconds(200));
         BorderAccent.BeginAnimation(SolidColorBrush.ColorProperty, animation);
@@ -150,12 +166,7 @@ public partial class ChatWindow : Window
 
     private void ToggleAdvancedMode()
     {
-        if (_subscribedViewModel is null || !_subscribedViewModel.IsAdvancedModeAvailable)
-        {
-            return;
-        }
-
-        _subscribedViewModel.IsAdvancedMode = !_subscribedViewModel.IsAdvancedMode;
+        _subscribedViewModel?.ToggleAdvancedMode();
     }
 
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
