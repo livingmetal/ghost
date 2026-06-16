@@ -116,7 +116,12 @@ public sealed class WorkspaceStore
             AllowedCommands = new[]
             {
                 "git status",
+                "git branch",
                 "git diff",
+                "git log",
+                "git remote",
+                "git fetch",
+                "git pull",
                 "dotnet build",
                 "dotnet test"
             },
