@@ -11,7 +11,7 @@ namespace LivingMetalGhost.UI.Views;
 
 public partial class ChatWindow : Window
 {
-    private static readonly Color NormalBorder  = Color.FromRgb(0x1B, 0x24, 0x30);
+    private static readonly Color NormalBorder = Color.FromRgb(0xEF, 0xE7, 0xDC);
     private static readonly Color RoleplayBorder = Color.FromRgb(0x9B, 0x6A, 0xD6);
     private static readonly Color AdvancedBorder = Color.FromRgb(0x7B, 0x4F, 0xC8);
 
@@ -102,16 +102,16 @@ public partial class ChatWindow : Window
         {
             ConversationMode.Advanced => "GHOST WORKBENCH",
             ConversationMode.Story => "ROLEPLAY CONSOLE",
-            _ => "PROMPT CONSOLE"
+            _ => "PROMPT BUBBLE"
         };
         ProviderLabel.Text = (_subscribedViewModel?.ActiveProviderLabel ?? string.Empty)
             .Replace("STORY:", "ROLEPLAY:", StringComparison.OrdinalIgnoreCase);
-        SendButton.Content = mode == ConversationMode.Advanced ? "RUN" : "SEND";
+        SendButton.Content = mode == ConversationMode.Advanced ? "RUN" : "➤";
         SendButton.Background = new SolidColorBrush(mode switch
         {
             ConversationMode.Advanced => Color.FromRgb(0x7B, 0x4F, 0xC8),
             ConversationMode.Story => Color.FromRgb(0x9B, 0x6A, 0xD6),
-            _ => Color.FromRgb(0xE9, 0x6A, 0x42)
+            _ => Color.FromRgb(0x9B, 0x6A, 0xD6)
         });
 
         var animation = new ColorAnimation(targetColor, TimeSpan.FromMilliseconds(200));
