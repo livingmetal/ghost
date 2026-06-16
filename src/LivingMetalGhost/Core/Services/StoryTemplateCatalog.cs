@@ -74,37 +74,12 @@ public static class StoryTemplateCatalog
                 file.Summary?.Trim() ?? string.Empty,
                 file.OpeningLine?.Trim() ?? string.Empty,
                 string.IsNullOrWhiteSpace(file.Mood) ? "quiet_tension" : file.Mood.Trim(),
-                file.Tension <= 0 ? 1 : Math.Clamp(file.Tension, 0, 5),
-                BuildObjectives(file.Objectives));
+                file.Tension <= 0 ? 1 : Math.Clamp(file.Tension, 0, 5));
         }
         catch
         {
             return null;
         }
-    }
-
-    private static IReadOnlyList<StoryObjective> BuildObjectives(List<StoryObjectiveFile>? objectives)
-    {
-        if (objectives is null || objectives.Count == 0)
-        {
-            return [];
-        }
-
-        var result = new List<StoryObjective>();
-        var autoIndex = 1;
-        foreach (var item in objectives)
-        {
-            if (item is null || string.IsNullOrWhiteSpace(item.Text))
-            {
-                continue;
-            }
-
-            var id = string.IsNullOrWhiteSpace(item.Id) ? $"G{autoIndex}" : item.Id.Trim();
-            result.Add(new StoryObjective { Id = id, Text = item.Text.Trim(), Done = item.Done });
-            autoIndex++;
-        }
-
-        return result;
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -125,13 +100,5 @@ public static class StoryTemplateCatalog
         public string? OpeningLine { get; set; }
         public string? Mood { get; set; }
         public int Tension { get; set; } = 1;
-        public List<StoryObjectiveFile>? Objectives { get; set; }
-    }
-
-    private sealed class StoryObjectiveFile
-    {
-        public string? Id { get; set; }
-        public string Text { get; set; } = string.Empty;
-        public bool Done { get; set; }
     }
 }
