@@ -21,11 +21,6 @@ public static class StoryStateStoreCompatibilityExtensions
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "LivingMetalGhost");
             var configPath = Path.Combine(root, "config.json");
-            if (!File.Exists(configPath))
-            {
-                return string.Empty;
-            }
-
             var options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -33,7 +28,9 @@ public static class StoryStateStoreCompatibilityExtensions
                 ReadCommentHandling = JsonCommentHandling.Skip,
                 AllowTrailingCommas = true
             };
-            var config = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(configPath), options) ?? new AppConfig();
+            var config = File.Exists(configPath)
+                ? JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(configPath), options) ?? new AppConfig()
+                : new AppConfig();
             config.App.CharacterProfiles ??= [];
             var character = CharacterCatalog.Get(config.App.GhostId);
             if (config.App.CharacterProfiles.TryGetValue(character.Id, out var profile) &&
