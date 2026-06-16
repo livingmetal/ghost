@@ -28,29 +28,48 @@ public partial class MainViewModel
         BubbleText = "새 고급 작업 세션을 시작했어요.";
     }
 
-    public async Task<ProjectMemoryEntry?> PromoteLastAdvancedAssistantMessageAsync(CancellationToken cancellationToken)
+    public string? GetLastCompletedAssistantMessageText()
     {
-        var lastAssistantMessage = Messages
+        return Messages
             .Reverse()
-            .FirstOrDefault(message => !message.IsUser && !message.IsTyping && !string.IsNullOrWhiteSpace(message.Text));
+            .FirstOrDefault(message => !message.IsUser && !message.IsTyping && !string.IsNullOrWhiteSpace(message.Text))
+            ?.Text;
+    }
 
-        if (lastAssistantMessage is null)
-        {
-            return null;
-        }
+    public string GetCurrentAdvancedSessionId()
+    {
+        var sessionLog = global::LivingMetalGhost.App.Services.GetRequiredService<AdvancedSessionLogService>();
+        return sessionLog.CurrentSessionId;
+    }
 
+    public async Task<ProjectMemoryEntry> SaveProjectMemoryAsync(
+        string content,
+        string type,
+        CancellationToken cancellationToken)
+    {
         var sessionLog = global::LivingMetalGhost.App.Services.GetRequiredService<AdvancedSessionLogService>();
         var memoryStore = global::LivingMetalGhost.App.Services.GetRequiredService<ProjectMemoryStore>();
         var entry = await memoryStore.AddAsync(
-            content: lastAssistantMessage.Text,
-            type: "decision",
+            content: content,
+            type: type,
             sourceSessionId: sessionLog.CurrentSessionId,
-            source: "last_assistant_response",
+            source: "memory_editor",
             tags: ["workbench", "promoted"],
             cancellationToken: cancellationToken);
 
         AdvancedContextRevision++;
-        BubbleText = "마지막 고급 답변을 프로젝트 기억으로 저장했어요.";
+        BubbleText = "프로젝트 기억으로 저장했어요.";
         return entry;
+    }
+
+    public async Task<ProjectMemoryEntry?> PromoteLastAdvancedAssistantMessageAsync(CancellationToken cancellationToken)
+    {
+        var lastAssistantMessage = GetLastCompletedAssistantMessageText();
+        if (string.IsNullOrWhiteSpace(lastAssistantMessage))
+        {
+            return null;
+        }
+
+        return await SaveProjectMemoryAsync(lastAssistantMessage, "decision", cancellationToken);
     }
 }
