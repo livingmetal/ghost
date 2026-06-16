@@ -96,7 +96,8 @@
                                        Text="speaking" />
                         </StackPanel>
 
-                        <TextBlock Grid.Row="1"
+                        <TextBlock x:Name="BubbleTextBlock"
+                                   Grid.Row="1"
                                    Margin="0,11,0,0"
                                    MaxHeight="98"
                                    FontFamily="Malgun Gothic"
@@ -105,19 +106,20 @@
                                    LineHeight="23"
                                    TextWrapping="Wrap"
                                    TextTrimming="CharacterEllipsis"
-                                   Foreground="#241B2B"
-                                   Text="{Binding BubbleText}" />
+                                   Foreground="#241B2B" />
                     </Grid>
                 </Border>
             </Grid>
 
-            <Border Grid.Row="1"
+            <Border x:Name="InputPanel"
+                    Grid.Row="1"
                     Margin="34,0,0,0"
                     Padding="14,10"
                     Background="{StaticResource InputFillBrush}"
                     BorderBrush="#E4D4C6"
                     BorderThickness="1"
-                    CornerRadius="22">
+                    CornerRadius="22"
+                    MouseLeftButtonDown="InputPanel_OnMouseLeftButtonDown">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="20"
                                       ShadowDepth="4"
