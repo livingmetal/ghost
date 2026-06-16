@@ -30,6 +30,7 @@ public partial class App : Application
         ConfigureServices(serviceCollection);
         Services = serviceCollection.BuildServiceProvider();
         Services.GetRequiredService<AdvancedSessionLogService>().EnsureWorkspaceFiles();
+        Services.GetRequiredService<WorkspaceStore>().EnsureWorkspaceFile();
 
         var mainWindow = new MainWindow
         {
@@ -124,6 +125,7 @@ public partial class App : Application
         services.AddSingleton<RoleplayStateUpdater>();
         services.AddSingleton<AdvancedSessionLogService>();
         services.AddSingleton<ProjectMemoryStore>();
+        services.AddSingleton<WorkspaceStore>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
