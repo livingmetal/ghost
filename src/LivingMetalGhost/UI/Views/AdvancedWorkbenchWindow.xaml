@@ -179,14 +179,17 @@
                                            FontSize="11"
                                            Foreground="#667085"
                                            Text="{Binding ActiveProviderLabel}" />
+                                <TextBlock x:Name="WorkbenchContextText"
+                                           Margin="0,8,0,0"
+                                           FontFamily="Consolas"
+                                           FontSize="10"
+                                           Foreground="#667085"
+                                           TextWrapping="Wrap"
+                                           Text="Workspace: default" />
                                 <TextBlock Margin="0,8,0,0"
                                            FontSize="11"
                                            Foreground="#667085"
                                            Text="롤플레잉 장면 상태는 고급 모드에서 사용하지 않습니다." />
-                                <TextBlock Margin="0,8,0,0"
-                                           FontSize="11"
-                                           Foreground="#667085"
-                                           Text="파일 변경/명령 실행은 승인 플로우로 분리 예정입니다." />
                             </StackPanel>
                         </Border>
 
