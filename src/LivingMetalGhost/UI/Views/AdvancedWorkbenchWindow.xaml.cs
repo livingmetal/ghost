@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Services;
@@ -11,6 +12,8 @@ namespace LivingMetalGhost.UI.Views;
 
 public partial class AdvancedWorkbenchWindow : Window
 {
+    private const double MaximumResizeWidth = 1500;
+    private const double MaximumResizeHeight = 1050;
     private MainViewModel? _subscribedViewModel;
     private ChatMessage? _selectedMemoryCandidate;
     private readonly AdvancedSessionLogService _advancedSessionLogService;
@@ -167,6 +170,16 @@ public partial class AdvancedWorkbenchWindow : Window
         {
             DragMove();
         }
+    }
+
+    private void ResizeThumb_OnDragDelta(object sender, DragDeltaEventArgs e)
+    {
+        var workArea = SystemParameters.WorkArea;
+        var maximumWidth = Math.Min(MaximumResizeWidth, Math.Max(MinWidth, workArea.Right - Left - 12));
+        var maximumHeight = Math.Min(MaximumResizeHeight, Math.Max(MinHeight, workArea.Bottom - Top - 12));
+
+        Width = Math.Clamp(Width + e.HorizontalChange, MinWidth, maximumWidth);
+        Height = Math.Clamp(Height + e.VerticalChange, MinHeight, maximumHeight);
     }
 
     private async void MessageBubble_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -332,6 +345,7 @@ public partial class AdvancedWorkbenchWindow : Window
         RefreshContextText();
         RefreshSelectedMemoryCandidateText();
     }
+
     private async void AlwaysApproveAgentJobButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_subscribedViewModel is null || sender is not FrameworkElement element ||
@@ -339,10 +353,11 @@ public partial class AdvancedWorkbenchWindow : Window
         {
             return;
         }
-    
+
         await _subscribedViewModel.AlwaysApproveAgentJobAsync(job, CancellationToken.None);
         RefreshContextText();
     }
+
     private void PromptTextBox_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
