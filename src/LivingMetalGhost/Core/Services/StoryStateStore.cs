@@ -24,8 +24,11 @@ public sealed class StoryStateStore
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
 
-    public StoryStateStore(AppPaths paths)
+    private readonly AppConfigLoader _configLoader;
+
+    public StoryStateStore(AppPaths paths, AppConfigLoader configLoader)
     {
+        _configLoader = configLoader;
         _storyRoot = Path.Combine(paths.Root, "Stories", "default");
         _stateFile = Path.Combine(_storyRoot, "story_state.json");
         _memoryFile = Path.Combine(_storyRoot, "memory.jsonl");
@@ -39,7 +42,7 @@ public sealed class StoryStateStore
     {
         if (!File.Exists(_stateFile))
         {
-            return CreateDefaultState();
+            return CreateSeededDefault();
         }
 
         try
@@ -67,7 +70,11 @@ public sealed class StoryStateStore
         state.Enabled = enabled;
         if (enabled && string.IsNullOrWhiteSpace(state.Scene))
         {
-            ApplyOpeningScene(state);
+            ApplyTemplate(state);
+            if (string.IsNullOrWhiteSpace(state.Scene))
+            {
+                ApplyOpeningScene(state);
+            }
         }
 
         state.UpdatedAt = DateTimeOffset.Now;
@@ -77,7 +84,7 @@ public sealed class StoryStateStore
 
     public StoryState Reset(bool keepEnabled)
     {
-        var resetState = CreateDefaultState();
+        var resetState = CreateSeededDefault();
         resetState.Enabled = keepEnabled;
         Save(resetState);
 
@@ -139,17 +146,56 @@ public sealed class StoryStateStore
         var objective = string.IsNullOrWhiteSpace(state.Summary)
             ? "첫 목표: 콘솔이 왜 깨어났는지 알아낸다."
             : state.Summary.Trim();
+        var openingLine = state.OpeningLine?.Trim() ?? string.Empty;
 
-        return $"""
-            {scene}
+        var builder = new StringBuilder();
+        builder.Append(scene);
+        if (!string.IsNullOrWhiteSpace(openingLine))
+        {
+            builder.Append("\n\n").Append(openingLine);
+        }
 
-            {objective}
+        builder.Append("\n\n").Append(objective);
+        builder.Append(
+            "\n\n입력 규칙:\n그냥 쓰면 대사로 처리됩니다.\n*이렇게 쓰면 행동이나 상황 설명입니다.*\n(이렇게 쓰면 속마음입니다.)");
+        return builder.ToString().Trim();
+    }
 
-            입력 규칙:
-            그냥 쓰면 대사로 처리됩니다.
-            *이렇게 쓰면 행동이나 상황 설명입니다.*
-            (이렇게 쓰면 속마음입니다.)
-            """.Trim();
+    private StoryState CreateSeededDefault()
+    {
+        var state = CreateDefaultState();
+        ApplyTemplate(state);
+        return state;
+    }
+
+    /// <summary>활성 캐릭터의 시작 스토리 템플릿이 있으면 StoryState 기본값을 덮어쓴다(없으면 그대로 둔다).</summary>
+    private void ApplyTemplate(StoryState state)
+    {
+        var template = ResolveActiveTemplate();
+        if (template is null)
+        {
+            return;
+        }
+
+        state.Title = template.Title;
+        state.PlayerRole = template.PlayerRole;
+        state.Scene = template.Scene;
+        state.Summary = template.Summary;
+        state.OpeningLine = template.OpeningLine;
+        state.Mood = template.Mood;
+        state.Tension = template.Tension;
+    }
+
+    private StoryTemplate? ResolveActiveTemplate()
+    {
+        try
+        {
+            return StoryTemplateCatalog.Get(_configLoader.Load().App.GhostId);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static StoryState CreateDefaultState()

@@ -183,6 +183,39 @@ First objective:
 
 The opening is produced through `StoryStateStore.BuildOpeningText()` and shown when roleplay mode is enabled.
 
+### Per-character starting story templates
+
+The starting story is no longer hardcoded as the single source. Each character can ship a default story template as an asset:
+
+```text
+src/LivingMetalGhost/Assets/Characters/<Name>/story-default.json
+```
+
+Template fields (snake_case JSON):
+
+- `character_id` — must match the character `id` in `manifest.json`.
+- `title`, `player_role`, `mood`, `tension` — story metadata.
+- `scene` — opening narration (use `\n` for line breaks).
+- `summary` — current objective.
+- `opening_line` — the character's first spoken line; `*...*` action syntax is allowed.
+
+Loading and seeding flow:
+
+- `StoryTemplateCatalog` scans the same roots as `CharacterCatalog`
+  (app `Assets\Characters` and `%APPDATA%\LivingMetalGhost\Characters`)
+  and keys templates by `character_id`.
+- `StoryStateStore` resolves the active character via `AppConfigLoader` (`App.GhostId`)
+  and seeds `StoryState` from that template when roleplay is first enabled or after `Reset(...)`.
+- If no template exists for the active character, it falls back to the built-in hardcoded scene.
+- `StoryState.OpeningLine` carries the template's `opening_line`, which `BuildOpeningText()` renders
+  after the scene and before the objective.
+
+The current shipped template is Orkia's `밤의 데이터센터`
+(`Assets/Characters/Orkia/story-default.json`).
+
+Note: a persisted `story_state.json` with a non-empty `Scene` masks the template
+until the user runs roleplay reset, which re-seeds from the template.
+
 ### Roleplay response rules
 
 The model must:
@@ -228,7 +261,17 @@ These files are central to the current roleplay feature:
 
 - `src/LivingMetalGhost/Core/Services/StoryStateStore.cs`
   - Stores story state at `%APPDATA%\LivingMetalGhost\Stories\default`.
-  - Default scene and `BuildOpeningText()` live here.
+  - Seeds `StoryState` from the active character's story template (fallback to built-in scene).
+  - `BuildOpeningText()` lives here and now also renders `StoryState.OpeningLine`.
+
+- `src/LivingMetalGhost/Core/Services/StoryTemplateCatalog.cs`
+  - Loads per-character `story-default.json` templates, keyed by `character_id`.
+
+- `src/LivingMetalGhost/Core/Models/StoryTemplate.cs`
+  - Record for a character's default starting story.
+
+- `src/LivingMetalGhost/Assets/Characters/<Name>/story-default.json`
+  - Per-character starting story asset (e.g. `Orkia/story-default.json`).
 
 - `src/LivingMetalGhost/Core/Services/PromptAssembler.cs`
   - Builds mode-specific system prompts.
