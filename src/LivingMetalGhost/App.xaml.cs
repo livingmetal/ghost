@@ -141,6 +141,7 @@ public partial class App : Application
 
         // 외부 작업 에이전트 계층(Provider 와 분리).
         services.AddSingleton<AgentWorkspacePolicy>();
+        services.AddSingleton<CommandPolicyService>();
         services.AddSingleton<IAgentExecutorFactory, AgentExecutorFactory>();
         services.AddSingleton<MockAgentExecutor>();
         services.AddSingleton<ClaudeCodeExecutor>();
@@ -149,6 +150,7 @@ public partial class App : Application
         services.AddSingleton<ChatSkill>();
         services.AddSingleton<TranslateSkill>();
         services.AddSingleton<AppCommandSkill>();
+        services.AddSingleton<GitCommandSkill>();
         services.AddSingleton<CodingAgentSkill>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<SettingsViewModel>();
