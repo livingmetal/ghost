@@ -38,6 +38,17 @@ public sealed class ChatMessage : ObservableObject
     public bool IsUser { get; init; }
     public bool IsProactive { get; init; }
 
+    /// <summary>고급 모드 답변이면 말풍선/타이핑/청크 연출을 피하고 GPT식 본문으로 렌더링한다.</summary>
+    public bool IsAdvanced { get; init; }
+
+    /// <summary>고급 모드에서 TypeMessageAsync가 돌더라도 즉시 완성본을 보여주기 위한 원문.</summary>
+    public string ImmediateText { get; init; } = string.Empty;
+
+    public string AdvancedDisplayText =>
+        IsAdvanced && !string.IsNullOrEmpty(ImmediateText)
+            ? ImmediateText
+            : Text;
+
     /// <summary>롤플레잉 메시지면 (속마음) 괄호도 이탤릭으로 렌더링한다.</summary>
     public bool IsRoleplay { get; init; }
 }
