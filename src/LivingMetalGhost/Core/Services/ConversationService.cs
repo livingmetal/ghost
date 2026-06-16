@@ -76,9 +76,9 @@ public sealed class ConversationService
             History = GetHistorySnapshot(mode)
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
-        var (storyCleanText, completedObjectiveIds) = mode == ConversationMode.Story
-            ? StoryTagParser.Parse(parsed.Text)
-            : (parsed.Text, (IReadOnlyList<string>)Array.Empty<string>());
+        var storyCleanText = mode == ConversationMode.Story
+            ? StripLegacyStoryTags(parsed.Text)
+            : parsed.Text;
         var characterText = PolishCharacterSpeech(storyCleanText);
         var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
                             (response.FromFallback ? "thinking" : "speaking");
@@ -87,7 +87,7 @@ public sealed class ConversationService
         AddToHistory(mode, "assistant", characterText);
         if (mode == ConversationMode.Story)
         {
-            _roleplayStateUpdater.UpdateAfterTurn(userTextForProvider, characterText, characterMood, completedObjectiveIds);
+            _roleplayStateUpdater.UpdateAfterTurn(userTextForProvider, characterText, characterMood);
         }
         else if (mode == ConversationMode.Advanced)
         {
@@ -260,6 +260,17 @@ public sealed class ConversationService
         var mood = match.Groups["mood"].Value.Trim().ToLowerInvariant();
         var text = responseText[match.Length..].Trim();
         return (text, mood);
+    }
+
+    private static string StripLegacyStoryTags(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        var cleaned = Regex.Replace(text, @"\[story:\s*[^\]]*\]", string.Empty, RegexOptions.IgnoreCase);
+        return Regex.Replace(cleaned, @"\n{3,}", Environment.NewLine + Environment.NewLine).Trim();
     }
 
     private static string? NormalizeMood(string? mood, CharacterVisualProfile visual)
