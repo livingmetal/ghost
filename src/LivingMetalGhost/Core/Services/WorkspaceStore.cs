@@ -74,6 +74,26 @@ public sealed class WorkspaceStore
         }
     }
 
+    public IReadOnlyList<string> FindLikelyWorkspaceRoots()
+    {
+        var candidates = new List<string>();
+        AddCandidateFromParents(candidates, AppContext.BaseDirectory);
+        AddCandidateFromParents(candidates, Environment.CurrentDirectory);
+
+        return candidates
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(NormalizePath)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    public bool TryDetectWorkspaceRoot(out string rootPath)
+    {
+        rootPath = FindLikelyWorkspaceRoots().FirstOrDefault() ?? string.Empty;
+        return !string.IsNullOrWhiteSpace(rootPath);
+    }
+
     public string BuildPromptContext()
     {
         var settings = Load();
@@ -205,16 +225,33 @@ public sealed class WorkspaceStore
 
     private static string? TryFindLikelyGhostRoot()
     {
+        var candidates = new List<string>();
+        AddCandidateFromParents(candidates, AppContext.BaseDirectory);
+        AddCandidateFromParents(candidates, Environment.CurrentDirectory);
+        return candidates.FirstOrDefault();
+    }
+
+    private static void AddCandidateFromParents(ICollection<string> candidates, string? startPath)
+    {
+        if (string.IsNullOrWhiteSpace(startPath))
+        {
+            return;
+        }
+
         try
         {
-            var baseDirectory = AppContext.BaseDirectory;
-            var directory = new DirectoryInfo(baseDirectory);
+            var directory = new DirectoryInfo(startPath);
+            if (File.Exists(startPath))
+            {
+                directory = new FileInfo(startPath).Directory!;
+            }
+
             while (directory is not null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "LivingMetalGhost.sln")) ||
-                    Directory.Exists(Path.Combine(directory.FullName, ".git")))
+                if (IsWorkspaceRoot(directory.FullName))
                 {
-                    return directory.FullName;
+                    candidates.Add(directory.FullName);
+                    return;
                 }
 
                 directory = directory.Parent;
@@ -223,7 +260,11 @@ public sealed class WorkspaceStore
         catch
         {
         }
+    }
 
-        return null;
+    private static bool IsWorkspaceRoot(string path)
+    {
+        return File.Exists(Path.Combine(path, "LivingMetalGhost.sln")) ||
+               Directory.Exists(Path.Combine(path, ".git"));
     }
 }
