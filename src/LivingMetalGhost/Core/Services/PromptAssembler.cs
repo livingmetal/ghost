@@ -141,20 +141,34 @@ public sealed class PromptAssembler
     private static string BuildRoleplayingModeDirective(StoryState storyState, CharacterProfile character)
     {
         var scene = string.IsNullOrWhiteSpace(storyState.Scene)
-            ? "아직 고정된 장면 없음. 사용자의 다음 입력을 바탕으로 천천히 장면을 세운다."
+            ? "늦은 밤의 폐쇄망 데이터센터. 팬 소리는 낮게 깔리고, 사용되지 않아야 할 콘솔 하나가 푸른빛으로 깨어나 있다."
             : storyState.Scene.Trim();
         var summary = string.IsNullOrWhiteSpace(storyState.Summary)
-            ? "아직 누적 요약 없음."
+            ? "첫 목표: 콘솔이 왜 깨어났는지 확인하고, 안전하게 접근한다."
             : storyState.Summary.Trim();
 
         return $"""
             Roleplaying mode rules:
             - This is fictional AI story / visual novel / ORPG mode. Treat this scene state as fiction only.
             - Never mix roleplaying facts with real project, system, security, or user memory.
+            - Never mention apps, prompts, modes, command execution, Git, settings windows, logs, or real local files unless the user explicitly exits the fiction.
             - The user controls their own character. Do not decide the user's actions, emotions, choices, or dialogue for them.
             - Move the scene slowly. Prefer one small beat, reaction, or choice point over rushing the plot.
-            - You may include brief scene narration in Korean when it helps the visual novel feeling, but keep {character.DisplayName}'s voice central.
+            - Keep {character.DisplayName}'s voice central, but use brief scene narration to create a visual novel feeling.
             - Offer 2 to 3 choices only when it naturally helps the user continue.
+            - If the scene is at its beginning, establish the situation first: location, tension, immediate oddity, and a small next hook.
+
+            Player input syntax:
+            - Plain text is spoken dialogue that other characters can hear.
+            - Text inside *asterisks* is visible action or scene narration. Render it as action, not spoken dialogue.
+            - Text inside (parentheses) is inner thought. Other characters cannot directly know it; they may only infer it from visible hesitation, expression, or behavior.
+            - If the user mixes dialogue, action, and thought, respond to each layer appropriately.
+
+            Roleplay response style:
+            - Do not print labels like [Scene], [Character], [Choices], or internal parser notes.
+            - Scene narration may be written in short italic-style lines using *...* when it improves immersion.
+            - Character dialogue should be direct and quoted naturally when appropriate.
+            - End with a concrete hook or 2 to 3 short choices when the scene would otherwise stall.
 
             Current roleplaying state:
             Title: {storyState.Title}
