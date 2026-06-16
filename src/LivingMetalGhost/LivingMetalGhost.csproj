@@ -22,6 +22,16 @@
     <EmbeddedResource Remove="Ghost\**\*" />
   </ItemGroup>
 
+  <Target Name="GenerateApplicationIconFromSsyongIdle" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <SsyongIdlePng>$(MSBuildProjectDirectory)\Assets\Characters\ssyong\sleep.png</SsyongIdlePng>
+      <GeneratedApplicationIcon>$(MSBuildProjectDirectory)\Assets\App\LivingMetalGhost.ico</GeneratedApplicationIcon>
+      <IconGeneratorScript>$(MSBuildProjectDirectory)\..\..\tools\make-icon.ps1</IconGeneratorScript>
+    </PropertyGroup>
+    <Exec Condition="Exists('$(SsyongIdlePng)') And Exists('$(IconGeneratorScript)')"
+          Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(IconGeneratorScript)&quot; -SourcePng &quot;$(SsyongIdlePng)&quot; -OutputIco &quot;$(GeneratedApplicationIcon)&quot;" />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
@@ -31,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\\..\\config.template.json"
+    <EmbeddedResource Include="..\..\config.template.json"
                       Link="config.template.json"
                       LogicalName="LivingMetalGhost.config.template.json" />
   </ItemGroup>
