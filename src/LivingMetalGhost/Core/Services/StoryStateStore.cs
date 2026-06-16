@@ -184,6 +184,14 @@ public sealed class StoryStateStore
         state.OpeningLine = template.OpeningLine;
         state.Mood = template.Mood;
         state.Tension = template.Tension;
+        state.Objectives = template.Objectives
+            .Select(objective => new StoryObjective
+            {
+                Id = objective.Id,
+                Text = objective.Text,
+                Done = objective.Done
+            })
+            .ToList();
     }
 
     private StoryTemplate? ResolveActiveTemplate()

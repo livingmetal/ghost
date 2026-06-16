@@ -14,5 +14,17 @@ public sealed class StoryState
     public string PlayerRole { get; set; } = "주인공";
     public string Mood { get; set; } = "daily";
     public int Tension { get; set; }
+
+    /// <summary>구조화 서사 목표 목록. 템플릿에서 시드되고 진행하며 Done이 채워진다.</summary>
+    public List<StoryObjective> Objectives { get; set; } = [];
+
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
+}
+
+/// <summary>스토리 목표 한 항목. Id는 모델이 [story: done=Id] 로 완료를 알릴 때 쓰인다.</summary>
+public sealed class StoryObjective
+{
+    public string Id { get; set; } = string.Empty;
+    public string Text { get; set; } = string.Empty;
+    public bool Done { get; set; }
 }

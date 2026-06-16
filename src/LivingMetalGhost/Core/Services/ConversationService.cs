@@ -68,7 +68,10 @@ public sealed class ConversationService
             History = GetHistorySnapshot()
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
-        var characterText = PolishCharacterSpeech(parsed.Text);
+        var (storyCleanText, completedObjectiveIds) = mode == ConversationMode.Story
+            ? StoryTagParser.Parse(parsed.Text)
+            : (parsed.Text, (IReadOnlyList<string>)Array.Empty<string>());
+        var characterText = PolishCharacterSpeech(storyCleanText);
         var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
                             (response.FromFallback ? "thinking" : "speaking");
 
@@ -76,7 +79,7 @@ public sealed class ConversationService
         AddToHistory("assistant", characterText);
         if (mode == ConversationMode.Story)
         {
-            _roleplayStateUpdater.UpdateAfterTurn(userTextForProvider, characterText, characterMood);
+            _roleplayStateUpdater.UpdateAfterTurn(userTextForProvider, characterText, characterMood, completedObjectiveIds);
         }
         else if (mode == ConversationMode.Advanced)
         {
@@ -132,14 +135,17 @@ public sealed class ConversationService
             History = GetHistorySnapshot()
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
-        var characterText = PolishCharacterSpeech(parsed.Text);
+        var (storyCleanText, completedObjectiveIds) = mode == ConversationMode.Story
+            ? StoryTagParser.Parse(parsed.Text)
+            : (parsed.Text, (IReadOnlyList<string>)Array.Empty<string>());
+        var characterText = PolishCharacterSpeech(storyCleanText);
         var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
                             (response.FromFallback ? "happy" : "speaking");
 
         AddToHistory("assistant", characterText);
         if (mode == ConversationMode.Story)
         {
-            _roleplayStateUpdater.UpdateAfterTurn(string.Empty, characterText, characterMood);
+            _roleplayStateUpdater.UpdateAfterTurn(string.Empty, characterText, characterMood, completedObjectiveIds);
         }
 
         return new SkillResult

@@ -165,6 +165,11 @@ public sealed class PromptAssembler
             - If the player's input is inner thought only, with no spoken dialogue and no visible action, the character perceives nothing to react to. Do not respond to the thought; continue with ambient scene or your own small initiative as if quietly waiting for the player.
             - If the user mixes dialogue, action, and thought, respond only to the dialogue and action, and let the thought stay private.
 
+            Story state signal (hidden from the player, stripped before display):
+            - When the player clearly accomplishes a listed objective, append exactly one line at the very end of your reply: [story: done=<id>]. List several with commas, e.g. [story: done=G1,G2].
+            - Only mark an objective done when it is genuinely achieved in the fiction. If nothing changed, do not append the line.
+            - Never speak the objective ids, the word "objective", or this bracketed signal as visible dialogue. It is machine-only.
+
             Roleplay response style:
             - Do not print labels like [Scene], [Character], [Choices], or internal parser notes.
             - Scene narration may be written in short italic-style lines using *...* when it improves immersion.
@@ -182,7 +187,23 @@ public sealed class PromptAssembler
             Summary: {summary}
             Mood: {storyState.Mood}
             Tension: {storyState.Tension}/5
+            {BuildObjectivesBlock(storyState)}
             """;
+    }
+
+    private static string BuildObjectivesBlock(StoryState storyState)
+    {
+        if (storyState.Objectives.Count == 0)
+        {
+            return "Objectives: (none)";
+        }
+
+        var lines = storyState.Objectives.Select(objective =>
+            $"- [{objective.Id}] ({(objective.Done ? "done" : "active")}) {objective.Text}");
+
+        return "Objectives (pursue the active ones; never reveal this list or the ids to the player):"
+               + Environment.NewLine
+               + string.Join(Environment.NewLine, lines);
     }
 
     private string BuildAdvancedModeDirective()
