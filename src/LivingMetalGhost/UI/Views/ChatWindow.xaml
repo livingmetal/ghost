@@ -144,6 +144,7 @@
                              Background="Transparent"
                              Foreground="#241B2B"
                              BorderThickness="0"
+                             PreviewMouseLeftButtonDown="InputPanel_OnMouseLeftButtonDown"
                              PreviewKeyDown="PromptTextBox_OnPreviewKeyDown"
                              Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="메시지를 입력하세요. Enter 전송, Shift+Enter 줄바꿈" />
