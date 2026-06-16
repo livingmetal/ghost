@@ -16,6 +16,7 @@ public sealed class ConversationService
     private readonly ILlmProviderFactory _providerFactory;
     private readonly PromptAssembler _promptAssembler;
     private readonly StoryStateStore _storyStateStore;
+    private readonly RoleplayStateUpdater _roleplayStateUpdater;
     private readonly List<LlmHistoryMessage> _history = [];
     private readonly Lock _historyLock = new();
     private readonly Dictionary<string, HiddenTraitRuntimeState> _hiddenTraitStates = new(StringComparer.OrdinalIgnoreCase);
@@ -24,12 +25,14 @@ public sealed class ConversationService
         AppConfigLoader configLoader,
         ILlmProviderFactory providerFactory,
         PromptAssembler promptAssembler,
-        StoryStateStore storyStateStore)
+        StoryStateStore storyStateStore,
+        RoleplayStateUpdater roleplayStateUpdater)
     {
         _configLoader = configLoader;
         _providerFactory = providerFactory;
         _promptAssembler = promptAssembler;
         _storyStateStore = storyStateStore;
+        _roleplayStateUpdater = roleplayStateUpdater;
     }
 
     public async Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
@@ -64,12 +67,16 @@ public sealed class ConversationService
 
         AddToHistory("user", text);
         AddToHistory("assistant", characterText);
+        if (mode == ConversationMode.Story)
+        {
+            _roleplayStateUpdater.UpdateAfterTurn(text, characterText, characterMood);
+        }
 
         return new SkillResult
         {
             BubbleText = characterText,
             Mood = characterMood,
-            Action = mode == ConversationMode.Story ? "story-chat" : "chat",
+            Action = mode == ConversationMode.Story ? "roleplay-chat" : "chat",
             UsedLlm = true
         };
     }
@@ -84,7 +91,7 @@ public sealed class ConversationService
         var options = LlmOptions.FromSettings(config.Llm);
         var provider = _providerFactory.Create(options.Provider);
         var userText = mode == ConversationMode.Story
-            ? "현재 story_state에 어울리는 짧은 장면 반응이나 다음 한마디로 이야기를 이어가. 사용자의 행동은 대신 결정하지 마."
+            ? "현재 roleplay_state에 어울리는 짧은 장면 반응이나 다음 한마디로 이야기를 이어가. 사용자의 행동은 대신 결정하지 마."
             : "지금 상황에 어울리는 짧은 말 한마디로 먼저 대화를 시작해. " +
               "질문, 가벼운 안부, 작업 집중 확인, 휴식 제안 중 하나를 자연스럽게 선택해. " +
               "설명이나 따옴표 없이 실제로 사용자에게 말할 문장만 출력해.";
@@ -108,12 +115,16 @@ public sealed class ConversationService
                             (response.FromFallback ? "happy" : "speaking");
 
         AddToHistory("assistant", characterText);
+        if (mode == ConversationMode.Story)
+        {
+            _roleplayStateUpdater.UpdateAfterTurn(string.Empty, characterText, characterMood);
+        }
 
         return new SkillResult
         {
             BubbleText = characterText,
             Mood = characterMood,
-            Action = mode == ConversationMode.Story ? "proactive-story" : "proactive-chat",
+            Action = mode == ConversationMode.Story ? "proactive-roleplay" : "proactive-chat",
             UsedLlm = true
         };
     }
