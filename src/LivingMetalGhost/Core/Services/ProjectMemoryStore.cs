@@ -38,6 +38,7 @@ public sealed class ProjectMemoryStore
             Id = Guid.NewGuid().ToString("N"),
             CreatedAt = DateTimeOffset.Now,
             WorkspaceId = _advancedSessionLogService.WorkspaceId,
+            IsEnabled = true,
             Type = NormalizeType(type),
             Content = content.Trim(),
             SourceSessionId = sourceSessionId,
@@ -60,6 +61,43 @@ public sealed class ProjectMemoryStore
         return entry;
     }
 
+    public async Task<bool> UpdateAsync(ProjectMemoryEntry updatedEntry, CancellationToken cancellationToken)
+    {
+        var entries = ReadAll().ToList();
+        var index = entries.FindIndex(entry => string.Equals(entry.Id, updatedEntry.Id, StringComparison.OrdinalIgnoreCase));
+        if (index < 0)
+        {
+            return false;
+        }
+
+        updatedEntry.Type = NormalizeType(updatedEntry.Type);
+        updatedEntry.Content = updatedEntry.Content.Trim();
+        updatedEntry.WorkspaceId = string.IsNullOrWhiteSpace(updatedEntry.WorkspaceId)
+            ? _advancedSessionLogService.WorkspaceId
+            : updatedEntry.WorkspaceId.Trim();
+        if (string.IsNullOrWhiteSpace(updatedEntry.Content))
+        {
+            return false;
+        }
+
+        entries[index] = updatedEntry;
+        await RewriteAllAsync(entries, cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> DeleteAsync(string id, CancellationToken cancellationToken)
+    {
+        var entries = ReadAll().ToList();
+        var removed = entries.RemoveAll(entry => string.Equals(entry.Id, id, StringComparison.OrdinalIgnoreCase));
+        if (removed == 0)
+        {
+            return false;
+        }
+
+        await RewriteAllAsync(entries, cancellationToken);
+        return true;
+    }
+
     public IReadOnlyList<ProjectMemoryEntry> ReadAll()
     {
         if (!File.Exists(MemoryFile))
@@ -80,6 +118,7 @@ public sealed class ProjectMemoryStore
                 var entry = JsonSerializer.Deserialize<ProjectMemoryEntry>(line, _jsonOptions);
                 if (entry is not null && !string.IsNullOrWhiteSpace(entry.Content))
                 {
+                    entry.Type = NormalizeType(entry.Type);
                     entries.Add(entry);
                 }
             }
@@ -94,22 +133,50 @@ public sealed class ProjectMemoryStore
             .ToArray();
     }
 
+    public IReadOnlyList<ProjectMemoryEntry> ReadEnabled()
+    {
+        return ReadAll()
+            .Where(entry => entry.IsEnabled)
+            .ToArray();
+    }
+
+    public string BuildReusablePromptText(int maximumEntries = 12)
+    {
+        var entries = ReadEnabled()
+            .Take(maximumEntries)
+            .ToArray();
+        if (entries.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        var builder = new StringBuilder();
+        foreach (var entry in entries)
+        {
+            builder.AppendLine($"- [{entry.Type}] {entry.Content}");
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
     public string BuildDisplayText(int maximumEntries = 30)
     {
-        var entries = ReadAll().Take(maximumEntries).ToArray();
+        var allEntries = ReadAll();
+        var entries = allEntries.Take(maximumEntries).ToArray();
         if (entries.Length == 0)
         {
             return "아직 프로젝트 기억이 없습니다." + Environment.NewLine + Environment.NewLine + MemoryFile;
         }
 
+        var enabledCount = allEntries.Count(entry => entry.IsEnabled);
         var builder = new StringBuilder();
-        builder.AppendLine($"프로젝트 기억: {ReadAll().Count}개");
+        builder.AppendLine($"프로젝트 기억: {allEntries.Count}개 / 활성 {enabledCount}개");
         builder.AppendLine($"저장 위치: {MemoryFile}");
         builder.AppendLine();
 
         foreach (var entry in entries)
         {
-            builder.AppendLine($"[{entry.Type}] {entry.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+            builder.AppendLine($"[{entry.Type}] {(entry.IsEnabled ? "enabled" : "disabled")} · {entry.CreatedAt:yyyy-MM-dd HH:mm:ss}");
             if (!string.IsNullOrWhiteSpace(entry.SourceSessionId))
             {
                 builder.AppendLine($"session: {entry.SourceSessionId}");
@@ -125,6 +192,26 @@ public sealed class ProjectMemoryStore
         }
 
         return builder.ToString().TrimEnd();
+    }
+
+    private async Task RewriteAllAsync(IReadOnlyList<ProjectMemoryEntry> entries, CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(MemoryFile)!);
+        var builder = new StringBuilder();
+        foreach (var entry in entries.OrderBy(entry => entry.CreatedAt))
+        {
+            builder.AppendLine(JsonSerializer.Serialize(entry, _jsonOptions));
+        }
+
+        await _writeLock.WaitAsync(cancellationToken);
+        try
+        {
+            await File.WriteAllTextAsync(MemoryFile, builder.ToString(), Encoding.UTF8, cancellationToken);
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
     }
 
     private static string NormalizeType(string type)
