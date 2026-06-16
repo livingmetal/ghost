@@ -234,16 +234,11 @@ public partial class AdvancedWorkbenchWindow : Window
 
     private void ProjectMemoryButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_subscribedViewModel is null)
+        var window = new ProjectMemoryManagerWindow
         {
-            return;
-        }
-
-        MessageBox.Show(
-            _subscribedViewModel.GetProjectMemorySummary(),
-            "프로젝트 기억",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+            Owner = this
+        };
+        window.ShowDialog();
         RefreshContextText();
     }
 
