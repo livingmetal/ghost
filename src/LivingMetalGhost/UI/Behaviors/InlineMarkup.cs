@@ -13,7 +13,7 @@ namespace LivingMetalGhost.UI.Behaviors;
 /// </summary>
 public static class InlineMarkup
 {
-    private static readonly Brush NarrationBrush = CreateFrozenBrush(Color.FromRgb(0x5A, 0x64, 0x70));
+    private static readonly Brush NarrationBrush = CreateFrozenBrush(Color.FromRgb(0x3B, 0x41, 0x49));
 
     public static readonly DependencyProperty TextProperty =
         DependencyProperty.RegisterAttached(
@@ -26,6 +26,18 @@ public static class InlineMarkup
 
     public static void SetText(DependencyObject element, string value) => element.SetValue(TextProperty, value);
 
+    // 롤플레잉 메시지에서만 (속마음) 괄호를 이탤릭으로 처리한다(일상/고급 모드의 일반 괄호 보호).
+    public static readonly DependencyProperty ParseThoughtsProperty =
+        DependencyProperty.RegisterAttached(
+            "ParseThoughts",
+            typeof(bool),
+            typeof(InlineMarkup),
+            new PropertyMetadata(false, OnTextChanged));
+
+    public static bool GetParseThoughts(DependencyObject element) => (bool)element.GetValue(ParseThoughtsProperty);
+
+    public static void SetParseThoughts(DependencyObject element, bool value) => element.SetValue(ParseThoughtsProperty, value);
+
     private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not RichTextBox richTextBox)
@@ -33,9 +45,10 @@ public static class InlineMarkup
             return;
         }
 
-        var text = e.NewValue as string ?? string.Empty;
+        var text = GetText(richTextBox);
+        var parseThoughts = GetParseThoughts(richTextBox);
 
-        // 행동(이탤릭) 글자는 일반 대화보다 1pt 작게 해서 평문과 더 잘 구분되게 한다.
+        // 행동/속마음(이탤릭) 글자는 일반 대화보다 1pt 작게 해서 평문과 더 잘 구분되게 한다.
         var baseFontSize = double.IsNaN(richTextBox.FontSize) || richTextBox.FontSize <= 0
             ? 14.0
             : richTextBox.FontSize;
@@ -46,7 +59,7 @@ public static class InlineMarkup
         document.Blocks.Clear();
 
         var paragraph = new Paragraph { Margin = new Thickness(0) };
-        foreach (var inline in BuildInlines(text, narrationFontSize))
+        foreach (var inline in BuildInlines(text, parseThoughts, narrationFontSize))
         {
             paragraph.Inlines.Add(inline);
         }
@@ -54,10 +67,10 @@ public static class InlineMarkup
         document.Blocks.Add(paragraph);
     }
 
-    private static IEnumerable<Inline> BuildInlines(string rawText, double narrationFontSize)
+    private static IEnumerable<Inline> BuildInlines(string rawText, bool parseThoughts, double narrationFontSize)
     {
         var inlines = new List<Inline>();
-        foreach (var segment in InlineMarkupParser.Parse(rawText))
+        foreach (var segment in InlineMarkupParser.Parse(rawText, parseThoughts))
         {
             AddSegment(inlines, segment.Text, segment.Italic, narrationFontSize);
         }

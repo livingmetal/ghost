@@ -37,4 +37,7 @@ public sealed class ChatMessage : ObservableObject
     public string SpeakerName { get; init; } = "ASSISTANT";
     public bool IsUser { get; init; }
     public bool IsProactive { get; init; }
+
+    /// <summary>롤플레잉 메시지면 (속마음) 괄호도 이탤릭으로 렌더링한다.</summary>
+    public bool IsRoleplay { get; init; }
 }

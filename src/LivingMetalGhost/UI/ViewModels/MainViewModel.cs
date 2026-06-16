@@ -230,7 +230,8 @@ public partial class MainViewModel : ObservableObject
         {
             Text = openingText,
             SpeakerName = "STORY",
-            IsProactive = true
+            IsProactive = true,
+            IsRoleplay = true
         });
         SetCharacterMood(_spriteDirector.ResolveSpeakingMood("curious", ConversationMode.Story));
         StartPostSpeechMoodHold(CharacterMood);
@@ -267,7 +268,8 @@ public partial class MainViewModel : ObservableObject
         {
             Text = request.RawText,
             SpeakerName = "YOU",
-            IsUser = true
+            IsUser = true,
+            IsRoleplay = CurrentMode == ConversationMode.Story
         });
         InputText = string.Empty;
 
@@ -387,6 +389,7 @@ public partial class MainViewModel : ObservableObject
                         ? $"{CharacterDisplayName.ToUpperInvariant()} • 먼저 말 걸기"
                         : CharacterDisplayName.ToUpperInvariant(),
                     IsProactive = isProactive && index == 0,
+                    IsRoleplay = CurrentMode == ConversationMode.Story,
                     IsTyping = true
                 };
                 Messages.Add(message);
