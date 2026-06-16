@@ -141,11 +141,12 @@ public sealed class PromptAssembler
     private static string BuildRoleplayingModeDirective(StoryState storyState, CharacterProfile character)
     {
         var scene = string.IsNullOrWhiteSpace(storyState.Scene)
-            ? "늦은 밤의 폐쇄망 데이터센터. 팬 소리는 낮게 깔리고, 사용되지 않아야 할 콘솔 하나가 푸른빛으로 깨어나 있다."
+            ? "아직 시작 장면이 정해지지 않았다."
             : storyState.Scene.Trim();
         var summary = string.IsNullOrWhiteSpace(storyState.Summary)
-            ? "첫 목표: 콘솔이 왜 깨어났는지 확인하고, 안전하게 접근한다."
+            ? "첫 목표: 장면을 정하고 이야기를 시작한다."
             : storyState.Summary.Trim();
+        var affinity = Math.Clamp(storyState.Affinity <= 0 ? 50 : storyState.Affinity, 0, 100);
 
         return $"""
             Roleplaying mode rules:
@@ -157,6 +158,7 @@ public sealed class PromptAssembler
             - Keep {character.DisplayName}'s voice central, but use brief scene narration to create a visual novel feeling.
             - Offer 2 to 3 choices only when it naturally helps the user continue.
             - If the scene is at its beginning, establish the situation first: location, tension, immediate oddity, and a small next hook.
+            - Use Affinity as relationship tone only: low means cautious distance, middle means neutral cooperation, high means warmer trust. Do not let Affinity override safety, consent, or established character boundaries.
 
             Player input syntax:
             - Plain text is spoken dialogue that other characters can hear.
@@ -179,6 +181,7 @@ public sealed class PromptAssembler
             Summary: {summary}
             Mood: {storyState.Mood}
             Tension: {storyState.Tension}/5
+            Affinity: {affinity}/100
             """;
     }
 
