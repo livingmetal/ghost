@@ -332,7 +332,17 @@ public partial class AdvancedWorkbenchWindow : Window
         RefreshContextText();
         RefreshSelectedMemoryCandidateText();
     }
-
+    private async void AlwaysApproveAgentJobButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_subscribedViewModel is null || sender is not FrameworkElement element ||
+            element.DataContext is not AgentJob job)
+        {
+            return;
+        }
+    
+        await _subscribedViewModel.AlwaysApproveAgentJobAsync(job, CancellationToken.None);
+        RefreshContextText();
+    }
     private void PromptTextBox_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
