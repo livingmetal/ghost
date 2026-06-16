@@ -80,4 +80,7 @@ if ($PublishRuntimeIdentifier -ne "none") {
 
 Write-Host ""
 Write-Host "Verification complete."
-Write-Host "Evidence summary: restore passed, build passed$(if ($PublishRuntimeIdentifier -ne "none") { ", publish passed for $PublishRuntimeIdentifier" } else { "" })."
+# Windows PowerShell 5.1 cannot parse double quotes nested inside $(...) inside a
+# double-quoted string, so build the optional publish note as a separate variable.
+$publishNote = if ($PublishRuntimeIdentifier -ne "none") { ", publish passed for $PublishRuntimeIdentifier" } else { "" }
+Write-Host "Evidence summary: restore passed, build passed$publishNote."
