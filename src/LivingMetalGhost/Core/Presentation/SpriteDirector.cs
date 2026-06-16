@@ -60,7 +60,7 @@ public sealed class SpriteDirector
         var prefix = mode switch
         {
             ConversationMode.Advanced => "ADV",
-            ConversationMode.Story => "STORY",
+            ConversationMode.Story => "RP",
             _ => "DAILY"
         };
 
