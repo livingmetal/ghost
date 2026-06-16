@@ -19,6 +19,7 @@ public partial class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
     private TrayIconService? _trayIconService;
+    private static int _dispatcherExceptionCount;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -57,12 +58,17 @@ public partial class App : Application
             WriteCrashLog("dispatcher", e.Exception);
             e.Handled = true;
 
-            MessageBox.Show(
-                "Ghost가 작업 중 예외를 잡았어요. 프로그램은 계속 실행됩니다.\n" +
-                "자세한 내용은 %APPDATA%\\LivingMetalGhost\\Logs 의 crash 로그를 확인하세요.",
-                "LivingMetalGhost 오류",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            // XAML 바인딩/레이아웃 예외는 한 프레임 안에서 여러 번 반복될 수 있다.
+            // 모달 MessageBox를 매번 띄우면 오류창 폭주가 나므로 첫 1회만 알린다.
+            if (Interlocked.Increment(ref _dispatcherExceptionCount) == 1)
+            {
+                MessageBox.Show(
+                    "Ghost가 UI 예외를 잡았어요. 프로그램은 계속 실행됩니다.\n" +
+                    "자세한 내용은 %APPDATA%\\LivingMetalGhost\\Logs 의 crash 로그를 확인하세요.",
+                    "LivingMetalGhost 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         };
 
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
