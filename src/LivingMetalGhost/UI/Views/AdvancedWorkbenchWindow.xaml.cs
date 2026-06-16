@@ -216,6 +216,16 @@ public partial class AdvancedWorkbenchWindow : Window
         RefreshSelectedMemoryCandidateText();
     }
 
+    private void WorkspaceSettingsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var window = new WorkspaceSettingsWindow
+        {
+            Owner = this
+        };
+        window.ShowDialog();
+        RefreshContextText();
+    }
+
     private async void GenerateSummaryButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_subscribedViewModel is null)
