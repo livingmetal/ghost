@@ -24,9 +24,20 @@ public partial class WorkspaceSettingsWindow : Window
         SettingsFileText.Text = _workspaceStore.SettingsFile;
         WorkspaceIdTextBox.Text = settings.WorkspaceId;
         DisplayNameTextBox.Text = settings.DisplayName;
-        RootPathTextBox.Text = settings.RootPath;
-        AllowedReadPathsTextBox.Text = string.Join(Environment.NewLine, settings.AllowedReadPaths);
-        AllowedWritePathsTextBox.Text = string.Join(Environment.NewLine, settings.AllowedWritePaths);
+
+        var rootPath = settings.RootPath;
+        if (string.IsNullOrWhiteSpace(rootPath) && _workspaceStore.TryDetectWorkspaceRoot(out var detectedRoot))
+        {
+            rootPath = detectedRoot;
+        }
+
+        RootPathTextBox.Text = rootPath;
+        AllowedReadPathsTextBox.Text = settings.AllowedReadPaths.Count == 0 && !string.IsNullOrWhiteSpace(rootPath)
+            ? rootPath
+            : string.Join(Environment.NewLine, settings.AllowedReadPaths);
+        AllowedWritePathsTextBox.Text = settings.AllowedWritePaths.Count == 0 && !string.IsNullOrWhiteSpace(rootPath)
+            ? rootPath
+            : string.Join(Environment.NewLine, settings.AllowedWritePaths);
         AllowedCommandsTextBox.Text = string.Join(Environment.NewLine, settings.AllowedCommands);
         RequireWriteApprovalCheckBox.IsChecked = settings.RequireApprovalForWrite;
         RequireExecuteApprovalCheckBox.IsChecked = settings.RequireApprovalForExecute;
