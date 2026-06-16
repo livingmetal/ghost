@@ -47,12 +47,15 @@ public sealed class ConversationService
         var mode = advanced
             ? ConversationMode.Advanced
             : storyState.Enabled ? ConversationMode.Story : ConversationMode.Daily;
+        var userTextForProvider = mode == ConversationMode.Story
+            ? RoleplayInputFormatter.FormatForPrompt(text)
+            : text;
         var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
         var options = LlmOptions.FromSettings(llm);
         var provider = _providerFactory.Create(options.Provider);
         var response = await provider.GenerateAsync(new LlmRequest
         {
-            UserText = text,
+            UserText = userTextForProvider,
             UserTitle = config.App.UserTitle,
             Model = options.Model,
             Options = options,
@@ -69,11 +72,11 @@ public sealed class ConversationService
         var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
                             (response.FromFallback ? "thinking" : "speaking");
 
-        AddToHistory("user", text);
+        AddToHistory("user", userTextForProvider);
         AddToHistory("assistant", characterText);
         if (mode == ConversationMode.Story)
         {
-            _roleplayStateUpdater.UpdateAfterTurn(text, characterText, characterMood);
+            _roleplayStateUpdater.UpdateAfterTurn(userTextForProvider, characterText, characterMood);
         }
         else if (mode == ConversationMode.Advanced)
         {
@@ -110,7 +113,7 @@ public sealed class ConversationService
         var options = LlmOptions.FromSettings(config.Llm);
         var provider = _providerFactory.Create(options.Provider);
         var userText = mode == ConversationMode.Story
-            ? "현재 roleplay_state에 어울리는 짧은 장면 반응이나 다음 한마디로 이야기를 이어가. 사용자의 행동은 대신 결정하지 마."
+            ? "현재 roleplay_state의 첫 장면이나 이어지는 장면을 짧게 진행해. 장소, 긴장, 바로 보이는 이상 징후를 보여주고 사용자의 행동은 대신 결정하지 마."
             : "지금 상황에 어울리는 짧은 말 한마디로 먼저 대화를 시작해. " +
               "질문, 가벼운 안부, 작업 집중 확인, 휴식 제안 중 하나를 자연스럽게 선택해. " +
               "설명이나 따옴표 없이 실제로 사용자에게 말할 문장만 출력해.";
