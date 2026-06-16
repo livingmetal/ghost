@@ -1,6 +1,7 @@
 <Window x:Class="LivingMetalGhost.UI.Views.ChatWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:LivingMetalGhost.UI.Controls"
         Title="LivingMetalGhost Chat"
         Width="470"
         Height="630"
@@ -11,77 +12,25 @@
         ShowInTaskbar="False"
         ShowActivated="False">
     <Grid Background="Transparent">
-        <Border x:Name="RootBorder"
-                Margin="8"
-                Padding="16"
-                Background="#F4EFE5"
-                BorderThickness="2"
-                CornerRadius="22">
-            <Border.BorderBrush>
-                <SolidColorBrush x:Name="BorderAccent" Color="#1B2430" />
-            </Border.BorderBrush>
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="20"
-                                  ShadowDepth="6"
-                                  Opacity="0.28"
-                                  Color="#101820" />
-            </Border.Effect>
-
+        <Border x:Name="RootBorder" Margin="8" Padding="16" Background="#F4EFE5" BorderThickness="2" CornerRadius="22">
+            <Border.BorderBrush><SolidColorBrush x:Name="BorderAccent" Color="#1B2430" /></Border.BorderBrush>
+            <Border.Effect><DropShadowEffect BlurRadius="20" ShadowDepth="6" Opacity="0.28" Color="#101820" /></Border.Effect>
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <Grid MouseLeftButtonDown="Header_OnMouseLeftButtonDown"
-                      Cursor="SizeAll">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <Grid MouseLeftButtonDown="Header_OnMouseLeftButtonDown" Cursor="SizeAll">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock x:Name="TitleLabel"
-                                   FontFamily="Bahnschrift"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"
-                                   Foreground="#18212D"
-                                   Text="PROMPT CONSOLE" />
-                        <TextBlock x:Name="ProviderLabel"
-                                   Margin="0,2,0,0"
-                                   FontFamily="Consolas"
-                                   FontSize="10"
-                                   Foreground="#64707E"
-                                   Text="" />
+                        <TextBlock x:Name="TitleLabel" FontFamily="Bahnschrift" FontSize="20" FontWeight="SemiBold" Foreground="#18212D" Text="PROMPT CONSOLE" />
+                        <TextBlock x:Name="ProviderLabel" Margin="0,2,0,0" FontFamily="Consolas" FontSize="10" Foreground="#64707E" Text="" />
                     </StackPanel>
-                    <Button Grid.Column="1"
-                            Width="30"
-                            Height="30"
-                            Padding="0"
-                            Background="#18212D"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Click="CloseButton_OnClick"
-                            Content="×" />
+                    <Button Grid.Column="1" Width="30" Height="30" Padding="0" Background="#18212D" Foreground="White" BorderThickness="0" Click="CloseButton_OnClick" Content="×" />
                 </Grid>
-
-                <Border Grid.Row="1"
-                        Margin="0,14,0,10"
-                        Padding="8"
-                        CornerRadius="16"
-                        Background="#FFFDF8"
-                        BorderBrush="#D8D0C3"
-                        BorderThickness="1">
-                    <ScrollViewer x:Name="ConversationScrollViewer"
-                                  VerticalScrollBarVisibility="Auto">
+                <Border Grid.Row="1" Margin="0,14,0,10" Padding="8" CornerRadius="16" Background="#FFFDF8" BorderBrush="#D8D0C3" BorderThickness="1">
+                    <ScrollViewer x:Name="ConversationScrollViewer" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding Messages}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border MaxWidth="370"
-                                            Margin="5,4"
-                                            Padding="11,9"
-                                            HorizontalAlignment="Stretch">
+                                    <Border MaxWidth="370" Margin="5,4" Padding="11,9" HorizontalAlignment="Stretch">
                                         <Border.Style>
                                             <Style TargetType="Border">
                                                 <Setter Property="HorizontalAlignment" Value="Left" />
@@ -97,36 +46,9 @@
                                             </Style>
                                         </Border.Style>
                                         <StackPanel>
-                                            <TextBlock FontSize="10"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#64707E"
-                                                       Text="{Binding SpeakerName}" />
-                                            <TextBox Margin="0,4,0,0"
-                                                     Padding="0"
-                                                     FontFamily="Malgun Gothic"
-                                                     FontSize="14"
-                                                     Foreground="#202A35"
-                                                     Background="Transparent"
-                                                     BorderThickness="0"
-                                                     IsReadOnly="True"
-                                                     IsReadOnlyCaretVisible="False"
-                                                     TextWrapping="Wrap"
-                                                     AcceptsReturn="True"
-                                                     Text="{Binding DisplayText, Mode=OneWay}"
-                                                     ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
-                                                <TextBox.ContextMenu>
-                                                    <ContextMenu>
-                                                        <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
-                                                        <MenuItem Command="ApplicationCommands.SelectAll" Header="전체 선택" />
-                                                    </ContextMenu>
-                                                </TextBox.ContextMenu>
-                                            </TextBox>
-                                            <TextBlock Margin="0,4,0,0"
-                                                       HorizontalAlignment="Right"
-                                                       FontFamily="Consolas"
-                                                       FontSize="9"
-                                                       Foreground="#7B848D"
-                                                       Text="{Binding Timestamp, StringFormat={}{0:HH:mm}}" />
+                                            <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#64707E" Text="{Binding SpeakerName}" />
+                                            <controls:MarkdownTextBlock Margin="0,4,0,0" FontFamily="Malgun Gothic" FontSize="14" Foreground="#202A35" TextWrapping="Wrap" MarkdownText="{Binding Text, Mode=OneWay}" IsTyping="{Binding IsTyping, Mode=OneWay}" />
+                                            <TextBlock Margin="0,4,0,0" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="9" Foreground="#7B848D" Text="{Binding Timestamp, StringFormat={}{0:HH:mm}}" />
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -134,104 +56,18 @@
                         </ItemsControl>
                     </ScrollViewer>
                 </Border>
-
-                <Border Grid.Row="2"
-                        Margin="0,0,0,10"
-                        Padding="10,8"
-                        CornerRadius="14"
-                        Background="#171E2C"
-                        BorderBrush="#7B4FC8"
-                        BorderThickness="1">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsAdvancedMode}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
+                <Border Grid.Row="2" Margin="0,0,0,10" Padding="10,8" CornerRadius="14" Background="#171E2C" BorderBrush="#7B4FC8" BorderThickness="1">
+                    <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsAdvancedMode}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Border.Style>
                     <StackPanel>
-                        <TextBlock FontFamily="Bahnschrift"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="#D9CBFF"
-                                   Text="AGENT DOCK" />
-                        <TextBlock Margin="0,2,0,6"
-                                   FontSize="10"
-                                   Foreground="#8E9AAF"
-                                   Text="고급 작업 에이전트 상태. 마우스를 올리면 작업 요약을 볼 수 있습니다." />
-                        <ItemsControl ItemsSource="{Binding ActiveAgentJobs}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Width="128"
-                                            Margin="0,0,7,7"
-                                            Padding="9,7"
-                                            CornerRadius="10"
-                                            Background="#232A3B"
-                                            BorderBrush="#4A5570"
-                                            BorderThickness="1"
-                                            ToolTip="{Binding TooltipText}">
-                                        <StackPanel>
-                                            <TextBlock FontFamily="Bahnschrift"
-                                                       FontSize="12"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#FFFFFF"
-                                                       Text="{Binding DisplayName}" />
-                                            <TextBlock Margin="0,2,0,0"
-                                                       FontSize="10"
-                                                       Foreground="#AAB3C5"
-                                                       Text="{Binding StatusLabel}" />
-                                            <TextBlock Margin="0,2,0,5"
-                                                       FontSize="9"
-                                                       Foreground="#7F8AA3"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Text="{Binding Summary}" />
-                                            <ProgressBar Height="5"
-                                                         Minimum="0"
-                                                         Maximum="1"
-                                                         Value="{Binding Progress}" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <TextBlock FontFamily="Bahnschrift" FontSize="12" FontWeight="SemiBold" Foreground="#D9CBFF" Text="AGENT DOCK" />
+                        <TextBlock Margin="0,2,0,6" FontSize="10" Foreground="#8E9AAF" Text="고급 작업 에이전트 상태. 마우스를 올리면 작업 요약을 볼 수 있습니다." />
+                        <ItemsControl ItemsSource="{Binding ActiveAgentJobs}" />
                     </StackPanel>
                 </Border>
-
                 <Grid Grid.Row="3">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="PromptTextBox"
-                             MinHeight="64"
-                             MaxHeight="120"
-                             Padding="12,10"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto"
-                             BorderBrush="#A9A095"
-                             BorderThickness="1"
-                             PreviewKeyDown="PromptTextBox_OnPreviewKeyDown"
-                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" />
-                    <Button x:Name="SendButton"
-                            Grid.Column="1"
-                            Margin="8,0,0,0"
-                            MinWidth="76"
-                            Padding="14,8"
-                            VerticalAlignment="Stretch"
-                            Background="#E96A42"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Command="{Binding SendCommand}"
-                            Content="SEND" />
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <TextBox x:Name="PromptTextBox" MinHeight="64" MaxHeight="120" Padding="12,10" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" BorderBrush="#A9A095" BorderThickness="1" PreviewKeyDown="PromptTextBox_OnPreviewKeyDown" Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button x:Name="SendButton" Grid.Column="1" Margin="8,0,0,0" MinWidth="76" Padding="14,8" VerticalAlignment="Stretch" Background="#E96A42" Foreground="White" BorderThickness="0" Command="{Binding SendCommand}" Content="SEND" />
                 </Grid>
             </Grid>
         </Border>
