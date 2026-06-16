@@ -48,11 +48,12 @@
                                    FontWeight="SemiBold"
                                    Foreground="#18212D"
                                    Text="PROMPT CONSOLE" />
-                        <TextBlock Margin="0,2,0,0"
+                        <TextBlock x:Name="ProviderLabel"
+                                   Margin="0,2,0,0"
                                    FontFamily="Consolas"
                                    FontSize="10"
                                    Foreground="#64707E"
-                                   Text="{Binding ActiveProviderLabel}" />
+                                   Text="" />
                     </StackPanel>
                     <Button Grid.Column="1"
                             Width="30"
