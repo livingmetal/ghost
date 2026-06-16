@@ -1,73 +1,85 @@
 # LivingMetalGhost Agent Guide
 
-This document is the handoff note for future AI agents, Codex sessions, Claude Code sessions, or human maintainers working on this repository.
+This is the single handoff guide for future AI agents, Codex sessions, Claude Code sessions, and human maintainers working on this repository.
 
-The project is a Windows desktop character assistant called **LivingMetalGhost**. It is intended to feel like a modern Ukagaka/Nanika-style companion: a lightweight character on the desktop in daily mode, a small visual-novel/ORPG partner in roleplay mode, and a practical workbench/agent manager in advanced mode.
-
-Use this file as the first thing to read before making changes.
+Read this file first before changing the project.
 
 ---
 
-## Repository and environment
+## Final product goal
 
-- Repository: `livingmetal/ghost`
-- Typical local path: `C:\workspace\livingmetal\temporory\ghost`
-- Main app: `src/LivingMetalGhost`
-- Target runtime currently tested by the user: `win-arm64`
-- User primary device: Surface Pro 11, Windows on ARM
-- The user often builds with:
+**LivingMetalGhost** is a Windows desktop character assistant inspired by modern Ukagaka/Nanika companions.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\publish.ps1 -RuntimeIdentifier win-arm64
+The final goal is not merely a chat window with a mascot. The app should become a small desktop companion platform with three sharply separated experiences:
+
+1. **Daily companion**
+   - A lightweight character that lives on the desktop.
+   - Handles casual questions, short utility conversations, translation, summaries, and small daily assistant tasks.
+   - Keeps character flavor without turning every answer into fiction.
+   - Does not run local commands or change files.
+
+2. **Roleplay / visual-novel mode**
+   - A fictional ORPG / visual-novel style scene mode.
+   - The user controls their own player character.
+   - The assistant character reacts inside the fictional scene.
+   - Scene state, turn memory, tension, and affinity are isolated from practical work memory.
+   - The mode should eventually feel like a lightweight scene engine, not just a different speaking tone.
+
+3. **Advanced workbench mode**
+   - A practical work mode for architecture review, code review, file/workspace tasks, build/test orchestration, and external coding agents.
+   - Character voice remains, but accuracy, risk checks, assumptions, and approval boundaries come first.
+   - Codex / Claude Code style agents may appear as controlled sub-agents in an Agent Dock.
+   - All workspace-changing actions must be gated by explicit approval.
+
+A good long-term shape is:
+
+```text
+Desktop character
+  -> Daily chat for ordinary interaction
+  -> Roleplay console for fictional scenes
+  -> Advanced workbench for real project work
+       -> Agent Dock
+       -> Approval cards
+       -> Build/test summaries
+       -> Safe file patch preview
 ```
 
-The repository is actively edited both through GitHub and local pulls. Avoid broad rewrites unless necessary. Prefer small, compiling changes.
+The boundary between fiction, daily chat, and practical work is central. Do not blur it.
 
 ---
 
-## Current product direction
+## Repository shape
 
-The app should not become a Git client or a build tool first. Git and command execution were used as a testbed for the approval/workbench system. The broader goal is this:
+- Repository: `livingmetal/ghost`
+- Main app: `src/LivingMetalGhost`
+- UI stack: WPF / .NET
+- Character assets: `src/LivingMetalGhost/Assets/Characters`
+- Config template: `config.template.json`
+- User config at runtime: `%APPDATA%/LivingMetalGhost/config.json`
 
-1. **Daily mode**
-   - Casual character conversation.
-   - Reality-based conversation.
-   - No local command execution.
-   - No file/Git/build operations.
-   - If the user asks for real work, guide them to advanced mode.
+Do not assume a fixed local path, fixed developer machine, fixed CPU architecture, or fixed runtime identifier. This project may be cloned and built from different machines and directories.
 
-2. **Roleplay mode**
-   - Fictional visual-novel/ORPG style.
-   - User becomes the player.
-   - Character stays inside the fictional scene.
-   - No real app, Git, command, settings, log, prompt, or local file references unless the user explicitly exits fiction.
-   - Must feel like a small scene engine, not just a different tone.
+Prefer repository-relative commands in examples:
 
-3. **Advanced mode**
-   - Practical, factual workbench mode.
-   - Character voice remains, but accuracy, risk checks, and assumptions come first.
-   - Local commands and external agents must be gated by approval cards.
-   - Future Codex/Claude Code integration belongs here.
+```powershell
+dotnet build .\src\LivingMetalGhost\LivingMetalGhost.csproj
+```
+
+Publishing may use `publish.ps1`, but do not hard-code one runtime as the only valid target.
 
 ---
 
 ## Core mode model
 
-The app currently uses `ConversationMode` with these conceptual states:
+The app uses `ConversationMode`:
 
 - `Daily`
 - `Story`
 - `Advanced`
 
-The user prefers the wording **롤플레잉 모드** for `Story` mode. Code still uses `Story` in places. When changing UI text, prefer “롤플레잉”. Avoid reintroducing “스토리모드” in user-facing text unless compatibility requires it.
+The UI should call `Story` mode **롤플레잉 모드**. Avoid user-facing text such as “스토리 모드” unless compatibility requires it.
 
-Important existing flags in `MainViewModel`:
-
-- `IsAdvancedMode`
-- `IsStoryMode`
-- `CurrentMode`
-
-`CurrentMode` is determined as:
+Current conceptual priority:
 
 ```csharp
 public ConversationMode CurrentMode => IsAdvancedMode
@@ -75,22 +87,39 @@ public ConversationMode CurrentMode => IsAdvancedMode
     : IsStoryMode ? ConversationMode.Story : ConversationMode.Daily;
 ```
 
-Advanced mode should override roleplay mode.
+Advanced mode overrides roleplay mode. Daily mode should be the startup default. Roleplay mode is something the user turns on intentionally.
+
+---
+
+## Daily mode rules
+
+Daily mode is reality-based character chat.
+
+Daily mode should:
+
+- Keep replies compact by default.
+- Answer real-world questions normally.
+- Use character voice without heavy narration.
+- Avoid local commands, file changes, Git actions, and build/test execution.
+- Avoid leaking roleplay state into practical answers.
+
+If the user wants fictional scene continuation while Daily mode is active, either answer casually as fiction or guide them toward roleplay mode. Do not silently pull persistent roleplay state into daily answers.
 
 ---
 
 ## Roleplay mode design
 
-Roleplay mode should be lightweight, immersive, and syntax-driven.
+Roleplay mode is fictional, scene-driven, and syntax-driven.
 
 ### Player input syntax
 
-The user requested this simple grammar:
+The current grammar is:
 
 ```text
-plain text    -> spoken dialogue
-*text*        -> visible action / narration / situation description
-(text)        -> inner thought
+plain text       -> spoken dialogue
+**text**         -> visible action / narration / background description
+*text*           -> ordinary italic emphasis
+(text)           -> inner thought
 ```
 
 Example:
@@ -98,9 +127,9 @@ Example:
 ```text
 오르키아, 저 콘솔 보여?
 
-*천천히 콘솔 앞으로 다가간다.*
+**천천히 콘솔 앞으로 다가간다.**
 
-(이건 켜져 있으면 안 되는 장비인데...)
+(이거, 켜져 있으면 안 되는 장비인데...)
 ```
 
 The LLM should receive this as structured roleplay input:
@@ -108,27 +137,51 @@ The LLM should receive this as structured roleplay input:
 - Spoken dialogue: heard by characters.
 - Visible action/narration: seen by characters.
 - Inner thought: not directly knowable by characters.
+- Italic emphasis: style only, not action syntax.
 
 Characters may infer thoughts only from visible hesitation, expression, or behavior. They must not read the player’s mind.
 
-### Roleplay opening scene
+### Roleplay story templates
 
-Roleplay mode should start with an actual situation, not a blank chat. The current default scene is:
+Starting scenarios should not be hard-coded in C#.
+
+Use character manifest defaults and user settings instead:
+
+- Manifest field: `default_story_template`
+- User override: `CharacterPromptSettings.StoryTemplate`
+- State storage: `StoryStateStore`
+
+The template format is simple line-based metadata:
 
 ```text
-밤의 데이터센터
-늦은 밤의 폐쇄망 데이터센터.
-팬 소리는 낮게 깔리고,
-사용되지 않아야 할 콘솔 하나가 푸른빛으로 깨어나 있다.
+title: 밤의 데이터센터
+player_role: 아키텍쳐
+scene: 늦은 밤의 폐쇄망 데이터센터. 팬 소리는 낮게 깔리고, 사용되지 않아야 할 콘솔 하나가 푸른빛으로 깨어나 있다.
+summary: 첫 목표: 콘솔이 왜 깨어났는지 확인하고, 캐릭터와 함께 안전하게 접근한다.
+mood: quiet_tension
+tension: 1
+affinity: 50
 ```
 
-First objective:
+Settings UI should let the user edit this template per character.
 
-```text
-콘솔이 왜 깨어났는지 확인하고, 오르키아와 함께 안전하게 접근한다.
-```
+### Roleplay state
 
-The opening is produced through `StoryStateStore.BuildOpeningText()` and shown when roleplay mode is enabled.
+Roleplay state belongs only to roleplay storage. Do not merge it into practical project memory.
+
+Key state fields:
+
+- `Enabled`
+- `Title`
+- `Scene`
+- `Summary`
+- `PlayerRole`
+- `Mood`
+- `Tension`
+- `Affinity`
+- `UpdatedAt`
+
+Affinity is a relationship-tone value, not a safety override. It may make a character warmer or more guarded, but it must not override consent, safety boundaries, or the character’s established personality.
 
 ### Roleplay response rules
 
@@ -136,16 +189,16 @@ The model must:
 
 - Keep the fiction intact.
 - Not say “roleplay mode”, “prompt”, “system”, “app”, “Git”, “settings”, or “logs” inside fiction.
-- Not decide the user’s next action.
-- Progress only a small beat at a time.
+- Not decide the user’s next action, emotion, or dialogue.
+- Progress one small beat at a time.
 - Use scene narration when useful.
 - End with a hook or 2 to 3 choices if the scene would otherwise stall.
-- Avoid printing labels like `[Scene]`, `[Character]`, `[Choices]` in the final visible response.
+- Avoid labels like `[Scene]`, `[Character]`, `[Choices]` in the visible response.
 
 Good behavior:
 
 ```text
-*콘솔의 푸른빛이 네 손등 위로 얇게 번진다.*
+**콘솔의 푸른빛이 네 손등 위로 얇게 번진다.**
 
 오르키아는 화면에 떠오른 깨진 문자를 보며 목소리를 낮춘다.
 
@@ -159,7 +212,7 @@ Good behavior:
 Bad behavior:
 
 ```text
-현재 스토리 모드입니다. 사용자의 입력은 행동으로 해석됩니다.
+현재 롤플레잉 모드입니다. 사용자의 입력은 행동으로 해석됩니다.
 ```
 
 or
@@ -172,126 +225,85 @@ Do not take control of the player.
 
 ---
 
-## Recent roleplay implementation files
-
-These files are central to the current roleplay feature:
-
-- `src/LivingMetalGhost/Core/Services/RoleplayInputFormatter.cs`
-  - Parses plain text, `*action*`, and `(thought)` into structured prompt text.
-
-- `src/LivingMetalGhost/Core/Services/StoryStateStore.cs`
-  - Stores story state at `%APPDATA%\LivingMetalGhost\Stories\default`.
-  - Default scene and `BuildOpeningText()` live here.
-
-- `src/LivingMetalGhost/Core/Services/PromptAssembler.cs`
-  - Builds mode-specific system prompts.
-  - `BuildRoleplayingModeDirective()` contains the roleplay syntax and fiction rules.
-
-- `src/LivingMetalGhost/Core/Services/ConversationService.cs`
-  - Uses `RoleplayInputFormatter.FormatForPrompt(text)` when `ConversationMode.Story` is active.
-  - Updates story memory through `RoleplayStateUpdater.UpdateAfterTurn(...)`.
-
-- `src/LivingMetalGhost/UI/ViewModels/MainViewModel.cs`
-  - `SetStoryMode(...)` shows the opening text when roleplay starts.
-  - `ShowRoleplayOpening(...)` writes the opening scene into the chat list.
-
----
-
-## Daily mode rules
-
-Daily mode is not roleplay. It should be a character-flavored daily assistant mode.
-
-Daily mode should:
-
-- Keep replies compact by default.
-- Answer real-world questions normally.
-- Use character voice, but not heavy narration.
-- Not execute local commands.
-- Not invoke Git/build/file operations.
-- Not leak roleplay state into practical answers.
-
-If the user asks for fictional scene continuation while Daily mode is active, either answer casually as fiction or suggest using roleplay mode if the UI flow supports it. Do not silently pull roleplay state into daily answers.
-
----
-
 ## Advanced mode and command approval
 
 Advanced mode is the only place where local command-like behavior belongs.
 
-### Existing approval direction
+Command and agent rules:
 
-Current work explored these behaviors:
-
-- `git status` / read-only checks can be automatic.
-- `git fetch origin` is a `NetworkRead` style command and can be approved.
-- `git pull` changes workspace state and must remain approval-gated.
-- General/roleplay mode must not execute command actions.
-
-Agent Dock has approval cards and now may show:
-
-```text
-[승인] [항상 승인] [거절]
-```
-
-The UI may be cramped. UI resizing can wait.
-
-### Always approve policy
+- Read-only checks may be low risk.
+- Network reads may still need approval depending on scope.
+- Workspace-changing actions require explicit approval.
+- File writes require patch preview and approval.
+- Build/test execution should be approval-gated.
+- Codex/Claude Code execution should be approval-gated.
 
 Always-approve must remain conservative.
 
-Allowed to remember:
+Allowed to remember only for low-risk repeat discovery:
 
-- Network read-only operations such as `git fetch origin`.
+- Read-only checks.
+- Safe network reads explicitly approved as repeatable.
 
-Do not remember automatically:
+Never silently auto-approve:
 
 - `git pull`
 - merge/rebase/checkout
 - reset/clean/delete
 - file writes
-- `dotnet build/test` for now
+- build/test execution
 - PowerShell/script execution
 - Codex/Claude Code execution
-
-The rule of thumb:
-
-```text
-Always approve may skip repeated low-risk discovery.
-It must not skip operations that change workspace state.
-```
+- any operation that changes workspace state
 
 ---
 
-## Git work status
+## Important implementation files
 
-Git integration is an MVP testbed. Do not over-invest in Git-specific workflow unless the user explicitly asks.
+Roleplay:
 
-Good enough for now:
+- `src/LivingMetalGhost/Core/Services/RoleplayInputFormatter.cs`
+  - Parses plain dialogue, `**action**`, `*italic*`, and `(thought)` into structured prompt text.
+- `src/LivingMetalGhost/Core/Services/StoryStateStore.cs`
+  - Stores roleplay state and builds opening text.
+- `src/LivingMetalGhost/Core/Services/RoleplayStateUpdater.cs`
+  - Updates scene summary, tension, and affinity with lightweight heuristics.
+- `src/LivingMetalGhost/Core/Services/PromptAssembler.cs`
+  - Builds mode-specific system prompts.
+- `src/LivingMetalGhost/Core/Services/ConversationService.cs`
+  - Applies roleplay input formatting and updates story memory.
+- `src/LivingMetalGhost/UI/ViewModels/MainViewModel.cs`
+  - Mode switching and opening-scene display.
+- `src/LivingMetalGhost/UI/ViewModels/MainViewModel.Roleplay.cs`
+  - Roleplay state summary/reset helper.
 
-- Read local status.
-- Ask approval for fetch.
-- Allow remembering safe network checks.
-- Ask approval for pull.
-- Block Git work outside advanced mode.
+Settings and config:
 
-Avoid spending time on these unless requested:
+- `src/LivingMetalGhost/Core/Config/AppConfig.cs`
+- `src/LivingMetalGhost/UI/ViewModels/SettingsViewModel.cs`
+- `src/LivingMetalGhost/UI/Views/SettingsWindow.xaml`
+- Character manifests under `src/LivingMetalGhost/Assets/Characters/*/manifest.json`
 
-- rebase/merge strategy automation
-- branch management UI
-- push/commit/PR automation
-- reset/clean helpers
+Advanced/agent work:
 
-The next practical command-work step, when resumed, should likely be `dotnet build` / `dotnet test` behind approval cards. The user indicated this can wait and may be better handled through Codex later.
+- `src/LivingMetalGhost/Agents/*`
+- `src/LivingMetalGhost/Skills/CodingAgentSkill.cs`
+- `src/LivingMetalGhost/Core/Services/AdvancedSessionLogService.cs`
+- `src/LivingMetalGhost/Core/Services/WorkspaceStore.cs`
 
 ---
 
-## Current build command
+## Build and verification
 
-Use the same command the user runs:
+Use repository-relative build commands. Do not assume a local drive or clone path.
+
+Recommended basic check:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\publish.ps1 -RuntimeIdentifier win-arm64
+dotnet build .\src\LivingMetalGhost\LivingMetalGhost.csproj
 ```
+
+If publishing, choose the runtime appropriate to the current build machine and target.
 
 If a change touches XAML or generated partial classes, expect WPF generated temp project names such as:
 
@@ -303,11 +315,11 @@ These are normal during WPF builds.
 
 ---
 
-## Important compatibility pitfalls
+## Compatibility pitfalls
 
-### `ConversationLogEntry`
+### ConversationLogEntry
 
-Do not call a multi-argument constructor. It currently uses settable properties. Use object initializer style:
+Do not call a multi-argument constructor. Use object initializer style:
 
 ```csharp
 await _conversationLogService.AppendAsync(new ConversationLogEntry
@@ -325,62 +337,48 @@ await _conversationLogService.AppendAsync(new ConversationLogEntry
 }, CancellationToken.None);
 ```
 
-### `CharacterProfile`
+### CharacterProfile
 
-Do not assume these properties exist on `CharacterProfile`:
+Do not assume size/framing fields live directly on `CharacterProfile`.
 
-```text
-DefaultSizePresetId
-DefaultFramingPresetId
-DefaultScale
-```
-
-Use safe fallbacks currently used in `MainViewModel.RefreshSelectedCharacter()`:
+Use:
 
 ```csharp
-SelectedCharacterSizePresetId = string.IsNullOrWhiteSpace(profile?.CharacterSizePresetId)
-    ? "normal"
-    : profile.CharacterSizePresetId;
-
-SelectedCharacterFramingPresetId = string.IsNullOrWhiteSpace(profile?.CharacterFramingPresetId)
-    ? "full-body"
-    : profile.CharacterFramingPresetId;
-
-CharacterScale = profile?.CharacterScale is > 0 ? profile.CharacterScale : 1.0;
+character.Presentation.DefaultSizePresetId
+character.Presentation.DefaultFramingPresetId
 ```
 
-### `AppCommandSkill`
+or validate configured profile values against `character.Presentation.SizePresets` and `character.Presentation.FramingPresets`.
 
-The user wanted chat-triggered “settings/log window” commands removed. Do not re-enable chat text such as `설정 열어` or `로그 보여줘` as app-window commands unless the user asks.
+### AppCommandSkill
 
-Settings and logs should be opened through explicit UI routes such as buttons, tray menu, or future command palette.
+Do not re-enable chat text commands that open settings or log windows unless requested. Settings and logs should be opened through explicit UI routes such as buttons, tray menu, or a future command palette.
 
 ---
 
 ## Character and UI direction
 
-The app uses sprites now and should remain sprite-friendly. VRM/3D can be explored later, but current priority is modular character/sprite architecture and mode experience.
+The app is sprite-friendly now and should remain so.
 
 Important direction:
 
 - Characters should be modularly addable.
+- Character manifests should carry defaults such as appearance, background, personality, presentation, sprites, and story template.
 - Sprite swapping can remain coarse for now.
 - Later, sprites may become modular parts.
-- In advanced mode, Codex/Claude Code may appear as pet/summoned helper agents rather than replacing the main character.
+- Advanced mode can show Codex/Claude Code as pet/summoned helper agents rather than replacing the main character.
 - Agent Dock should show current agent tasks and approval status.
-- Hovering agents should eventually show what is running.
 - The main character should ask for approval on behalf of background agents.
 
-UI state:
+UI direction:
 
-- Daily mode can remain small character + speech bubble.
-- Roleplay mode should gradually move toward a visual-novel style panel or richer chat rendering.
-- Advanced mode can be a workbench/browser-like panel.
-- Agent Dock approval buttons are currently cramped and need later UI polish.
+- Daily mode: small desktop character + speech bubble / compact chat.
+- Roleplay mode: richer visual-novel style panel or styled chat rendering.
+- Advanced mode: workbench/browser-like panel with Agent Dock.
 
 ---
 
-## Coding style and response behavior
+## Coding style
 
 When modifying code:
 
@@ -388,67 +386,53 @@ When modifying code:
 - Avoid full-file rewrites unless necessary.
 - Before replacing a file, inspect current model definitions.
 - Keep Korean UI text natural and short.
-- Do not add verbose assistant-ish messages.
-- Do not put internal parser labels into user-visible roleplay output.
+- Do not add verbose assistant-like messages.
+- Do not put parser labels into user-visible roleplay output.
 - Do not create command execution paths outside advanced mode.
 - Treat local command execution as dangerous by default.
 
 When responding to the user:
 
-- The user prefers direct, assumption-checking feedback.
+- Be direct and assumption-checking.
 - Explain risks and tradeoffs clearly.
-- The user is comfortable with architecture-level discussion and code paths.
 - Keep answers actionable.
 
 ---
 
 ## Suggested next work
 
-### Near-term
+Near term:
 
-1. Rebuild and verify the recent roleplay patch.
-2. Test roleplay mode with:
+1. Build and fix compile errors.
+2. Verify the roleplay syntax:
 
 ```text
 오르키아, 저 콘솔 보여?
 
-*천천히 콘솔 앞으로 다가간다.*
+**천천히 콘솔 앞으로 다가간다.**
 
 (이거, 켜져 있으면 안 되는 장비인데...)
 ```
 
 3. Check that:
    - plain text is treated as dialogue,
-   - `*...*` is handled as action/narration,
+   - `**...**` is handled as action/narration,
+   - `*...*` is rendered as ordinary italic emphasis,
    - `(...)` is handled as inner thought,
-   - the character does not directly read the inner thought.
+   - the character does not directly read inner thought.
 
-### Next UX work
+Next UX work:
 
-- Improve roleplay rendering so `*action*` can be shown as italic or a separate narration style.
-- Current chat bubble uses text-based rendering, so mixed inline styling may require replacing `TextBox` with `TextBlock` + `Inlines`, `FlowDocument`, or a custom message renderer.
+- Wire `CharacterPromptSettings.StoryTemplate` into SettingsViewModel and SettingsWindow.
+- Use styled rendering for roleplay narration and italic text in chat.
+- Consider a visual-novel style roleplay panel.
 
-### Later advanced-work work
+Later advanced-work work:
 
-- Leave Git MVP alone unless the user asks.
 - Add `dotnet build` and `dotnet test` through approval cards.
 - Add build result summarization.
 - Add file read / patch preview before any write operation.
 - Then consider Codex/Claude Code orchestration.
-
----
-
-## Known recent commits to understand context
-
-Recent changes included:
-
-- Roleplay input parser creation.
-- Default roleplay opening scene.
-- Stronger roleplay prompt rules.
-- Roleplay syntax formatting before LLM calls.
-- MainViewModel compatibility fix for current `ConversationLogEntry` and `CharacterProfile` models.
-
-If something fails after pulling, first check `MainViewModel.cs`, `ConversationService.cs`, `PromptAssembler.cs`, and `StoryStateStore.cs`.
 
 ---
 
@@ -461,5 +445,3 @@ If something fails after pulling, first check `MainViewModel.cs`, `ConversationS
 - Auto-approve workspace-changing commands.
 - Re-enable chat text commands that open settings/log windows.
 - Merge roleplay memory into advanced/project memory.
-
-The boundary between fiction, daily chat, and practical work is central to the app. Keep it sharp.
