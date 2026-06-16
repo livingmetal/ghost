@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="LivingMetalGhost Chat"
         Width="456"
-        Height="292"
+        Height="254"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -21,17 +21,6 @@
             <GradientStop Color="#FFF8F0" Offset="0" />
             <GradientStop Color="#F6EADD" Offset="1" />
         </LinearGradientBrush>
-
-        <Style x:Key="QuickActionButtonStyle" TargetType="Button">
-            <Setter Property="Padding" Value="10,5" />
-            <Setter Property="Margin" Value="0,0,6,0" />
-            <Setter Property="Background" Value="#F0E7DD" />
-            <Setter Property="BorderBrush" Value="#DDCFC2" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Foreground" Value="#6B5D52" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
     </Window.Resources>
 
     <Grid Background="Transparent">
@@ -61,12 +50,10 @@
                                       Color="#2A1A30" />
                 </Grid.Effect>
 
-                <!-- Soft outer glow. -->
                 <Border Margin="2,4,4,8"
                         CornerRadius="30"
                         Background="#44FFFFFF" />
 
-                <!-- Tail shadow, then tail fill. Keeping these separate makes the tail feel attached instead of pasted on. -->
                 <Path HorizontalAlignment="Right"
                       VerticalAlignment="Bottom"
                       Margin="0,0,34,-14"
@@ -97,46 +84,17 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-
-                            <Border Width="28"
-                                    Height="28"
-                                    Margin="0,0,9,0"
-                                    CornerRadius="14"
-                                    Background="#F1E8FF"
-                                    BorderBrush="#DFCFF9"
-                                    BorderThickness="1">
-                                <TextBlock HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           FontSize="14"
-                                           Foreground="#9B6AD6"
-                                           Text="✦" />
-                            </Border>
-
-                            <StackPanel Grid.Column="1"
-                                        VerticalAlignment="Center">
-                                <TextBlock FontFamily="Bahnschrift"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           Foreground="#7C55BA"
-                                           Text="{Binding CharacterDisplayName}" />
-                                <TextBlock Margin="0,1,0,0"
-                                           FontSize="10"
-                                           Foreground="#9A8D82"
-                                           Text="speaking" />
-                            </StackPanel>
-
-                            <TextBlock Grid.Column="2"
-                                       VerticalAlignment="Top"
-                                       FontSize="19"
-                                       Foreground="#B184D8"
-                                       Text="♥" />
-                        </Grid>
+                        <StackPanel>
+                            <TextBlock FontFamily="Bahnschrift"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="#7C55BA"
+                                       Text="{Binding CharacterDisplayName}" />
+                            <TextBlock Margin="0,1,0,0"
+                                       FontSize="10"
+                                       Foreground="#9A8D82"
+                                       Text="speaking" />
+                        </StackPanel>
 
                         <TextBlock Grid.Row="1"
                                    Margin="0,11,0,0"
@@ -155,7 +113,7 @@
 
             <Border Grid.Row="1"
                     Margin="34,0,0,0"
-                    Padding="12,10"
+                    Padding="14,10"
                     Background="{StaticResource InputFillBrush}"
                     BorderBrush="#E4D4C6"
                     BorderThickness="1"
@@ -168,34 +126,13 @@
                                       Color="#24182B" />
                 </Border.Effect>
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <Border Grid.Row="0"
-                            Grid.RowSpan="2"
-                            Width="34"
-                            Height="34"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            CornerRadius="17"
-                            Background="#F2E8FF">
-                        <TextBlock HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontSize="19"
-                                   Foreground="#A579D8"
-                                   Text="✦" />
-                    </Border>
-
                     <TextBox x:Name="PromptTextBox"
-                             Grid.Row="0"
-                             Grid.Column="1"
+                             Grid.Column="0"
                              MinHeight="42"
                              MaxHeight="80"
                              Padding="4,6"
@@ -210,8 +147,7 @@
                              ToolTip="메시지를 입력하세요. Enter 전송, Shift+Enter 줄바꿈" />
 
                     <Button x:Name="SendButton"
-                            Grid.Row="0"
-                            Grid.Column="2"
+                            Grid.Column="1"
                             Width="46"
                             Height="46"
                             Margin="10,0,0,0"
@@ -225,16 +161,6 @@
                             FontSize="20"
                             Cursor="Hand"
                             ToolTip="보내기" />
-
-                    <StackPanel Grid.Row="1"
-                                Grid.Column="1"
-                                Grid.ColumnSpan="2"
-                                Margin="0,8,0,0"
-                                Orientation="Horizontal">
-                        <Button Style="{StaticResource QuickActionButtonStyle}"
-                                Command="{Binding OpenSettingsCommand}"
-                                Content="설정" />
-                    </StackPanel>
                 </Grid>
             </Border>
         </Grid>
