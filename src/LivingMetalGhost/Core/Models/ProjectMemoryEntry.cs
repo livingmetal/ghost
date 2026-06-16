@@ -9,6 +9,7 @@ public sealed class ProjectMemoryEntry
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
     public string WorkspaceId { get; set; } = "default";
+    public bool IsEnabled { get; set; } = true;
     public string Type { get; set; } = "decision";
     public string Content { get; set; } = string.Empty;
     public string SourceSessionId { get; set; } = string.Empty;
