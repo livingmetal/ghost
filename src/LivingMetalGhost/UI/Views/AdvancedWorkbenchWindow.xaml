@@ -109,8 +109,8 @@
                                             <Border MaxWidth="560"
                                                     Margin="4,4"
                                                     Padding="12,9"
-                                                    MouseLeftButtonDown="MessageBubble_OnMouseLeftButtonDown"
-                                                    ToolTip="클릭하면 이 말풍선을 프로젝트 기억 후보로 선택합니다.">
+                                                    PreviewMouseLeftButtonDown="MessageBubble_OnPreviewMouseLeftButtonDown"
+                                                    ToolTip="더블클릭하면 이 말풍선을 프로젝트 기억으로 저장합니다.">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="HorizontalAlignment" Value="Left" />
