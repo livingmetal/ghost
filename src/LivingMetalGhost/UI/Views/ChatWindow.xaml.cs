@@ -23,6 +23,7 @@ public partial class ChatWindow : Window
         Loaded += (_, _) =>
         {
             SubscribeToMessages(DataContext as MainViewModel);
+            ApplyModeVisuals();
         };
     }
 
@@ -46,6 +47,7 @@ public partial class ChatWindow : Window
     private void ChatWindow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         SubscribeToMessages(e.NewValue as MainViewModel);
+        ApplyModeVisuals();
     }
 
     private void SubscribeToMessages(MainViewModel? viewModel)
@@ -87,7 +89,8 @@ public partial class ChatWindow : Window
         var advanced = _subscribedViewModel?.IsAdvancedMode ?? false;
         var targetColor = advanced ? AdvancedBorder : NormalBorder;
 
-        TitleLabel.Text = advanced ? "ADVANCED CONSOLE" : "PROMPT CONSOLE";
+        TitleLabel.Text = advanced ? "GHOST WORKBENCH" : "PROMPT CONSOLE";
+        SendButton.Content = advanced ? "RUN" : "SEND";
         SendButton.Background = new SolidColorBrush(advanced
             ? Color.FromRgb(0x7B, 0x4F, 0xC8)
             : Color.FromRgb(0xE9, 0x6A, 0x42));
