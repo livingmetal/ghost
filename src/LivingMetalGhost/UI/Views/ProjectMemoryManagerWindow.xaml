@@ -1,0 +1,203 @@
+<Window x:Class="LivingMetalGhost.UI.Views.ProjectMemoryManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Project Memory Manager"
+        Width="860"
+        Height="620"
+        MinWidth="720"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        Background="#F0F2F7">
+    <Border Margin="14"
+            Padding="16"
+            CornerRadius="18"
+            Background="#FFFDF8"
+            BorderBrush="#CBD0DC"
+            BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock FontFamily="Bahnschrift"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               Foreground="#18212D"
+                               Text="프로젝트 기억 관리" />
+                    <TextBlock x:Name="MemoryStatusText"
+                               Margin="0,4,0,0"
+                               FontFamily="Consolas"
+                               FontSize="11"
+                               Foreground="#667085" />
+                </StackPanel>
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Top">
+                    <ComboBox x:Name="FilterComboBox"
+                              Width="120"
+                              Margin="0,0,8,0"
+                              SelectedIndex="0"
+                              SelectionChanged="FilterComboBox_OnSelectionChanged">
+                        <ComboBoxItem Content="all" />
+                        <ComboBoxItem Content="enabled" />
+                        <ComboBoxItem Content="disabled" />
+                        <ComboBoxItem Content="decision" />
+                        <ComboBoxItem Content="fact" />
+                        <ComboBoxItem Content="warning" />
+                        <ComboBoxItem Content="todo" />
+                        <ComboBoxItem Content="preference" />
+                    </ComboBox>
+                    <Button Padding="12,6"
+                            Background="#FFFFFF"
+                            BorderBrush="#CBD0DC"
+                            BorderThickness="1"
+                            Click="RefreshButton_OnClick"
+                            Content="새로고침" />
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="1"
+                  Margin="0,14,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.25*" />
+                    <ColumnDefinition Width="14" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <DataGrid x:Name="MemoryGrid"
+                          Grid.Column="0"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          SelectionMode="Single"
+                          SelectionChanged="MemoryGrid_OnSelectionChanged"
+                          HeadersVisibility="Column"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False">
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Header="On"
+                                                Width="42"
+                                                Binding="{Binding IsEnabled}" />
+                        <DataGridTextColumn Header="Type"
+                                            Width="84"
+                                            Binding="{Binding Type}" />
+                        <DataGridTextColumn Header="Created"
+                                            Width="128"
+                                            Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}" />
+                        <DataGridTextColumn Header="Content"
+                                            Width="*"
+                                            Binding="{Binding Content}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <Border Grid.Column="2"
+                        Padding="12"
+                        CornerRadius="14"
+                        Background="#F8F9FC"
+                        BorderBrush="#D7DAE3"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel>
+                            <TextBlock FontFamily="Bahnschrift"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="#445066"
+                                       Text="선택한 기억" />
+                            <TextBlock x:Name="SelectedIdText"
+                                       Margin="0,4,0,0"
+                                       FontFamily="Consolas"
+                                       FontSize="10"
+                                       Foreground="#667085"
+                                       Text="선택 없음" />
+                        </StackPanel>
+
+                        <Grid Grid.Row="1"
+                              Margin="0,12,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox x:Name="EnabledCheckBox"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,10,0"
+                                      Content="활성" />
+                            <ComboBox x:Name="MemoryTypeComboBox"
+                                      Grid.Column="1"
+                                      SelectedIndex="0">
+                                <ComboBoxItem Content="decision" />
+                                <ComboBoxItem Content="fact" />
+                                <ComboBoxItem Content="warning" />
+                                <ComboBoxItem Content="todo" />
+                                <ComboBoxItem Content="preference" />
+                            </ComboBox>
+                        </Grid>
+
+                        <TextBox x:Name="ContentTextBox"
+                                 Grid.Row="2"
+                                 Padding="10"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 FontFamily="Malgun Gothic"
+                                 FontSize="13" />
+
+                        <StackPanel Grid.Row="3"
+                                    Margin="0,12,0,0"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button MinWidth="78"
+                                    Padding="12,7"
+                                    Margin="0,0,8,0"
+                                    Background="#FFFFFF"
+                                    BorderBrush="#CBD0DC"
+                                    BorderThickness="1"
+                                    Click="SaveButton_OnClick"
+                                    Content="저장" />
+                            <Button MinWidth="78"
+                                    Padding="12,7"
+                                    Margin="0,0,8,0"
+                                    Background="#FFFFFF"
+                                    BorderBrush="#CBD0DC"
+                                    BorderThickness="1"
+                                    Click="ToggleButton_OnClick"
+                                    Content="활성/비활성" />
+                            <Button MinWidth="78"
+                                    Padding="12,7"
+                                    Background="#B42318"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="DeleteButton_OnClick"
+                                    Content="삭제" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button MinWidth="92"
+                        Padding="14,7"
+                        Background="#7B4FC8"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Click="CloseButton_OnClick"
+                        Content="닫기" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
