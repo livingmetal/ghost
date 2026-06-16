@@ -44,6 +44,7 @@ public sealed class AppSettings
     public int ProactiveChatMinMinutes { get; set; } = 20;
     public int ProactiveChatMaxMinutes { get; set; } = 45;
     public Dictionary<string, CharacterPromptSettings> CharacterProfiles { get; set; } = [];
+    public WindowPlacementSettings DailyChatWindow { get; set; } = new();
 }
 
 public sealed class CharacterPromptSettings
@@ -54,6 +55,13 @@ public sealed class CharacterPromptSettings
     public double CharacterScale { get; set; } = 1.0;
     public string CharacterSizePresetId { get; set; } = string.Empty;
     public string CharacterFramingPresetId { get; set; } = string.Empty;
+}
+
+public sealed class WindowPlacementSettings
+{
+    public bool HasPosition { get; set; }
+    public double Left { get; set; }
+    public double Top { get; set; }
 }
 
 public sealed class LlmSettings
