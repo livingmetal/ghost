@@ -115,6 +115,12 @@ Current and planned provider directions include:
 
 Provider-specific behavior should remain isolated. Character prompts, mode prompts, and tool-routing prompts should not be tangled together.
 
+## Agent Orchestration Direction
+
+Long term, the main Ghost character should become the user-facing orchestrator: it classifies the user's request, decides whether to answer directly or summon helper agents, routes complex work to specialized agents, asks for approval before risky actions, and returns one coherent result.
+
+See [`plans/agent-orchestration.md`](./plans/agent-orchestration.md) for the planned orchestrator skeleton.
+
 ## Character and Sprite Direction
 
 Ghost is sprite-friendly by design.
@@ -137,6 +143,7 @@ Important files:
 
 - [`AGENTS.md`](./AGENTS.md): conventional entry point for coding agents.
 - [`AGENT.md`](./AGENT.md): canonical repository handoff and project direction.
+- [`plans/agent-orchestration.md`](./plans/agent-orchestration.md): long-term main-character orchestrator and sub-agent architecture.
 - [`plans/agent-workflow.md`](./plans/agent-workflow.md): plan-first and evidence-first workflow.
 - [`scripts/verify.ps1`](./scripts/verify.ps1): standard verification script.
 - [`.ghost-work/README.md`](./.ghost-work/README.md): evidence note guidance.
@@ -151,8 +158,8 @@ Do not report a task as complete without verification evidence. If verification 
 
 - API keys should be stored securely, not committed.
 - Sensitive actions are intentionally out of scope for daily and roleplay modes.
-- Do not add unrestricted shell execution.
-- Do not auto-run external coding agents.
+- Do not add unrestricted command execution.
+- Do not auto-start external coding agents.
 - Do not auto-apply patches.
 - Do not auto-approve workspace-changing commands.
 
