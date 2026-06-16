@@ -12,5 +12,4 @@ public sealed record StoryTemplate(
     string Summary,
     string OpeningLine,
     string Mood,
-    int Tension,
-    IReadOnlyList<StoryObjective> Objectives);
+    int Tension);
