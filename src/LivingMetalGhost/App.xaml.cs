@@ -1,5 +1,7 @@
 using System.IO;
+using System.Text;
 using System.Windows;
+using System.Windows.Threading;
 using LivingMetalGhost.Agents;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Presentation;
@@ -20,6 +22,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        RegisterExceptionHandlers();
         base.OnStartup(e);
 
         var serviceCollection = new ServiceCollection();
@@ -45,6 +48,59 @@ public partial class App : Application
     {
         _trayIconService?.Dispose();
         base.OnExit(e);
+    }
+
+    private static void RegisterExceptionHandlers()
+    {
+        Current.DispatcherUnhandledException += (_, e) =>
+        {
+            WriteCrashLog("dispatcher", e.Exception);
+            e.Handled = true;
+
+            MessageBox.Show(
+                "Ghost가 작업 중 예외를 잡았어요. 프로그램은 계속 실행됩니다.\n" +
+                "자세한 내용은 %APPDATA%\\LivingMetalGhost\\Logs 의 crash 로그를 확인하세요.",
+                "LivingMetalGhost 오류",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            WriteCrashLog("appdomain", e.ExceptionObject as Exception);
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            WriteCrashLog("task", e.Exception);
+            e.SetObserved();
+        };
+    }
+
+    public static void WriteCrashLog(string source, Exception? exception)
+    {
+        try
+        {
+            var logRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "LivingMetalGhost",
+                "Logs");
+            Directory.CreateDirectory(logRoot);
+            var filePath = Path.Combine(logRoot, $"crash-{DateTime.Now:yyyyMMdd-HHmmss-fff}-{source}.log");
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"Source: {source}");
+            builder.AppendLine($"Time: {DateTimeOffset.Now:O}");
+            builder.AppendLine($"Version: {typeof(App).Assembly.GetName().Version}");
+            builder.AppendLine();
+            builder.AppendLine(exception?.ToString() ?? "Unknown non-Exception crash object.");
+
+            File.WriteAllText(filePath, builder.ToString(), Encoding.UTF8);
+        }
+        catch
+        {
+            // 마지막 안전망이다. 여기서 다시 터지면 원래 예외를 가리므로 조용히 버린다.
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)
