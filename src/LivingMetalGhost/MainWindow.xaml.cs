@@ -95,8 +95,14 @@ public partial class MainWindow : Window
             return;
         }
 
-        StoryModeMenuItem.IsChecked = _subscribedViewModel.IsStoryMode;
-        AdvancedModeMenuItem.IsChecked = _subscribedViewModel.IsAdvancedMode;
+        var advanced = _subscribedViewModel.IsAdvancedMode;
+        StoryModeMenuItem.IsChecked = !advanced && _subscribedViewModel.IsStoryMode;
+        StoryModeMenuItem.IsEnabled = !advanced;
+        StoryModeMenuItem.ToolTip = advanced
+            ? "고급 모드 중에는 롤플레잉 모드가 일시 중지됩니다. 고급 모드를 끄면 이전 상태로 돌아갑니다."
+            : "AI소설/미연시/ORPG식 허구 장면 진행 모드";
+
+        AdvancedModeMenuItem.IsChecked = advanced;
         AdvancedModeMenuItem.IsEnabled = _subscribedViewModel.IsAdvancedModeAvailable;
         AdvancedModeMenuItem.ToolTip = _subscribedViewModel.IsAdvancedModeAvailable
             ? "고급 작업/검토 모드"
@@ -302,6 +308,12 @@ public partial class MainWindow : Window
 
     private void StoryModeMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        if (ViewModel.IsAdvancedMode)
+        {
+            SyncModeMenuItems();
+            return;
+        }
+
         ViewModel.SetStoryMode(StoryModeMenuItem.IsChecked);
         SyncModeMenuItems();
     }
@@ -365,7 +377,7 @@ public partial class MainWindow : Window
     {
         var workArea = SystemParameters.WorkArea;
         Left = Math.Clamp(Left, workArea.Left, Math.Max(workArea.Left, workArea.Right - ActualWidth));
-        Top = Math.Clamp(Top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - ActualHeight));
+        Top = Math.Clamp(Top, workArea.Top, Math.Max(workArea.Top, Math.Max(workArea.Top, workArea.Bottom - ActualHeight)));
         PositionCompanionWindows();
     }
 
