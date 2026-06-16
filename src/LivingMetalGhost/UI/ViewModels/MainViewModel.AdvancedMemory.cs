@@ -16,13 +16,13 @@ public partial class MainViewModel
 
     public string GetProjectMemorySummary()
     {
-        var memoryStore = App.Services.GetRequiredService<ProjectMemoryStore>();
+        var memoryStore = global::LivingMetalGhost.App.Services.GetRequiredService<ProjectMemoryStore>();
         return memoryStore.BuildDisplayText();
     }
 
     public void StartNewAdvancedSession()
     {
-        var sessionLog = App.Services.GetRequiredService<AdvancedSessionLogService>();
+        var sessionLog = global::LivingMetalGhost.App.Services.GetRequiredService<AdvancedSessionLogService>();
         sessionLog.StartNewSession();
         AdvancedContextRevision++;
         BubbleText = "새 고급 작업 세션을 시작했어요.";
@@ -39,8 +39,8 @@ public partial class MainViewModel
             return null;
         }
 
-        var sessionLog = App.Services.GetRequiredService<AdvancedSessionLogService>();
-        var memoryStore = App.Services.GetRequiredService<ProjectMemoryStore>();
+        var sessionLog = global::LivingMetalGhost.App.Services.GetRequiredService<AdvancedSessionLogService>();
+        var memoryStore = global::LivingMetalGhost.App.Services.GetRequiredService<ProjectMemoryStore>();
         var entry = await memoryStore.AddAsync(
             content: lastAssistantMessage.Text,
             type: "decision",
