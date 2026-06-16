@@ -113,11 +113,6 @@
                                                      AcceptsReturn="True"
                                                      Text="{Binding DisplayText}"
                                                      ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
-                                                <TextBox.Resources>
-                                                    <Style TargetType="Paragraph">
-                                                        <Setter Property="LineHeight" Value="21"/>
-                                                    </Style>
-                                                </TextBox.Resources>
                                                 <TextBox.ContextMenu>
                                                     <ContextMenu>
                                                         <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
