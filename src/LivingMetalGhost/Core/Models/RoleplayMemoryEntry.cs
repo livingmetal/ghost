@@ -8,5 +8,6 @@ public sealed class RoleplayMemoryEntry
     public string AssistantText { get; set; } = string.Empty;
     public string Mood { get; set; } = string.Empty;
     public int Tension { get; set; }
+    public int Affinity { get; set; }
     public string Scene { get; set; } = string.Empty;
 }
