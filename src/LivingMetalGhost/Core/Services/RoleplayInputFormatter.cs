@@ -5,12 +5,13 @@ namespace LivingMetalGhost.Core.Services;
 
 /// <summary>
 /// 롤플레잉 모드의 가벼운 입력 문법을 LLM이 안정적으로 이해할 수 있는 구조화 텍스트로 바꾼다.
-/// 일반 문장 = 대사, *...* = 행동/지문, (...) = 속마음.
+/// 일반 문장 = 대사, **...** = 행동/지문, (...) = 속마음.
+/// *...*는 일반 이탤릭 강조로 남겨두기 위해 파서가 소비하지 않는다.
 /// </summary>
 public static class RoleplayInputFormatter
 {
     private static readonly Regex SegmentRegex = new(
-        @"(?<action>\*[^*]+\*)|(?<thought>\([^\r\n()]+\))",
+        @"(?<action>\*\*[^*]+\*\*)|(?<thought>\([^\r\n()]+\))",
         RegexOptions.Compiled);
 
     public static string FormatForPrompt(string rawText)
@@ -24,7 +25,8 @@ public static class RoleplayInputFormatter
         var builder = new StringBuilder();
         builder.AppendLine("Player input interpreted by roleplay syntax:");
         builder.AppendLine("- Plain text is spoken dialogue heard by characters.");
-        builder.AppendLine("- *...* is visible action or scene narration.");
+        builder.AppendLine("- **...** is visible action or scene narration.");
+        builder.AppendLine("- *...* is ordinary italic emphasis inside dialogue, not action syntax.");
         builder.AppendLine("- (...) is inner thought. Other characters cannot directly know it.");
         builder.AppendLine();
 
