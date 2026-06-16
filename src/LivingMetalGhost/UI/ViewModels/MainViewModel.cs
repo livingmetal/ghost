@@ -24,6 +24,7 @@ public partial class MainViewModel : ObservableObject
     private readonly SpriteDirector _spriteDirector;
     private readonly StoryStateStore _storyStateStore;
     private bool _isResponding;
+    private bool _isStoryResponding;
     private CancellationTokenSource? _moodHoldCts;
 
     [ObservableProperty]
@@ -31,6 +32,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string inputText = string.Empty;
+
+    [ObservableProperty]
+    private string storyInputText = string.Empty;
 
     [ObservableProperty]
     private string characterMood = "idle";
@@ -97,13 +101,19 @@ public partial class MainViewModel : ObservableObject
     }
 
     public ObservableCollection<ChatMessage> Messages { get; } = [];
+    public ObservableCollection<ChatMessage> StoryMessages { get; } = [];
 
     /// <summary>고급 Workbench / Agent Dock 에 표시할 현재 작업들.</summary>
     public ObservableCollection<AgentJob> ActiveAgentJobs { get; } = [];
 
     public ConversationMode CurrentMode => IsAdvancedMode
         ? ConversationMode.Advanced
-        : IsStoryMode ? ConversationMode.Story : ConversationMode.Daily;
+        : ConversationMode.Daily;
+
+    public string ActiveProviderLabel => BuildProviderLabel(CurrentMode);
+
+    public string StoryProviderLabel => BuildProviderLabel(ConversationMode.Story)
+        .Replace("STORY:", "ROLEPLAY:", StringComparison.OrdinalIgnoreCase);
 
     public async Task RefreshLocalLmAvailabilityAsync()
     {
@@ -140,21 +150,18 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    public string ActiveProviderLabel
+    private string BuildProviderLabel(ConversationMode mode)
     {
-        get
+        var config = _configLoader.Load();
+        var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
+        var modeLabel = mode switch
         {
-            var config = _configLoader.Load();
-            var llm = IsAdvancedMode ? config.AdvancedLlm : config.Llm;
-            var mode = CurrentMode switch
-            {
-                ConversationMode.Advanced => "ADVANCED",
-                ConversationMode.Story => "STORY",
-                _ => "DAILY"
-            };
-            var model = string.IsNullOrWhiteSpace(llm.Model) ? "(default)" : llm.Model;
-            return $"{mode}: {llm.Provider} / {model}";
-        }
+            ConversationMode.Advanced => "ADVANCED",
+            ConversationMode.Story => "STORY",
+            _ => "DAILY"
+        };
+        var model = string.IsNullOrWhiteSpace(llm.Model) ? "(default)" : llm.Model;
+        return $"{modeLabel}: {llm.Provider} / {model}";
     }
 
     public (bool Enabled, int MinMinutes, int MaxMinutes) GetProactiveChatSettings()
@@ -225,16 +232,13 @@ public partial class MainViewModel : ObservableObject
     private void ShowRoleplayOpening(StoryState state)
     {
         var openingText = StoryStateStore.BuildOpeningText(state);
-        BubbleText = openingText;
-        Messages.Add(new ChatMessage
+        StoryMessages.Add(new ChatMessage
         {
             Text = openingText,
             SpeakerName = "STORY",
             IsProactive = true,
             IsRoleplay = true
         });
-        SetCharacterMood(_spriteDirector.ResolveSpeakingMood("curious", ConversationMode.Story));
-        StartPostSpeechMoodHold(CharacterMood);
     }
 
     partial void OnIsAdvancedModeChanged(bool value)
@@ -269,7 +273,7 @@ public partial class MainViewModel : ObservableObject
             Text = request.RawText,
             SpeakerName = "YOU",
             IsUser = true,
-            IsRoleplay = CurrentMode == ConversationMode.Story
+            IsRoleplay = false
         });
         InputText = string.Empty;
 
@@ -299,6 +303,62 @@ public partial class MainViewModel : ObservableObject
         finally
         {
             _isResponding = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task StorySendAsync()
+    {
+        if (_isStoryResponding)
+        {
+            return;
+        }
+
+        var rawText = StoryInputText.Trim();
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            return;
+        }
+
+        _isStoryResponding = true;
+        StoryMessages.Add(new ChatMessage
+        {
+            Text = rawText,
+            SpeakerName = "YOU",
+            IsUser = true,
+            IsRoleplay = true
+        });
+        StoryInputText = string.Empty;
+
+        try
+        {
+            var result = await _conversationService.RoleplayAsync(rawText, CancellationToken.None);
+            await DisplayAssistantResponseAsync(
+                result.BubbleText,
+                isProactive: false,
+                result.Mood,
+                StoryMessages,
+                ConversationMode.Story,
+                animateCharacter: false);
+            await WriteLogAsync(
+                rawText,
+                result.BubbleText,
+                isProactive: false,
+                result.Mood,
+                ConversationMode.Story);
+        }
+        catch (Exception ex)
+        {
+            StoryMessages.Add(new ChatMessage
+            {
+                Text = $"롤플레잉 응답을 처리하지 못했어요: {ex.Message}",
+                SpeakerName = "SYSTEM",
+                IsRoleplay = true
+            });
+        }
+        finally
+        {
+            _isStoryResponding = false;
         }
     }
 
@@ -361,6 +421,7 @@ public partial class MainViewModel : ObservableObject
         window.ShowDialog();
         RefreshSelectedCharacter();
         OnPropertyChanged(nameof(ActiveProviderLabel));
+        OnPropertyChanged(nameof(StoryProviderLabel));
         ProactiveSettingsRevision++;
     }
 
@@ -374,11 +435,32 @@ public partial class MainViewModel : ObservableObject
         window.Show();
     }
 
-    private async Task DisplayAssistantResponseAsync(string response, bool isProactive, string assistantMood)
+    private Task DisplayAssistantResponseAsync(string response, bool isProactive, string assistantMood)
     {
-        var compact = CurrentMode != ConversationMode.Advanced;
+        return DisplayAssistantResponseAsync(
+            response,
+            isProactive,
+            assistantMood,
+            Messages,
+            CurrentMode,
+            animateCharacter: true);
+    }
+
+    private async Task DisplayAssistantResponseAsync(
+        string response,
+        bool isProactive,
+        string assistantMood,
+        ObservableCollection<ChatMessage> targetMessages,
+        ConversationMode mode,
+        bool animateCharacter)
+    {
+        var compact = mode != ConversationMode.Advanced;
         var chunks = SplitForPacedDisplay(response, compact);
-        IsCharacterSpeaking = true;
+        if (animateCharacter)
+        {
+            IsCharacterSpeaking = true;
+        }
+
         try
         {
             for (var index = 0; index < chunks.Count; index++)
@@ -389,10 +471,10 @@ public partial class MainViewModel : ObservableObject
                         ? $"{CharacterDisplayName.ToUpperInvariant()} • 먼저 말 걸기"
                         : CharacterDisplayName.ToUpperInvariant(),
                     IsProactive = isProactive && index == 0,
-                    IsRoleplay = CurrentMode == ConversationMode.Story,
+                    IsRoleplay = mode == ConversationMode.Story,
                     IsTyping = true
                 };
-                Messages.Add(message);
+                targetMessages.Add(message);
                 await TypeMessageAsync(message, chunks[index]);
 
                 if (index + 1 < chunks.Count)
@@ -403,16 +485,23 @@ public partial class MainViewModel : ObservableObject
         }
         finally
         {
-            IsCharacterSpeaking = false;
+            if (animateCharacter)
+            {
+                IsCharacterSpeaking = false;
+            }
         }
 
-        StartPostSpeechMoodHold(assistantMood);
+        if (animateCharacter)
+        {
+            StartPostSpeechMoodHold(assistantMood);
+        }
     }
 
     private void RefreshModePresentation()
     {
         OnPropertyChanged(nameof(CurrentMode));
         OnPropertyChanged(nameof(ActiveProviderLabel));
+        OnPropertyChanged(nameof(StoryProviderLabel));
 
         if (!_isResponding && !IsCharacterSpeaking)
         {
@@ -628,10 +717,16 @@ public partial class MainViewModel : ObservableObject
         return bestIndex > 0 ? bestIndex : maximumLength;
     }
 
-    private async Task WriteLogAsync(string userText, string assistantText, bool isProactive, string mood = "speaking")
+    private async Task WriteLogAsync(
+        string userText,
+        string assistantText,
+        bool isProactive,
+        string mood = "speaking",
+        ConversationMode? modeOverride = null)
     {
         var config = _configLoader.Load();
-        var llm = IsAdvancedMode ? config.AdvancedLlm : config.Llm;
+        var mode = modeOverride ?? CurrentMode;
+        var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
 
         await _conversationLogService.AppendAsync(new ConversationLogEntry
         {
@@ -643,9 +738,9 @@ public partial class MainViewModel : ObservableObject
             IsProactive = isProactive,
             CharacterId = SelectedCharacterId,
             CharacterName = CharacterDisplayName,
-            ProviderLabel = ActiveProviderLabel,
+            ProviderLabel = BuildProviderLabel(mode),
             Mood = mood,
-            Mode = CurrentMode.ToString()
+            Mode = mode.ToString()
         }, CancellationToken.None);
     }
 
