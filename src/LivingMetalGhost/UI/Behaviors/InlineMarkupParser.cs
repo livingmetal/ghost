@@ -11,8 +11,9 @@ public static class InlineMarkupParser
 {
     public readonly record struct Segment(string Text, bool Italic);
 
-    /// <param name="parseThoughts">(속마음) 괄호를 이탤릭으로 처리할지 여부. 롤플레잉 메시지에서만 켠다.</param>
-    public static IReadOnlyList<Segment> Parse(string rawText, bool parseThoughts = false)
+    /// <param name="roleplay">스토리(롤플레잉) 모드 여부. true 일 때만 *행동* / (속마음) 마크업을 적용한다.
+    /// false(일상/고급 모드)면 별표·괄호를 그대로 둔 평문으로 처리한다.</param>
+    public static IReadOnlyList<Segment> Parse(string rawText, bool roleplay = false)
     {
         var segments = new List<Segment>();
         if (string.IsNullOrEmpty(rawText))
@@ -21,10 +22,18 @@ public static class InlineMarkupParser
         }
 
         var text = rawText.Replace("\r\n", "\n").Replace('\r', '\n');
+
+        if (!roleplay)
+        {
+            // 일상/고급 모드에서는 마크업을 적용하지 않고 글자 그대로 둔다.
+            Add(segments, text, italic: false);
+            return segments;
+        }
+
         var index = 0;
         while (index < text.Length)
         {
-            var marker = FindNextMarker(text, index, parseThoughts);
+            var marker = FindNextMarker(text, index, parseThoughts: true);
             if (marker < 0)
             {
                 Add(segments, text.Substring(index), italic: false);
@@ -77,18 +86,20 @@ public static class InlineMarkupParser
         return -1;
     }
 
-    // 속마음: (...). 괄호는 남긴다(행동과 구분). 반환값은 다음 인덱스, 종료 시 -1.
+    // 속마음: (...). 괄호는 남기고 앞에 💭 를 붙인다(행동과 구분). 반환값은 다음 인덱스, 종료 시 -1.
+    private const string ThoughtPrefix = "💭";
+
     private static int ConsumeThought(string text, int open, List<Segment> segments)
     {
         var close = text.IndexOf(')', open + 1);
         if (close >= 0)
         {
-            Add(segments, text.Substring(open, close - open + 1), italic: true);
+            Add(segments, ThoughtPrefix + text.Substring(open, close - open + 1), italic: true);
             return close + 1;
         }
 
         // 닫는 괄호가 아직 없다(스트리밍 중). 여는 괄호부터 끝까지 이탤릭.
-        Add(segments, text.Substring(open), italic: true);
+        Add(segments, ThoughtPrefix + text.Substring(open), italic: true);
         return -1;
     }
 

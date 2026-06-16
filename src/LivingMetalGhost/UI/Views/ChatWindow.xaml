@@ -115,7 +115,7 @@
                                                          HorizontalScrollBarVisibility="Disabled"
                                                          VerticalScrollBarVisibility="Disabled"
                                                          behaviors:InlineMarkup.Text="{Binding DisplayText, Mode=OneWay}"
-                                                         behaviors:InlineMarkup.ParseThoughts="{Binding IsRoleplay, Mode=OneWay}"
+                                                         behaviors:InlineMarkup.Roleplay="{Binding IsRoleplay, Mode=OneWay}"
                                                          ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
                                                 <RichTextBox.ContextMenu>
                                                     <ContextMenu>

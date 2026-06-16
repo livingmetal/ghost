@@ -26,17 +26,17 @@ public static class InlineMarkup
 
     public static void SetText(DependencyObject element, string value) => element.SetValue(TextProperty, value);
 
-    // 롤플레잉 메시지에서만 (속마음) 괄호를 이탤릭으로 처리한다(일상/고급 모드의 일반 괄호 보호).
-    public static readonly DependencyProperty ParseThoughtsProperty =
+    // 스토리(롤플레잉) 메시지에서만 *행동* / (속마음) 마크업을 적용한다(일상/고급 모드는 평문 유지).
+    public static readonly DependencyProperty RoleplayProperty =
         DependencyProperty.RegisterAttached(
-            "ParseThoughts",
+            "Roleplay",
             typeof(bool),
             typeof(InlineMarkup),
             new PropertyMetadata(false, OnTextChanged));
 
-    public static bool GetParseThoughts(DependencyObject element) => (bool)element.GetValue(ParseThoughtsProperty);
+    public static bool GetRoleplay(DependencyObject element) => (bool)element.GetValue(RoleplayProperty);
 
-    public static void SetParseThoughts(DependencyObject element, bool value) => element.SetValue(ParseThoughtsProperty, value);
+    public static void SetRoleplay(DependencyObject element, bool value) => element.SetValue(RoleplayProperty, value);
 
     private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -46,7 +46,7 @@ public static class InlineMarkup
         }
 
         var text = GetText(richTextBox);
-        var parseThoughts = GetParseThoughts(richTextBox);
+        var roleplay = GetRoleplay(richTextBox);
 
         // 행동/속마음(이탤릭) 글자는 일반 대화보다 1pt 작게 해서 평문과 더 잘 구분되게 한다.
         var baseFontSize = double.IsNaN(richTextBox.FontSize) || richTextBox.FontSize <= 0
@@ -59,7 +59,7 @@ public static class InlineMarkup
         document.Blocks.Clear();
 
         var paragraph = new Paragraph { Margin = new Thickness(0) };
-        foreach (var inline in BuildInlines(text, parseThoughts, narrationFontSize))
+        foreach (var inline in BuildInlines(text, roleplay, narrationFontSize))
         {
             paragraph.Inlines.Add(inline);
         }
@@ -67,10 +67,10 @@ public static class InlineMarkup
         document.Blocks.Add(paragraph);
     }
 
-    private static IEnumerable<Inline> BuildInlines(string rawText, bool parseThoughts, double narrationFontSize)
+    private static IEnumerable<Inline> BuildInlines(string rawText, bool roleplay, double narrationFontSize)
     {
         var inlines = new List<Inline>();
-        foreach (var segment in InlineMarkupParser.Parse(rawText, parseThoughts))
+        foreach (var segment in InlineMarkupParser.Parse(rawText, roleplay))
         {
             AddSegment(inlines, segment.Text, segment.Italic, narrationFontSize);
         }
