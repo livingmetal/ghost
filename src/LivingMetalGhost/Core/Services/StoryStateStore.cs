@@ -11,6 +11,7 @@ namespace LivingMetalGhost.Core.Services;
 /// </summary>
 public sealed class StoryStateStore
 {
+    private const int DefaultAffinity = 50;
     private readonly string _storyRoot;
     private readonly string _stateFile;
     private readonly string _memoryFile;
@@ -45,7 +46,9 @@ public sealed class StoryStateStore
         try
         {
             var json = File.ReadAllText(_stateFile);
-            return JsonSerializer.Deserialize<StoryState>(json, _jsonOptions) ?? CreateDefaultState();
+            var state = JsonSerializer.Deserialize<StoryState>(json, _jsonOptions) ?? CreateDefaultState();
+            state.Affinity = NormalizeAffinity(state.Affinity);
+            return state;
         }
         catch (JsonException)
         {
@@ -61,13 +64,13 @@ public sealed class StoryStateStore
         }
     }
 
-    public StoryState SetEnabled(bool enabled)
+    public StoryState SetEnabled(bool enabled, string? storyTemplate)
     {
         var state = Load();
         state.Enabled = enabled;
-        if (enabled && string.IsNullOrWhiteSpace(state.Scene))
+        if (enabled && IsEmptyStory(state))
         {
-            ApplyOpeningScene(state);
+            ApplyTemplate(state, storyTemplate);
         }
 
         state.UpdatedAt = DateTimeOffset.Now;
@@ -75,10 +78,11 @@ public sealed class StoryStateStore
         return state;
     }
 
-    public StoryState Reset(bool keepEnabled)
+    public StoryState Reset(bool keepEnabled, string? storyTemplate)
     {
         var resetState = CreateDefaultState();
         resetState.Enabled = keepEnabled;
+        ApplyTemplate(resetState, storyTemplate);
         Save(resetState);
 
         try
@@ -120,6 +124,7 @@ public sealed class StoryStateStore
     {
         Directory.CreateDirectory(_storyRoot);
         state.UpdatedAt = DateTimeOffset.Now;
+        state.Affinity = NormalizeAffinity(state.Affinity);
         var json = JsonSerializer.Serialize(state, _jsonOptions);
         File.WriteAllText(_stateFile, json);
     }
@@ -134,16 +139,18 @@ public sealed class StoryStateStore
     public static string BuildOpeningText(StoryState state)
     {
         var scene = string.IsNullOrWhiteSpace(state.Scene)
-            ? "늦은 밤, 조용한 데이터센터 한가운데에 닫힌 콘솔 하나가 희미하게 깜박인다."
+            ? "아직 시작 장면이 정해지지 않았다."
             : state.Scene.Trim();
         var objective = string.IsNullOrWhiteSpace(state.Summary)
-            ? "첫 목표: 콘솔이 왜 깨어났는지 알아낸다."
+            ? "첫 목표: 장면을 정하고 이야기를 시작한다."
             : state.Summary.Trim();
 
         return $"""
             {scene}
 
             {objective}
+
+            상태: 긴장도 {Math.Clamp(state.Tension, 0, 5)}/5 · Affinity {NormalizeAffinity(state.Affinity)}/100
 
             입력 규칙:
             그냥 쓰면 대사로 처리됩니다.
@@ -155,30 +162,115 @@ public sealed class StoryStateStore
 
     private static StoryState CreateDefaultState()
     {
-        var state = new StoryState
+        return new StoryState
         {
             Enabled = false,
-            Title = "밤의 데이터센터",
+            Title = "default",
             Scene = string.Empty,
             Summary = string.Empty,
-            PlayerRole = "아키텍쳐",
-            Mood = "quiet_tension",
-            Tension = 1,
+            PlayerRole = "주인공",
+            Mood = "daily",
+            Tension = 0,
+            Affinity = DefaultAffinity,
             UpdatedAt = DateTimeOffset.Now
         };
-        ApplyOpeningScene(state);
-        return state;
     }
 
-    private static void ApplyOpeningScene(StoryState state)
+    private static bool IsEmptyStory(StoryState state) =>
+        string.IsNullOrWhiteSpace(state.Scene) &&
+        string.IsNullOrWhiteSpace(state.Summary);
+
+    private static void ApplyTemplate(StoryState state, string? storyTemplate)
     {
-        state.Title = string.IsNullOrWhiteSpace(state.Title) || string.Equals(state.Title, "default", StringComparison.OrdinalIgnoreCase)
-            ? "밤의 데이터센터"
-            : state.Title;
-        state.PlayerRole = string.IsNullOrWhiteSpace(state.PlayerRole) ? "아키텍쳐" : state.PlayerRole;
-        state.Scene = "늦은 밤의 폐쇄망 데이터센터. 팬 소리는 낮게 깔리고, 사용되지 않아야 할 콘솔 하나가 푸른빛으로 깨어나 있다.";
-        state.Summary = "첫 목표: 콘솔이 왜 깨어났는지 확인하고, 오르키아와 함께 안전하게 접근한다.";
-        state.Mood = "quiet_tension";
-        state.Tension = Math.Clamp(state.Tension <= 0 ? 1 : state.Tension, 0, 5);
+        var template = ParseTemplate(storyTemplate);
+        state.Title = string.IsNullOrWhiteSpace(template.Title) ? "새 이야기" : template.Title;
+        state.PlayerRole = string.IsNullOrWhiteSpace(template.PlayerRole) ? "주인공" : template.PlayerRole;
+        state.Scene = template.Scene;
+        state.Summary = template.Summary;
+        state.Mood = string.IsNullOrWhiteSpace(template.Mood) ? "quiet" : template.Mood;
+        state.Tension = Math.Clamp(template.Tension ?? 0, 0, 5);
+        state.Affinity = NormalizeAffinity(template.Affinity ?? DefaultAffinity);
     }
+
+    private static StoryTemplate ParseTemplate(string? storyTemplate)
+    {
+        if (string.IsNullOrWhiteSpace(storyTemplate))
+        {
+            return new StoryTemplate();
+        }
+
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var freeform = new List<string>();
+        foreach (var rawLine in storyTemplate.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            var separatorIndex = line.IndexOf(':');
+            if (separatorIndex > 0)
+            {
+                var key = NormalizeKey(line[..separatorIndex]);
+                var value = line[(separatorIndex + 1)..].Trim();
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    values[key] = value;
+                    continue;
+                }
+            }
+
+            freeform.Add(line);
+        }
+
+        var scene = Get(values, "scene");
+        if (string.IsNullOrWhiteSpace(scene) && freeform.Count > 0)
+        {
+            scene = string.Join(" ", freeform);
+        }
+
+        return new StoryTemplate(
+            Get(values, "title"),
+            Get(values, "playerrole"),
+            scene,
+            Get(values, "summary"),
+            Get(values, "mood"),
+            TryParseInt(Get(values, "tension")),
+            TryParseInt(Get(values, "affinity")));
+    }
+
+    private static string NormalizeKey(string key)
+    {
+        var normalized = key.Trim().ToLowerInvariant().Replace("_", string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty);
+        return normalized switch
+        {
+            "title" or "제목" => "title",
+            "player" or "playerrole" or "role" or "주인공" or "플레이어" or "플레이어역할" => "playerrole",
+            "scene" or "opening" or "장면" or "시작장면" => "scene",
+            "summary" or "objective" or "goal" or "목표" or "요약" => "summary",
+            "mood" or "분위기" => "mood",
+            "tension" or "긴장도" => "tension",
+            "affinity" or "rapport" or "relationship" => "affinity",
+            _ => string.Empty
+        };
+    }
+
+    private static string Get(IReadOnlyDictionary<string, string> values, string key) =>
+        values.TryGetValue(key, out var value) ? value.Trim() : string.Empty;
+
+    private static int? TryParseInt(string value) =>
+        int.TryParse(value, out var parsed) ? parsed : null;
+
+    private static int NormalizeAffinity(int affinity) =>
+        affinity <= 0 ? DefaultAffinity : Math.Clamp(affinity, 0, 100);
+
+    private sealed record StoryTemplate(
+        string Title = "",
+        string PlayerRole = "",
+        string Scene = "",
+        string Summary = "",
+        string Mood = "",
+        int? Tension = null,
+        int? Affinity = null);
 }
