@@ -19,7 +19,7 @@
                           Click="OpenChatMenuItem_OnClick" />
                 <Separator />
                 <MenuItem x:Name="StoryModeMenuItem"
-                          Header="스토리 모드"
+                          Header="롤플레잉 모드"
                           IsCheckable="True"
                           Click="StoryModeMenuItem_OnClick" />
                 <MenuItem x:Name="AdvancedModeMenuItem"
