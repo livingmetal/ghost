@@ -32,12 +32,14 @@ public partial class App : Application
         Services.GetRequiredService<AdvancedSessionLogService>().EnsureWorkspaceFiles();
         Services.GetRequiredService<WorkspaceStore>().EnsureWorkspaceFile();
 
-        var mainWindow = new MainWindow
-        {
-            DataContext = Services.GetRequiredService<MainViewModel>()
-        };
+        var mainWindow = new MainWindow();
         MainWindow = mainWindow;
         mainWindow.Show();
+
+        // WPF requires the owner Window to have been shown before another Window can use it as Owner.
+        // Setting DataContext after Show prevents startup mode synchronization from creating child
+        // windows while MainWindow is still in the not-yet-shown state.
+        mainWindow.DataContext = Services.GetRequiredService<MainViewModel>();
 
         _trayIconService = new TrayIconService(
             mainWindow.RestoreFromTray,
