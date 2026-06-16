@@ -29,6 +29,7 @@ public partial class App : Application
         var serviceCollection = new ServiceCollection();
         ConfigureServices(serviceCollection);
         Services = serviceCollection.BuildServiceProvider();
+        Services.GetRequiredService<AdvancedSessionLogService>().EnsureWorkspaceFiles();
 
         var mainWindow = new MainWindow
         {
@@ -121,6 +122,7 @@ public partial class App : Application
         services.AddSingleton<DpapiSecretStore>();
         services.AddSingleton<StoryStateStore>();
         services.AddSingleton<RoleplayStateUpdater>();
+        services.AddSingleton<AdvancedSessionLogService>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
