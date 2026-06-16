@@ -299,6 +299,14 @@
                                                                     BorderThickness="0"
                                                                     Click="ApproveAgentJobButton_OnClick"
                                                                     Content="승인" />
+                                                            <Button Margin="0,0,6,0"
+                                                                    Padding="8,4"
+                                                                    Background="#4A3F6B"
+                                                                    Foreground="#D9CBFF"
+                                                                    BorderBrush="#6D5FA8"
+                                                                    BorderThickness="1"
+                                                                    Click="AlwaysApproveAgentJobButton_OnClick"
+                                                                    Content="항상 승인" />
                                                             <Button Padding="8,4"
                                                                     Background="#232A3B"
                                                                     Foreground="#D9CBFF"
