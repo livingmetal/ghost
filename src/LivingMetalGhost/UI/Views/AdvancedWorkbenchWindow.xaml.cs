@@ -12,6 +12,7 @@ namespace LivingMetalGhost.UI.Views;
 public partial class AdvancedWorkbenchWindow : Window
 {
     private MainViewModel? _subscribedViewModel;
+    private ChatMessage? _selectedMemoryCandidate;
     private readonly AdvancedSessionLogService _advancedSessionLogService;
 
     public AdvancedWorkbenchWindow()
@@ -23,6 +24,7 @@ public partial class AdvancedWorkbenchWindow : Window
         {
             SubscribeToMessages(DataContext as MainViewModel);
             RefreshContextText();
+            RefreshSelectedMemoryCandidateText();
         };
     }
 
@@ -40,6 +42,7 @@ public partial class AdvancedWorkbenchWindow : Window
         }
 
         RefreshContextText();
+        RefreshSelectedMemoryCandidateText();
         Activate();
         FocusPrompt();
     }
@@ -48,6 +51,7 @@ public partial class AdvancedWorkbenchWindow : Window
     {
         SubscribeToMessages(e.NewValue as MainViewModel);
         RefreshContextText();
+        RefreshSelectedMemoryCandidateText();
     }
 
     private void SubscribeToMessages(MainViewModel? viewModel)
@@ -73,6 +77,8 @@ public partial class AdvancedWorkbenchWindow : Window
             }
         }
 
+        _selectedMemoryCandidate = null;
+        RefreshSelectedMemoryCandidateText();
         ScrollToLatestMessage();
     }
 
@@ -100,10 +106,15 @@ public partial class AdvancedWorkbenchWindow : Window
             foreach (var item in e.OldItems.OfType<ChatMessage>())
             {
                 item.PropertyChanged -= Message_OnPropertyChanged;
+                if (ReferenceEquals(_selectedMemoryCandidate, item))
+                {
+                    _selectedMemoryCandidate = null;
+                }
             }
         }
 
         RefreshContextText();
+        RefreshSelectedMemoryCandidateText();
         ScrollToLatestMessage();
     }
 
@@ -111,6 +122,7 @@ public partial class AdvancedWorkbenchWindow : Window
     {
         if (e.PropertyName is nameof(ChatMessage.Text) or nameof(ChatMessage.DisplayText))
         {
+            RefreshSelectedMemoryCandidateText();
             ScrollToLatestMessage();
         }
     }
@@ -118,6 +130,23 @@ public partial class AdvancedWorkbenchWindow : Window
     private void RefreshContextText()
     {
         WorkbenchContextText.Text = _advancedSessionLogService.BuildWorkbenchContextText();
+    }
+
+    private void RefreshSelectedMemoryCandidateText()
+    {
+        if (_selectedMemoryCandidate is null || string.IsNullOrWhiteSpace(_selectedMemoryCandidate.Text))
+        {
+            SelectedMemoryCandidateText.Text = "선택된 기억 후보: 없음";
+            return;
+        }
+
+        var text = _selectedMemoryCandidate.Text.Replace("\r\n", " ").Replace('\n', ' ').Trim();
+        if (text.Length > 70)
+        {
+            text = text[..70] + "…";
+        }
+
+        SelectedMemoryCandidateText.Text = $"선택된 기억 후보: {text}";
     }
 
     private void ScrollToLatestMessage()
@@ -140,6 +169,23 @@ public partial class AdvancedWorkbenchWindow : Window
         }
     }
 
+    private void MessageBubble_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement element || element.DataContext is not ChatMessage message)
+        {
+            return;
+        }
+
+        if (message.IsUser || message.IsTyping || string.IsNullOrWhiteSpace(message.Text))
+        {
+            return;
+        }
+
+        _selectedMemoryCandidate = message;
+        RefreshSelectedMemoryCandidateText();
+        e.Handled = false;
+    }
+
     private void ExitAdvancedButton_OnClick(object sender, RoutedEventArgs e)
     {
         ExitAdvancedMode();
@@ -158,7 +204,9 @@ public partial class AdvancedWorkbenchWindow : Window
     private void NewAdvancedSessionButton_OnClick(object sender, RoutedEventArgs e)
     {
         _subscribedViewModel?.StartNewAdvancedSession();
+        _selectedMemoryCandidate = null;
         RefreshContextText();
+        RefreshSelectedMemoryCandidateText();
     }
 
     private async void GenerateSummaryButton_OnClick(object sender, RoutedEventArgs e)
@@ -199,8 +247,11 @@ public partial class AdvancedWorkbenchWindow : Window
             return;
         }
 
-        var lastReply = _subscribedViewModel.GetLastCompletedAssistantMessageText();
-        if (string.IsNullOrWhiteSpace(lastReply))
+        var candidateText = _selectedMemoryCandidate is { IsUser: false, IsTyping: false } &&
+                            !string.IsNullOrWhiteSpace(_selectedMemoryCandidate.Text)
+            ? _selectedMemoryCandidate.Text
+            : _subscribedViewModel.GetLastCompletedAssistantMessageText();
+        if (string.IsNullOrWhiteSpace(candidateText))
         {
             MessageBox.Show(
                 "저장할 완료된 답변을 찾지 못했어요.",
@@ -212,7 +263,7 @@ public partial class AdvancedWorkbenchWindow : Window
 
         var editor = new ProjectMemoryEditorWindow(
             _subscribedViewModel.GetCurrentAdvancedSessionId(),
-            lastReply)
+            candidateText)
         {
             Owner = this
         };
