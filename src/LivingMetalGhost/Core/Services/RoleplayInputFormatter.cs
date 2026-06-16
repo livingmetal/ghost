@@ -58,7 +58,7 @@ public static class RoleplayInputFormatter
                 builder.AppendLine();
             }
 
-            builder.AppendLine("Inner thought, not directly knowable by characters:");
+            builder.AppendLine("Inner thought — the player's private mind. The character cannot hear, see, or know this. Never quote, repeat, answer, or acknowledge it, and never show awareness of its content:");
             foreach (var thought in parsed.Thoughts)
             {
                 builder.AppendLine($"- {thought}");
@@ -66,7 +66,16 @@ public static class RoleplayInputFormatter
         }
 
         builder.AppendLine();
-        builder.AppendLine("Continue the scene from this input. Do not decide the player's next action.");
+        var hasObservable = parsed.Speeches.Count > 0 || parsed.Actions.Count > 0;
+        if (hasObservable)
+        {
+            builder.AppendLine("Continue the scene from only what the character can actually perceive (spoken dialogue and visible action). Do not reference or respond to the inner thought directly. Do not decide the player's next action.");
+        }
+        else
+        {
+            builder.AppendLine("The player only thought privately and neither said nor did anything the character can perceive. Do not answer, mention, or hint that you know the thought. Continue with ambient scene or your own small initiative, as if quietly waiting for the player to act. Do not decide the player's next action.");
+        }
+
         return builder.ToString().Trim();
     }
 

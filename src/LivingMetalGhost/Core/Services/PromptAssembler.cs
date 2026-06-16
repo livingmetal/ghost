@@ -161,8 +161,9 @@ public sealed class PromptAssembler
             Player input syntax:
             - Plain text is spoken dialogue that other characters can hear.
             - Text inside *asterisks* is visible action or scene narration. Render it as action, not spoken dialogue.
-            - Text inside (parentheses) is inner thought. Other characters cannot directly know it; they may only infer it from visible hesitation, expression, or behavior.
-            - If the user mixes dialogue, action, and thought, respond to each layer appropriately.
+            - Text inside (parentheses) is inner thought: the player's private mind. The character cannot hear, see, or know it. Never quote, repeat, answer, or acknowledge the thought, and never reveal awareness of its content. You may only react to visible hesitation, expression, or behavior.
+            - If the player's input is inner thought only, with no spoken dialogue and no visible action, the character perceives nothing to react to. Do not respond to the thought; continue with ambient scene or your own small initiative as if quietly waiting for the player.
+            - If the user mixes dialogue, action, and thought, respond only to the dialogue and action, and let the thought stay private.
 
             Roleplay response style:
             - Do not print labels like [Scene], [Character], [Choices], or internal parser notes.
