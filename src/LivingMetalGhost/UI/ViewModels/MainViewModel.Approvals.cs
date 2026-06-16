@@ -15,6 +15,49 @@ public partial class MainViewModel
         TryCreateGitFetchApprovalFromBubble(value);
     }
 
+    public async Task ApproveAgentJobAsync(AgentJob job, CancellationToken cancellationToken)
+    {
+        if (!IsApprovalJob(job))
+        {
+            return;
+        }
+
+        var approval = FindPendingApproval(job.Title);
+        if (approval is null)
+        {
+            job.Status = AgentJobStatus.Failed;
+            job.Summary = "대응되는 승인 요청을 찾지 못했습니다.";
+            return;
+        }
+
+        job.Status = AgentJobStatus.Running;
+        job.Progress = 0.35;
+        await ApprovePendingApprovalAsync(approval, cancellationToken);
+        job.Status = approval.Status == PendingApprovalStatus.Completed
+            ? AgentJobStatus.Completed
+            : AgentJobStatus.Failed;
+        job.Progress = 1.0;
+        job.Summary = approval.ResultText;
+    }
+
+    public void RejectAgentJob(AgentJob job)
+    {
+        if (!IsApprovalJob(job))
+        {
+            return;
+        }
+
+        var approval = FindPendingApproval(job.Title);
+        if (approval is not null)
+        {
+            RejectPendingApproval(approval);
+        }
+
+        job.Status = AgentJobStatus.Cancelled;
+        job.Progress = 1.0;
+        job.Summary = "사용자가 거절했습니다.";
+    }
+
     public async Task ApprovePendingApprovalAsync(PendingApprovalRequest approval, CancellationToken cancellationToken)
     {
         if (approval.Status != PendingApprovalStatus.Pending)
@@ -62,6 +105,20 @@ public partial class MainViewModel
         approval.CompletedAt = DateTimeOffset.Now;
         approval.ResultText = "사용자가 거절했습니다.";
         TrimPendingApprovals();
+    }
+
+    private PendingApprovalRequest? FindPendingApproval(string command)
+    {
+        return PendingApprovals.FirstOrDefault(approval =>
+            approval.Status == PendingApprovalStatus.Pending &&
+            string.Equals(approval.Command, command, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsApprovalJob(AgentJob job)
+    {
+        return job.RequiresApproval &&
+               string.Equals(job.AgentType, "approval", StringComparison.OrdinalIgnoreCase) &&
+               job.Status == AgentJobStatus.WaitingApproval;
     }
 
     private void TryCreateGitFetchApprovalFromBubble(string value)
@@ -125,7 +182,8 @@ public partial class MainViewModel
         if (ActiveAgentJobs.Any(job =>
                 job.RequiresApproval &&
                 string.Equals(job.AgentType, "approval", StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(job.Title, approval.Command, StringComparison.OrdinalIgnoreCase)))
+                string.Equals(job.Title, approval.Command, StringComparison.OrdinalIgnoreCase) &&
+                job.Status is AgentJobStatus.WaitingApproval or AgentJobStatus.Running))
         {
             return;
         }
