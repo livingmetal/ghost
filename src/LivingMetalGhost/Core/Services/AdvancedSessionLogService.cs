@@ -18,6 +18,7 @@ public sealed class AdvancedSessionLogService
     private readonly string _summariesRoot;
     private readonly string _projectMemoryFile;
     private readonly string _pinnedContextFile;
+    private readonly WorkspaceStore _workspaceStore;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -26,13 +27,14 @@ public sealed class AdvancedSessionLogService
 
     private int _currentTurnCount;
 
-    public AdvancedSessionLogService(AppPaths paths)
+    public AdvancedSessionLogService(AppPaths paths, WorkspaceStore workspaceStore)
     {
         _workspaceRoot = Path.Combine(paths.Root, "Workspaces", DefaultWorkspaceId);
         _sessionsRoot = Path.Combine(_workspaceRoot, "sessions");
         _summariesRoot = Path.Combine(_workspaceRoot, "summaries");
         _projectMemoryFile = Path.Combine(_workspaceRoot, "project_memory.jsonl");
         _pinnedContextFile = Path.Combine(_workspaceRoot, "pinned_context.md");
+        _workspaceStore = workspaceStore;
         StartNewSession();
     }
 
@@ -85,6 +87,7 @@ public sealed class AdvancedSessionLogService
     public string BuildWorkbenchContextText()
     {
         Directory.CreateDirectory(_workspaceRoot);
+        var workspace = _workspaceStore.Load();
         var memoryCount = CountJsonlLines(_projectMemoryFile);
         var enabledMemoryCount = ReadEnabledProjectMemoryEntries().Count;
         var pinnedLength = File.Exists(_pinnedContextFile)
@@ -93,7 +96,8 @@ public sealed class AdvancedSessionLogService
         var summaryState = File.Exists(CurrentSummaryFile) ? "exists" : "none";
 
         return $"""
-            Workspace: {WorkspaceId}
+            Workspace: {workspace.DisplayName} ({workspace.WorkspaceId})
+            Root: {(string.IsNullOrWhiteSpace(workspace.RootPath) ? "not set" : workspace.RootPath)}
             Session: {CurrentSessionId}
             Turns: {_currentTurnCount}
             Project memory: {enabledMemoryCount}/{memoryCount} enabled
@@ -109,6 +113,12 @@ public sealed class AdvancedSessionLogService
     public string BuildReusablePromptContext(int maximumCharacters = 5000)
     {
         var blocks = new List<string>();
+        var workspacePolicy = _workspaceStore.BuildPromptContext().Trim();
+        if (!string.IsNullOrWhiteSpace(workspacePolicy))
+        {
+            blocks.Add(workspacePolicy);
+        }
+
         var pinned = SafeReadAllText(_pinnedContextFile).Trim();
         if (!string.IsNullOrWhiteSpace(pinned))
         {
