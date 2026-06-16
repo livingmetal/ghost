@@ -36,6 +36,7 @@ public sealed class RoleplayStateUpdater
         state.Summary = AppendBeat(state.Summary, cleanUserText, cleanAssistantText);
         state.Mood = string.IsNullOrWhiteSpace(mood) ? state.Mood : mood.Trim().ToLowerInvariant();
         state.Tension = EstimateTension(state.Tension, cleanUserText, cleanAssistantText);
+        state.Affinity = EstimateAffinity(state.Affinity, cleanUserText, cleanAssistantText);
 
         _storyStateStore.Save(state);
         _storyStateStore.AppendMemory(new RoleplayMemoryEntry
@@ -45,6 +46,7 @@ public sealed class RoleplayStateUpdater
             AssistantText = cleanAssistantText,
             Mood = state.Mood,
             Tension = state.Tension,
+            Affinity = state.Affinity,
             Scene = state.Scene
         });
     }
@@ -107,6 +109,38 @@ public sealed class RoleplayStateUpdater
         }
 
         return Math.Clamp(tension, 0, 5);
+    }
+
+    private static int EstimateAffinity(int currentAffinity, string userText, string assistantText)
+    {
+        var text = (userText + " " + assistantText).ToLowerInvariant();
+        var positiveWords = new[]
+        {
+            "고마워", "감사", "도와", "함께", "괜찮아", "믿", "좋아", "웃", "안심", "칭찬", "잘했", "부드럽"
+        };
+        var negativeWords = new[]
+        {
+            "싫", "꺼져", "무시", "화내", "공격", "버려", "비난", "짜증", "거짓", "배신", "위협", "협박"
+        };
+
+        var affinity = currentAffinity <= 0 ? 50 : currentAffinity;
+        if (positiveWords.Any(word => text.Contains(word, StringComparison.OrdinalIgnoreCase)))
+        {
+            affinity += 2;
+        }
+
+        if (negativeWords.Any(word => text.Contains(word, StringComparison.OrdinalIgnoreCase)))
+        {
+            affinity -= 3;
+        }
+
+        if (assistantText.Contains("조심", StringComparison.OrdinalIgnoreCase) ||
+            assistantText.Contains("믿", StringComparison.OrdinalIgnoreCase))
+        {
+            affinity++;
+        }
+
+        return Math.Clamp(affinity, 0, 100);
     }
 
     private static string CleanText(string text)
