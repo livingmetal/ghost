@@ -644,7 +644,8 @@ public partial class MainViewModel : ObservableObject
             CharacterId = SelectedCharacterId,
             CharacterName = CharacterDisplayName,
             ProviderLabel = ActiveProviderLabel,
-            Mood = mood
+            Mood = mood,
+            Mode = CurrentMode.ToString()
         }, CancellationToken.None);
     }
 

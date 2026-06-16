@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace LivingMetalGhost.Core.Models;
 
 public sealed class ConversationLogEntry
@@ -20,4 +22,17 @@ public sealed class ConversationLogEntry
 
     /// <summary>응답 후 캐릭터가 유지한 mood/state.</summary>
     public string Mood { get; set; } = string.Empty;
+
+    /// <summary>대화 당시 모드: Daily / Story / Advanced. 구버전 로그는 비어 있을 수 있다.</summary>
+    public string Mode { get; set; } = string.Empty;
+
+    /// <summary>로그 뷰에서 보여줄 한글 모드 라벨. 직렬화하지 않는다.</summary>
+    [JsonIgnore]
+    public string ModeLabel => Mode switch
+    {
+        "Daily" => "일상",
+        "Story" => "스토리",
+        "Advanced" => "고급",
+        _ => string.Empty
+    };
 }

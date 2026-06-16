@@ -60,10 +60,22 @@
                            FontWeight="SemiBold"
                            Foreground="#18212D"
                            Text="{Binding SelectedDate, StringFormat={}{0:yyyy년 M월 d일}}" />
-                <TextBlock Grid.Column="1"
-                           VerticalAlignment="Bottom"
-                           Foreground="#64707E"
-                           Text="{Binding StatusMessage}" />
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Bottom">
+                    <TextBlock Margin="0,0,8,0"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="#64707E"
+                               Text="모드" />
+                    <ComboBox Width="96"
+                              Margin="0,0,14,0"
+                              ItemsSource="{Binding ModeFilters}"
+                              SelectedItem="{Binding SelectedModeFilter}" />
+                    <TextBlock VerticalAlignment="Center"
+                               Foreground="#64707E"
+                               Text="{Binding StatusMessage}" />
+                </StackPanel>
             </Grid>
 
             <ListBox Grid.Row="1"
@@ -85,10 +97,32 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock FontFamily="Consolas"
-                                               FontSize="11"
-                                               Foreground="#64707E"
-                                               Text="{Binding Provider}" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Margin="0,0,8,0"
+                                                Padding="6,1"
+                                                CornerRadius="6"
+                                                VerticalAlignment="Center"
+                                                Background="#E1D7FF">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ModeLabel}" Value="">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#3A2E6B"
+                                                       Text="{Binding ModeLabel}" />
+                                        </Border>
+                                        <TextBlock FontFamily="Consolas"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="#64707E"
+                                                   Text="{Binding Provider}" />
+                                    </StackPanel>
                                     <TextBlock Grid.Column="1"
                                                FontFamily="Consolas"
                                                FontSize="11"

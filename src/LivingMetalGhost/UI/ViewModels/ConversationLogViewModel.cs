@@ -7,13 +7,18 @@ namespace LivingMetalGhost.UI.ViewModels;
 
 public partial class ConversationLogViewModel : ObservableObject
 {
+    private const string AllModes = "전체";
     private readonly ConversationLogService _logService;
+    private readonly List<ConversationLogEntry> _loadedEntries = [];
 
     [ObservableProperty]
     private DateTime? selectedDate;
 
     [ObservableProperty]
     private string statusMessage = "저장된 대화가 없습니다.";
+
+    [ObservableProperty]
+    private string selectedModeFilter = AllModes;
 
     public ConversationLogViewModel(ConversationLogService logService)
     {
@@ -22,6 +27,9 @@ public partial class ConversationLogViewModel : ObservableObject
 
     public ObservableCollection<DateTime> Dates { get; } = [];
     public ObservableCollection<ConversationLogEntry> Entries { get; } = [];
+    public IReadOnlyList<string> ModeFilters { get; } = [AllModes, "일상", "스토리", "고급"];
+
+    partial void OnSelectedModeFilterChanged(string value) => ApplyFilter();
 
     public async Task LoadAsync()
     {
@@ -44,15 +52,37 @@ public partial class ConversationLogViewModel : ObservableObject
 
     public async Task LoadDateAsync(DateTime date)
     {
-        Entries.Clear();
+        _loadedEntries.Clear();
         var entries = await _logService.ReadAsync(date, CancellationToken.None);
-        foreach (var entry in entries)
+        _loadedEntries.AddRange(entries);
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        Entries.Clear();
+        var filtered = _loadedEntries.Where(MatchesFilter).ToList();
+        foreach (var entry in filtered)
         {
             Entries.Add(entry);
         }
 
-        StatusMessage = entries.Count == 0
-            ? "이 날짜에는 대화가 없습니다."
-            : $"{entries.Count}개의 대화";
+        if (_loadedEntries.Count == 0)
+        {
+            StatusMessage = "이 날짜에는 대화가 없습니다.";
+        }
+        else if (SelectedModeFilter == AllModes)
+        {
+            StatusMessage = $"{_loadedEntries.Count}개의 대화";
+        }
+        else
+        {
+            StatusMessage = $"{SelectedModeFilter} {filtered.Count}개 / 전체 {_loadedEntries.Count}개";
+        }
+    }
+
+    private bool MatchesFilter(ConversationLogEntry entry)
+    {
+        return SelectedModeFilter == AllModes || entry.ModeLabel == SelectedModeFilter;
     }
 }
