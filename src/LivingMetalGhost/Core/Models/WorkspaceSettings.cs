@@ -2,7 +2,6 @@ namespace LivingMetalGhost.Core.Models;
 
 /// <summary>
 /// 고급 Workbench가 어느 작업공간을 기준으로 판단하고, 나중에 어떤 경로/명령을 허용할지 정의한다.
-/// 아직 실행 권한 enforcement 전 단계이며, 컨텍스트/정책의 기준점으로 사용한다.
 /// </summary>
 public sealed class WorkspaceSettings
 {
@@ -23,6 +22,7 @@ public sealed class WorkspaceSettings
         "dotnet build",
         "dotnet test"
     };
+    public IReadOnlyList<string> AlwaysApprovedCommands { get; set; } = Array.Empty<string>();
     public bool RequireApprovalForWrite { get; set; } = true;
     public bool RequireApprovalForExecute { get; set; } = true;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
