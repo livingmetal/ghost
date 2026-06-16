@@ -128,12 +128,10 @@ public partial class CharacterHost : UserControl
     private void RefreshCharacter()
     {
         var character = CharacterCatalog.Get(CharacterId);
-        CharacterNameLabel.Text = character.DisplayName;
         _spriteVisual = character.Visual as SpriteCharacterVisualProfile;
         _modularVisual = character.Visual as ModularCharacterVisualProfile;
         var usesCustomVisual = _spriteVisual is not null || _modularVisual is not null;
 
-        DefaultCharacter.Visibility = usesCustomVisual ? Visibility.Collapsed : Visibility.Visible;
         SpriteCharacter.Visibility = usesCustomVisual ? Visibility.Visible : Visibility.Collapsed;
 
         _blinkTimer.Stop();
