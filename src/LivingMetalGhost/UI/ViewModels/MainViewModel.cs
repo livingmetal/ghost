@@ -229,43 +229,6 @@ public partial class MainViewModel : ObservableObject
         SetStoryMode(!IsStoryMode);
     }
 
-    public string GetRoleplayStateSummary()
-    {
-        var state = _storyStateStore.Load();
-        var objectives = state.Objectives.Count == 0
-            ? "- 목표 없음"
-            : string.Join(
-                Environment.NewLine,
-                state.Objectives.Select(objective => $"- {(objective.Done ? "완료" : "진행 중")} · {objective.Text}"));
-        var memoryCount = _storyStateStore.CountMemoryEntries();
-
-        return $"""
-            상태: {(IsStoryMode ? "켜짐" : "꺼짐")}
-            제목: {state.Title}
-            플레이어: {state.PlayerRole}
-            분위기: {state.Mood}
-            긴장도: {state.Tension}/5
-            기억 항목: {memoryCount}
-            마지막 갱신: {state.UpdatedAt:yyyy-MM-dd HH:mm:ss}
-
-            요약:
-            {state.Summary}
-
-            목표:
-            {objectives}
-            """.Trim();
-    }
-
-    public void ResetRoleplayState()
-    {
-        var resetState = _storyStateStore.Reset(IsStoryMode);
-        StoryMessages.Clear();
-        if (IsStoryMode)
-        {
-            ShowRoleplayOpening(resetState);
-        }
-    }
-
     private void ShowRoleplayOpening(StoryState state)
     {
         var openingText = StoryStateStore.BuildOpeningText(state);
