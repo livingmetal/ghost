@@ -173,11 +173,11 @@ public partial class MainWindow : Window
         CharacterSurface.ReleaseMouseCapture();
         if (!_isDragging)
         {
-            ToggleChatWindow();
+            ShowDailyChatWindow();
         }
     }
 
-    private void ToggleChatWindow()
+    private void ShowDailyChatWindow()
     {
         if (ViewModel.IsAdvancedMode)
         {
@@ -186,15 +186,8 @@ public partial class MainWindow : Window
         }
 
         EnsureChatWindow();
-
-        if (_chatWindow!.IsVisible)
-        {
-            _chatWindow.Hide();
-            return;
-        }
-
         PositionChatWindow();
-        _chatWindow.ShowConsole();
+        _chatWindow!.ShowConsole();
     }
 
     public void RestoreFromTray()
