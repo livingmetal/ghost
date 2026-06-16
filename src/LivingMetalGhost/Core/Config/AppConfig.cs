@@ -51,6 +51,7 @@ public sealed class CharacterPromptSettings
     public string Appearance { get; set; } = string.Empty;
     public string Background { get; set; } = string.Empty;
     public string Personality { get; set; } = string.Empty;
+    public string StoryTemplate { get; set; } = string.Empty;
     public double CharacterScale { get; set; } = 1.0;
     public string CharacterSizePresetId { get; set; } = string.Empty;
     public string CharacterFramingPresetId { get; set; } = string.Empty;
