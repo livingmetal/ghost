@@ -160,13 +160,15 @@ public sealed class PromptAssembler
 
             Player input syntax:
             - Plain text is spoken dialogue that other characters can hear.
-            - Text inside *asterisks* is visible action or scene narration. Render it as action, not spoken dialogue.
+            - Text inside **double asterisks** is visible action or scene narration. Render it as action, not spoken dialogue.
+            - Text inside *single asterisks* is ordinary italic emphasis inside dialogue, not action syntax.
             - Text inside (parentheses) is inner thought. Other characters cannot directly know it; they may only infer it from visible hesitation, expression, or behavior.
-            - If the user mixes dialogue, action, and thought, respond to each layer appropriately.
+            - If the user mixes dialogue, action, thought, and italic emphasis, respond to each layer appropriately.
 
             Roleplay response style:
             - Do not print labels like [Scene], [Character], [Choices], or internal parser notes.
-            - Scene narration may be written in short italic-style lines using *...* when it improves immersion.
+            - Scene narration should be written in short italic-style lines using **...** when it improves immersion.
+            - Use *...* only for ordinary italic emphasis inside dialogue or narration, not for action syntax.
             - Character dialogue should be direct and quoted naturally when appropriate.
             - End with a concrete hook or 2 to 3 short choices when the scene would otherwise stall.
 
