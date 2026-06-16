@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
 using LivingMetalGhost.Agents;
 using LivingMetalGhost.Core.Models;
@@ -10,7 +9,7 @@ namespace LivingMetalGhost.Skills;
 
 /// <summary>
 /// Git 관련 요청 중 읽기 전용 상태 확인은 Workbench가 직접 수행한다.
-/// pull/fetch/reset 같은 변경 가능 명령은 바로 실행하지 않고 승인 필요 작업으로 분류한다.
+/// 원격 확인이나 병합 계열 작업은 바로 실행하지 않고 승인 대상으로 분류한다.
 /// </summary>
 public sealed class GitCommandSkill : IGhostSkill
 {
@@ -26,7 +25,7 @@ public sealed class GitCommandSkill : IGhostSkill
     }
 
     public string Name => "GitCommand";
-    public string Description => "git status/diff 같은 읽기 전용 명령을 자동 실행하고, fetch/pull/reset은 승인 대상으로 분류한다.";
+    public string Description => "git status/diff 같은 읽기 전용 명령을 자동 실행하고, 원격 확인/병합 계열 명령은 승인 대상으로 분류한다.";
     public IReadOnlyList<string> Examples => ["git status", "git pull 해줘", "원격 브랜치랑 차이 확인해줘"];
 
     public bool CanHandle(UserRequest request)
@@ -65,7 +64,7 @@ public sealed class GitCommandSkill : IGhostSkill
             return await BuildNetworkApprovalResponseAsync(request.RawText, workspaceRoot, ct);
         }
 
-        if (IsPullOrWriteRequest(request.RawText))
+        if (IsPullRequest(request.RawText))
         {
             return await BuildPullPreflightResponseAsync(workspaceRoot, ct);
         }
@@ -112,17 +111,20 @@ public sealed class GitCommandSkill : IGhostSkill
         var statusResult = await BuildStatusResponseAsync(workspaceRoot, ct);
         var fetchDecision = _commandPolicyService.Evaluate("git fetch origin");
         var pullDecision = _commandPolicyService.Evaluate("git pull");
+        var approvals = fetchDecision.RequiresApproval
+            ? new[] { CreateApproval("원격 상태 확인", "git fetch origin", workspaceRoot, fetchDecision) }
+            : Array.Empty<PendingApprovalRequest>();
 
         var bubble = new StringBuilder();
         bubble.AppendLine("바로 pull은 위험해서 먼저 읽기 전용 상태만 확인했어.");
         bubble.AppendLine();
         bubble.AppendLine(statusResult.BubbleText);
         bubble.AppendLine();
-        bubble.AppendLine("다음 단계 후보:");
+        bubble.AppendLine("승인 카드에 다음 작업을 등록했어:");
         bubble.AppendLine($"- git fetch origin: {DescribeDecision(fetchDecision)}");
-        bubble.AppendLine($"- git pull: {DescribeDecision(pullDecision)}");
         bubble.AppendLine();
-        bubble.AppendLine("권장 흐름은 fetch 승인 → 원격 차이 확인 → 로컬 변경 처리 방침 결정 → pull 승인 순서야.");
+        bubble.AppendLine("fetch가 끝나면 원격 차이를 확인한 뒤 pull 승인 카드를 따로 만드는 흐름이 안전해.");
+        bubble.AppendLine($"참고: git pull은 {DescribeDecision(pullDecision)}");
 
         return new SkillResult
         {
@@ -130,7 +132,7 @@ public sealed class GitCommandSkill : IGhostSkill
             Mood = "serious",
             Action = "git-pull-preflight",
             UsedLlm = false,
-            RawData = new { Fetch = fetchDecision, Pull = pullDecision, Status = statusResult.RawData }
+            RawData = new PendingApprovalBatch { Requests = approvals }
         };
     }
 
@@ -141,6 +143,9 @@ public sealed class GitCommandSkill : IGhostSkill
             ? "git ls-remote"
             : "git fetch origin";
         var decision = _commandPolicyService.Evaluate(command);
+        var approvals = decision.RequiresApproval
+            ? new[] { CreateApproval("원격 상태 확인", command, workspaceRoot, decision) }
+            : Array.Empty<PendingApprovalRequest>();
 
         return new SkillResult
         {
@@ -149,11 +154,27 @@ public sealed class GitCommandSkill : IGhostSkill
                 $"요청한 원격 확인 명령은 `{command}`로 분류했어.\n" +
                 $"위험도: {decision.RiskLevel}\n" +
                 $"판정: {decision.Reason}\n" +
-                "네트워크 접근이 필요하니 지금 단계에서는 자동 실행하지 않고 승인 카드로 넘기는 게 맞아.",
+                "승인 카드에 등록했어. Workbench 오른쪽에서 승인 또는 거절하면 돼.",
             Mood = "serious",
             Action = "git-network-approval-needed",
             UsedLlm = false,
-            RawData = decision
+            RawData = new PendingApprovalBatch { Requests = approvals }
+        };
+    }
+
+    private static PendingApprovalRequest CreateApproval(
+        string title,
+        string command,
+        string workspaceRoot,
+        CommandPolicyDecision decision)
+    {
+        return new PendingApprovalRequest
+        {
+            Title = title,
+            Command = command,
+            WorkspaceRoot = workspaceRoot,
+            RiskLevel = decision.RiskLevel,
+            Reason = decision.Reason
         };
     }
 
@@ -222,13 +243,11 @@ public sealed class GitCommandSkill : IGhostSkill
             decision.RiskLevel);
     }
 
-    private static bool IsPullOrWriteRequest(string text)
+    private static bool IsPullRequest(string text)
     {
         return text.Contains("pull", StringComparison.OrdinalIgnoreCase) ||
                text.Contains("merge", StringComparison.OrdinalIgnoreCase) ||
-               text.Contains("checkout", StringComparison.OrdinalIgnoreCase) ||
-               text.Contains("reset", StringComparison.OrdinalIgnoreCase) ||
-               text.Contains("clean", StringComparison.OrdinalIgnoreCase);
+               text.Contains("checkout", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsFetchRequest(string text)
