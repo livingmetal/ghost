@@ -55,6 +55,7 @@ public partial class AdvancedWorkbenchWindow : Window
         if (_subscribedViewModel is not null)
         {
             _subscribedViewModel.Messages.CollectionChanged -= Messages_OnCollectionChanged;
+            _subscribedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
             foreach (var message in _subscribedViewModel.Messages)
             {
                 message.PropertyChanged -= Message_OnPropertyChanged;
@@ -65,6 +66,7 @@ public partial class AdvancedWorkbenchWindow : Window
         if (_subscribedViewModel is not null)
         {
             _subscribedViewModel.Messages.CollectionChanged += Messages_OnCollectionChanged;
+            _subscribedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
             foreach (var message in _subscribedViewModel.Messages)
             {
                 message.PropertyChanged += Message_OnPropertyChanged;
@@ -72,6 +74,15 @@ public partial class AdvancedWorkbenchWindow : Window
         }
 
         ScrollToLatestMessage();
+    }
+
+    private void ViewModel_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(MainViewModel.AdvancedContextRevision)
+            or nameof(MainViewModel.ActiveProviderLabel))
+        {
+            RefreshContextText();
+        }
     }
 
     private void Messages_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -142,6 +153,53 @@ public partial class AdvancedWorkbenchWindow : Window
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
     {
         Hide();
+    }
+
+    private void NewAdvancedSessionButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        _subscribedViewModel?.StartNewAdvancedSession();
+        RefreshContextText();
+    }
+
+    private void ProjectMemoryButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_subscribedViewModel is null)
+        {
+            return;
+        }
+
+        MessageBox.Show(
+            _subscribedViewModel.GetProjectMemorySummary(),
+            "Project Memory",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+        RefreshContextText();
+    }
+
+    private async void PromoteMemoryButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_subscribedViewModel is null)
+        {
+            return;
+        }
+
+        var result = MessageBox.Show(
+            "Save the last advanced reply as project memory?",
+            "Project Memory",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var entry = await _subscribedViewModel.PromoteLastAdvancedAssistantMessageAsync(CancellationToken.None);
+        MessageBox.Show(
+            entry is null ? "No completed assistant reply found." : "Saved to project memory.",
+            "Project Memory",
+            MessageBoxButton.OK,
+            entry is null ? MessageBoxImage.Warning : MessageBoxImage.Information);
+        RefreshContextText();
     }
 
     private void PromptTextBox_OnPreviewKeyDown(object sender, KeyEventArgs e)
