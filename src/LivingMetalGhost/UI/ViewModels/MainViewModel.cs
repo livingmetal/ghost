@@ -22,6 +22,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ConversationService _conversationService;
     private readonly ConversationLogService _conversationLogService;
     private readonly SpriteDirector _spriteDirector;
+    private readonly StoryStateStore _storyStateStore;
     private bool _isResponding;
     private CancellationTokenSource? _moodHoldCts;
 
@@ -59,6 +60,9 @@ public partial class MainViewModel : ObservableObject
     private bool isAdvancedMode;
 
     [ObservableProperty]
+    private bool isStoryMode;
+
+    [ObservableProperty]
     private bool isLocalLmAvailable;
 
     /// <summary>
@@ -77,7 +81,8 @@ public partial class MainViewModel : ObservableObject
         SettingsViewModel settingsViewModel,
         ConversationService conversationService,
         ConversationLogService conversationLogService,
-        SpriteDirector spriteDirector)
+        SpriteDirector spriteDirector,
+        StoryStateStore storyStateStore)
     {
         _configLoader = configLoader;
         _intentRouter = intentRouter;
@@ -85,6 +90,8 @@ public partial class MainViewModel : ObservableObject
         _conversationService = conversationService;
         _conversationLogService = conversationLogService;
         _spriteDirector = spriteDirector;
+        _storyStateStore = storyStateStore;
+        IsStoryMode = _storyStateStore.Load().Enabled;
         RefreshSelectedCharacter();
         _ = RefreshLocalLmAvailabilityAsync();
     }
@@ -94,7 +101,9 @@ public partial class MainViewModel : ObservableObject
     /// <summary>고급 Workbench / Agent Dock 에 표시할 현재 작업들.</summary>
     public ObservableCollection<AgentJob> ActiveAgentJobs { get; } = [];
 
-    public ConversationMode CurrentMode => IsAdvancedMode ? ConversationMode.Advanced : ConversationMode.Daily;
+    public ConversationMode CurrentMode => IsAdvancedMode
+        ? ConversationMode.Advanced
+        : IsStoryMode ? ConversationMode.Story : ConversationMode.Daily;
 
     public async Task RefreshLocalLmAvailabilityAsync()
     {
@@ -137,7 +146,12 @@ public partial class MainViewModel : ObservableObject
         {
             var config = _configLoader.Load();
             var llm = IsAdvancedMode ? config.AdvancedLlm : config.Llm;
-            var mode = IsAdvancedMode ? "ADVANCED" : "DAILY";
+            var mode = CurrentMode switch
+            {
+                ConversationMode.Advanced => "ADVANCED",
+                ConversationMode.Story => "STORY",
+                _ => "DAILY"
+            };
             var model = string.IsNullOrWhiteSpace(llm.Model) ? "(default)" : llm.Model;
             return $"{mode}: {llm.Provider} / {model}";
         }
@@ -177,14 +191,12 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsAdvancedModeChanged(bool value)
     {
-        OnPropertyChanged(nameof(CurrentMode));
-        OnPropertyChanged(nameof(ActiveProviderLabel));
+        RefreshModePresentation();
+    }
 
-        if (!_isResponding && !IsCharacterSpeaking)
-        {
-            var restingMood = _spriteDirector.ResolveRestingMood(CurrentMode);
-            SetCharacterMood(restingMood);
-        }
+    partial void OnIsStoryModeChanged(bool value)
+    {
+        RefreshModePresentation();
     }
 
     [RelayCommand]
@@ -252,6 +264,14 @@ public partial class MainViewModel : ObservableObject
                 break;
             case AppCommandActions.OpenLog:
                 OpenConversationLog();
+                break;
+            case AppCommandActions.EnableStoryMode:
+                _storyStateStore.SetEnabled(true);
+                IsStoryMode = true;
+                break;
+            case AppCommandActions.DisableStoryMode:
+                _storyStateStore.SetEnabled(false);
+                IsStoryMode = false;
                 break;
             // TODO: AppCommandActions.ExitApp 는 확인 절차를 둔 뒤 Application.Current.Shutdown() 연결.
         }
@@ -345,6 +365,18 @@ public partial class MainViewModel : ObservableObject
         }
 
         StartPostSpeechMoodHold(assistantMood);
+    }
+
+    private void RefreshModePresentation()
+    {
+        OnPropertyChanged(nameof(CurrentMode));
+        OnPropertyChanged(nameof(ActiveProviderLabel));
+
+        if (!_isResponding && !IsCharacterSpeaking)
+        {
+            var restingMood = _spriteDirector.ResolveRestingMood(CurrentMode);
+            SetCharacterMood(restingMood);
+        }
     }
 
     private void SetCharacterMood(string mood)
