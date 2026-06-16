@@ -27,6 +27,11 @@
                           IsCheckable="True"
                           Click="AdvancedModeMenuItem_OnClick" />
                 <Separator />
+                <MenuItem Header="롤플레잉 상태 보기"
+                          Click="RoleplayStateMenuItem_OnClick" />
+                <MenuItem Header="롤플레잉 상태 초기화"
+                          Click="ResetRoleplayStateMenuItem_OnClick" />
+                <Separator />
                 <MenuItem Header="대화 로그"
                           Click="ConversationLogMenuItem_OnClick" />
                 <MenuItem Header="설정"
