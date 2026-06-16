@@ -17,6 +17,7 @@ public sealed class ConversationService
     private readonly PromptAssembler _promptAssembler;
     private readonly StoryStateStore _storyStateStore;
     private readonly RoleplayStateUpdater _roleplayStateUpdater;
+    private readonly AdvancedSessionLogService _advancedSessionLogService;
     private readonly List<LlmHistoryMessage> _history = [];
     private readonly Lock _historyLock = new();
     private readonly Dictionary<string, HiddenTraitRuntimeState> _hiddenTraitStates = new(StringComparer.OrdinalIgnoreCase);
@@ -26,13 +27,15 @@ public sealed class ConversationService
         ILlmProviderFactory providerFactory,
         PromptAssembler promptAssembler,
         StoryStateStore storyStateStore,
-        RoleplayStateUpdater roleplayStateUpdater)
+        RoleplayStateUpdater roleplayStateUpdater,
+        AdvancedSessionLogService advancedSessionLogService)
     {
         _configLoader = configLoader;
         _providerFactory = providerFactory;
         _promptAssembler = promptAssembler;
         _storyStateStore = storyStateStore;
         _roleplayStateUpdater = roleplayStateUpdater;
+        _advancedSessionLogService = advancedSessionLogService;
     }
 
     public async Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
@@ -70,6 +73,21 @@ public sealed class ConversationService
         if (mode == ConversationMode.Story)
         {
             _roleplayStateUpdater.UpdateAfterTurn(text, characterText, characterMood);
+        }
+        else if (mode == ConversationMode.Advanced)
+        {
+            await _advancedSessionLogService.AppendTurnAsync(new AdvancedSessionLogEntry
+            {
+                Provider = options.Provider,
+                Model = options.Model,
+                CharacterId = character.Id,
+                CharacterName = character.DisplayName,
+                UserText = text,
+                AssistantText = characterText,
+                Mood = characterMood,
+                Action = "advanced-chat",
+                UsedContext = GetAdvancedUsedContextLabels()
+            }, cancellationToken);
         }
 
         return new SkillResult
@@ -127,6 +145,22 @@ public sealed class ConversationService
             Action = mode == ConversationMode.Story ? "proactive-roleplay" : "proactive-chat",
             UsedLlm = true
         };
+    }
+
+    private IReadOnlyList<string> GetAdvancedUsedContextLabels()
+    {
+        var labels = new List<string>();
+        if (File.Exists(_advancedSessionLogService.PinnedContextFile))
+        {
+            labels.Add("pinned_context");
+        }
+
+        if (File.Exists(_advancedSessionLogService.ProjectMemoryFile))
+        {
+            labels.Add("project_memory");
+        }
+
+        return labels;
     }
 
     private string BuildHiddenTraitDirective(CharacterProfile character)
