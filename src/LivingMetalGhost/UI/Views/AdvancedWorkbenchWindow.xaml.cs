@@ -76,6 +76,7 @@ public partial class AdvancedWorkbenchWindow : Window
             _subscribedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
             foreach (var message in _subscribedViewModel.Messages)
             {
+                PrepareAdvancedMessage(message);
                 message.PropertyChanged += Message_OnPropertyChanged;
             }
         }
@@ -100,6 +101,7 @@ public partial class AdvancedWorkbenchWindow : Window
         {
             foreach (var item in e.NewItems.OfType<ChatMessage>())
             {
+                PrepareAdvancedMessage(item);
                 item.PropertyChanged += Message_OnPropertyChanged;
             }
         }
@@ -121,9 +123,17 @@ public partial class AdvancedWorkbenchWindow : Window
         ScrollToLatestMessage();
     }
 
+    private static void PrepareAdvancedMessage(ChatMessage message)
+    {
+        if (!message.IsUser)
+        {
+            message.IsAdvanced = true;
+        }
+    }
+
     private void Message_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(ChatMessage.Text) or nameof(ChatMessage.DisplayText))
+        if (e.PropertyName is nameof(ChatMessage.Text) or nameof(ChatMessage.DisplayText) or nameof(ChatMessage.AdvancedDisplayText))
         {
             RefreshSelectedMemoryCandidateText();
             ScrollToLatestMessage();
@@ -137,13 +147,13 @@ public partial class AdvancedWorkbenchWindow : Window
 
     private void RefreshSelectedMemoryCandidateText()
     {
-        if (_selectedMemoryCandidate is null || string.IsNullOrWhiteSpace(_selectedMemoryCandidate.Text))
+        if (_selectedMemoryCandidate is null || string.IsNullOrWhiteSpace(_selectedMemoryCandidate.AdvancedDisplayText))
         {
             SelectedMemoryCandidateText.Text = "선택된 기억 후보: 없음";
             return;
         }
 
-        var text = _selectedMemoryCandidate.Text.Replace("\r\n", " ").Replace('\n', ' ').Trim();
+        var text = _selectedMemoryCandidate.AdvancedDisplayText.Replace("\r\n", " ").Replace('\n', ' ').Trim();
         if (text.Length > 70)
         {
             text = text[..70] + "…";
@@ -189,7 +199,7 @@ public partial class AdvancedWorkbenchWindow : Window
             return;
         }
 
-        if (message.IsUser || message.IsTyping || string.IsNullOrWhiteSpace(message.Text))
+        if (message.IsUser || string.IsNullOrWhiteSpace(message.AdvancedDisplayText))
         {
             return;
         }
@@ -203,7 +213,7 @@ public partial class AdvancedWorkbenchWindow : Window
         }
 
         e.Handled = true;
-        await SaveMemoryCandidateAsync(message.Text);
+        await SaveMemoryCandidateAsync(message.AdvancedDisplayText);
     }
 
     private void ExitAdvancedButton_OnClick(object sender, RoutedEventArgs e)
@@ -272,9 +282,9 @@ public partial class AdvancedWorkbenchWindow : Window
             return;
         }
 
-        var candidateText = _selectedMemoryCandidate is { IsUser: false, IsTyping: false } &&
-                            !string.IsNullOrWhiteSpace(_selectedMemoryCandidate.Text)
-            ? _selectedMemoryCandidate.Text
+        var candidateText = _selectedMemoryCandidate is { IsUser: false } &&
+                            !string.IsNullOrWhiteSpace(_selectedMemoryCandidate.AdvancedDisplayText)
+            ? _selectedMemoryCandidate.AdvancedDisplayText
             : _subscribedViewModel.GetLastCompletedAssistantMessageText();
         await SaveMemoryCandidateAsync(candidateText);
     }
