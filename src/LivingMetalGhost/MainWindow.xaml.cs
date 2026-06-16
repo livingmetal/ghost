@@ -46,12 +46,14 @@ public partial class MainWindow : Window
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         SubscribeToViewModel(DataContext as MainViewModel);
+        SyncModeMenuItems();
         ResetPosition();
     }
 
     private void MainWindow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         SubscribeToViewModel(e.NewValue as MainViewModel);
+        SyncModeMenuItems();
     }
 
     private void SubscribeToViewModel(MainViewModel? viewModel)
@@ -66,6 +68,8 @@ public partial class MainWindow : Window
         {
             _subscribedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
         }
+
+        SyncModeMenuItems();
     }
 
     private void ViewModel_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -76,6 +80,27 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.PropertyName is nameof(MainViewModel.IsAdvancedMode)
+            or nameof(MainViewModel.IsStoryMode)
+            or nameof(MainViewModel.IsAdvancedModeAvailable))
+        {
+            SyncModeMenuItems();
+        }
+    }
+
+    private void SyncModeMenuItems()
+    {
+        if (_subscribedViewModel is null)
+        {
+            return;
+        }
+
+        StoryModeMenuItem.IsChecked = _subscribedViewModel.IsStoryMode;
+        AdvancedModeMenuItem.IsChecked = _subscribedViewModel.IsAdvancedMode;
+        AdvancedModeMenuItem.IsEnabled = _subscribedViewModel.IsAdvancedModeAvailable;
+        AdvancedModeMenuItem.ToolTip = _subscribedViewModel.IsAdvancedModeAvailable
+            ? "고급 작업/검토 모드"
+            : "현재 고급 모드 provider를 사용할 수 없습니다.";
     }
 
     private void CharacterSurface_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -273,6 +298,18 @@ public partial class MainWindow : Window
             _chatWindow.Activate();
             _chatWindow.FocusPrompt();
         }
+    }
+
+    private void StoryModeMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.SetStoryMode(StoryModeMenuItem.IsChecked);
+        SyncModeMenuItems();
+    }
+
+    private void AdvancedModeMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.SetAdvancedMode(AdvancedModeMenuItem.IsChecked);
+        SyncModeMenuItems();
     }
 
     private void SettingsMenuItem_OnClick(object sender, RoutedEventArgs e)
