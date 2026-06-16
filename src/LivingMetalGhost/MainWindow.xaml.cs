@@ -15,6 +15,8 @@ public partial class MainWindow : Window
     private bool _isDragging;
     private ChatWindow? _chatWindow;
     private AdvancedWorkbenchWindow? _advancedWorkbenchWindow;
+    private StoryWindow? _storyWindow;
+    private bool _hiddenForStory;
     private MainViewModel? _subscribedViewModel;
     private readonly DispatcherTimer _proactiveChatTimer;
     private DateTimeOffset? _nextProactiveChatAt;
@@ -49,6 +51,7 @@ public partial class MainWindow : Window
         SubscribeToViewModel(DataContext as MainViewModel);
         SyncModeMenuItems();
         SyncAdvancedWorkbenchVisibility();
+        SyncStoryWindowVisibility();
         ResetPosition();
     }
 
@@ -57,6 +60,7 @@ public partial class MainWindow : Window
         SubscribeToViewModel(e.NewValue as MainViewModel);
         SyncModeMenuItems();
         SyncAdvancedWorkbenchVisibility();
+        SyncStoryWindowVisibility();
     }
 
     private void SubscribeToViewModel(MainViewModel? viewModel)
@@ -91,6 +95,11 @@ public partial class MainWindow : Window
             if (e.PropertyName == nameof(MainViewModel.IsAdvancedMode))
             {
                 SyncAdvancedWorkbenchVisibility();
+            }
+
+            if (e.PropertyName is nameof(MainViewModel.IsStoryMode) or nameof(MainViewModel.IsAdvancedMode))
+            {
+                SyncStoryWindowVisibility();
             }
         }
     }
@@ -258,6 +267,93 @@ public partial class MainWindow : Window
 
         e.Cancel = true;
         _chatWindow?.Hide();
+    }
+
+    private void EnsureStoryWindow()
+    {
+        if (_storyWindow is not null)
+        {
+            return;
+        }
+
+        _storyWindow = new StoryWindow
+        {
+            DataContext = ViewModel,
+            Owner = this,
+            Topmost = Topmost
+        };
+        _storyWindow.Closing += StoryWindow_OnClosing;
+    }
+
+    private void StoryWindow_OnClosing(object? sender, CancelEventArgs e)
+    {
+        if (Application.Current.Dispatcher.HasShutdownStarted)
+        {
+            return;
+        }
+
+        // 창을 닫는 대신 롤플레잉을 끄고 데스크톱 동반자로 복귀시킨다.
+        e.Cancel = true;
+        if (_subscribedViewModel is { IsStoryMode: true, IsAdvancedMode: false })
+        {
+            _subscribedViewModel.SetStoryMode(false);
+        }
+        else
+        {
+            _storyWindow?.Hide();
+        }
+    }
+
+    private void PositionStoryWindow()
+    {
+        if (_storyWindow is null)
+        {
+            return;
+        }
+
+        var workArea = SystemParameters.WorkArea;
+        _storyWindow.Left = Math.Clamp(
+            workArea.Left + (workArea.Width - _storyWindow.Width) / 2,
+            workArea.Left,
+            workArea.Right - _storyWindow.Width);
+        _storyWindow.Top = Math.Clamp(
+            workArea.Top + (workArea.Height - _storyWindow.Height) / 2,
+            workArea.Top,
+            workArea.Bottom - _storyWindow.Height);
+    }
+
+    private void SyncStoryWindowVisibility()
+    {
+        if (_subscribedViewModel is null)
+        {
+            return;
+        }
+
+        if (_subscribedViewModel is { IsStoryMode: true, IsAdvancedMode: false })
+        {
+            _chatWindow?.Hide();
+            EnsureStoryWindow();
+            PositionStoryWindow();
+            _storyWindow!.ShowConsole();
+
+            // 스프라이트가 두 곳에 보이지 않도록 데스크톱 동반자 창은 숨긴다(닫는 게 아님).
+            if (IsVisible)
+            {
+                Hide();
+                _hiddenForStory = true;
+            }
+        }
+        else
+        {
+            if (_hiddenForStory)
+            {
+                Show();
+                Topmost = AlwaysOnTopMenuItem.IsChecked;
+                _hiddenForStory = false;
+            }
+
+            _storyWindow?.Hide();
+        }
     }
 
     private void AdvancedWorkbenchWindow_OnClosing(object? sender, CancelEventArgs e)
