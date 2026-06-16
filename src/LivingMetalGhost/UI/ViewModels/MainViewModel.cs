@@ -280,7 +280,7 @@ public partial class MainViewModel : ObservableObject
             SetCharacterMood(assistantMood);
             CaptureAgentJobs(request, result);
             await DisplayAssistantResponseAsync(result.BubbleText, isProactive: false, assistantMood);
-            await WriteLogAsync(request.RawText, result.BubbleText, isProactive: false);
+            await WriteLogAsync(request.RawText, result.BubbleText, isProactive: false, assistantMood);
             DispatchAppCommand(result.Action);
         }
         catch (Exception ex)
@@ -334,7 +334,7 @@ public partial class MainViewModel : ObservableObject
             var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, CurrentMode);
             SetCharacterMood(assistantMood);
             await DisplayAssistantResponseAsync(result.BubbleText, isProactive: true, assistantMood);
-            await WriteLogAsync(string.Empty, result.BubbleText, isProactive: true);
+            await WriteLogAsync(string.Empty, result.BubbleText, isProactive: true, assistantMood);
         }
         catch (Exception ex)
         {
@@ -627,16 +627,22 @@ public partial class MainViewModel : ObservableObject
 
     private async Task WriteLogAsync(string userText, string assistantText, bool isProactive, string mood = "speaking")
     {
-        await _conversationLogService.AppendAsync(new ConversationLogEntry(
-            DateTimeOffset.Now,
-            isProactive ? "proactive" : "user",
-            userText,
-            assistantText,
-            CurrentMode.ToString(),
-            SelectedCharacterId,
-            CharacterDisplayName,
-            ActiveProviderLabel,
-            mood), CancellationToken.None);
+        var config = _configLoader.Load();
+        var llm = IsAdvancedMode ? config.AdvancedLlm : config.Llm;
+
+        await _conversationLogService.AppendAsync(new ConversationLogEntry
+        {
+            Timestamp = DateTimeOffset.Now,
+            UserText = userText,
+            AssistantText = assistantText,
+            Provider = llm.Provider,
+            Model = llm.Model,
+            IsProactive = isProactive,
+            CharacterId = SelectedCharacterId,
+            CharacterName = CharacterDisplayName,
+            ProviderLabel = ActiveProviderLabel,
+            Mood = mood
+        }, CancellationToken.None);
     }
 
     private void RefreshSelectedCharacter()
@@ -651,11 +657,11 @@ public partial class MainViewModel : ObservableObject
             ? savedProfile
             : null;
         SelectedCharacterSizePresetId = string.IsNullOrWhiteSpace(profile?.CharacterSizePresetId)
-            ? character.DefaultSizePresetId
+            ? "normal"
             : profile.CharacterSizePresetId;
         SelectedCharacterFramingPresetId = string.IsNullOrWhiteSpace(profile?.CharacterFramingPresetId)
-            ? character.DefaultFramingPresetId
+            ? "full-body"
             : profile.CharacterFramingPresetId;
-        CharacterScale = profile?.CharacterScale is > 0 ? profile.CharacterScale : character.DefaultScale;
+        CharacterScale = profile?.CharacterScale is > 0 ? profile.CharacterScale : 1.0;
     }
 }
