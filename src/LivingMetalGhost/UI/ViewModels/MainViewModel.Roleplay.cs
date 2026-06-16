@@ -21,7 +21,8 @@ public partial class MainViewModel
         builder.AppendLine($"제목: {state.Title}");
         builder.AppendLine($"플레이어 역할: {state.PlayerRole}");
         builder.AppendLine($"분위기: {state.Mood}");
-        builder.AppendLine($"긴장도: {state.Tension}/5");
+        builder.AppendLine($"긴장도: {Math.Clamp(state.Tension, 0, 5)}/5");
+        builder.AppendLine($"Affinity: {Math.Clamp(state.Affinity <= 0 ? 50 : state.Affinity, 0, 100)}/100");
         builder.AppendLine($"저장된 턴: {memoryEntries}");
         builder.AppendLine($"수정 시각: {state.UpdatedAt:yyyy-MM-dd HH:mm:ss}");
         builder.AppendLine();
