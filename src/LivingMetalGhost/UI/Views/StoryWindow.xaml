@@ -4,8 +4,10 @@
         xmlns:behaviors="clr-namespace:LivingMetalGhost.UI.Behaviors"
         xmlns:controls="clr-namespace:LivingMetalGhost.UI.Controls"
         Title="LivingMetalGhost Story"
-        Width="480"
-        Height="760"
+        Width="560"
+        Height="840"
+        MinWidth="520"
+        MinHeight="780"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -68,22 +70,30 @@
                 </Grid>
 
                 <Border Grid.Row="1"
-                        Height="320"
+                        Height="420"
                         Margin="0,12,0,10"
                         CornerRadius="16"
                         Background="#ECE6FB"
                         BorderBrush="#D8CEF2"
                         BorderThickness="1"
-                        ClipToBounds="True">
-                    <controls:CharacterHost x:Name="StoryCharacterHost"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Bottom"
-                                            CharacterId="{Binding SelectedCharacterId}"
-                                            Mood="{Binding CharacterMood}"
-                                            IsSpeaking="{Binding IsCharacterSpeaking}"
-                                            SizePresetId="{Binding SelectedCharacterSizePresetId}"
-                                            FramingPresetId="{Binding SelectedCharacterFramingPresetId}"
-                                            UserScale="{Binding CharacterScale}" />
+                        ClipToBounds="False">
+                    <Grid Margin="8"
+                          ClipToBounds="True">
+                        <Viewbox Stretch="Uniform"
+                                 StretchDirection="DownOnly"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Bottom">
+                            <controls:CharacterHost x:Name="StoryCharacterHost"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Bottom"
+                                                    CharacterId="{Binding SelectedCharacterId}"
+                                                    Mood="{Binding CharacterMood}"
+                                                    IsSpeaking="{Binding IsCharacterSpeaking}"
+                                                    SizePresetId="{Binding SelectedCharacterSizePresetId}"
+                                                    FramingPresetId="{Binding SelectedCharacterFramingPresetId}"
+                                                    UserScale="{Binding CharacterScale}" />
+                        </Viewbox>
+                    </Grid>
                 </Border>
 
                 <Border Grid.Row="2"
@@ -97,7 +107,7 @@
                         <ItemsControl ItemsSource="{Binding Messages}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border MaxWidth="400"
+                                    <Border MaxWidth="480"
                                             Margin="5,4"
                                             Padding="11,9"
                                             HorizontalAlignment="Stretch">
