@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Security;
+using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.Providers.Llm;
 
 namespace LivingMetalGhost.UI.ViewModels;
@@ -17,6 +18,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly AppPaths _paths;
     private readonly DpapiSecretStore _secretStore;
     private readonly ILlmProviderFactory _providerFactory;
+    private readonly StoryStateStore _storyStateStore;
     private readonly Dictionary<string, CharacterPromptSettings> _characterProfileDrafts =
         new(StringComparer.OrdinalIgnoreCase);
     private string _loadedCharacterId = string.Empty;
@@ -59,13 +61,26 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private int agentTimeoutSeconds = 180;
     [ObservableProperty] private string claudeCodeExecutable = "claude";
     [ObservableProperty] private string agentCodexExecutable = DefaultCodexExecutable;
+    [ObservableProperty] private string storyTitle = "밤의 데이터센터";
+    [ObservableProperty] private string storyPlayerRole = "작업자";
+    [ObservableProperty] private string storyScene = string.Empty;
+    [ObservableProperty] private string storyOpeningLine = string.Empty;
+    [ObservableProperty] private string storySummary = string.Empty;
+    [ObservableProperty] private string storyMood = "quiet_tension";
+    [ObservableProperty] private int storyTension = 1;
 
-    public SettingsViewModel(AppConfigLoader configLoader, AppPaths paths, DpapiSecretStore secretStore, ILlmProviderFactory providerFactory)
+    public SettingsViewModel(
+        AppConfigLoader configLoader,
+        AppPaths paths,
+        DpapiSecretStore secretStore,
+        ILlmProviderFactory providerFactory,
+        StoryStateStore storyStateStore)
     {
         _configLoader = configLoader;
         _paths = paths;
         _secretStore = secretStore;
         _providerFactory = providerFactory;
+        _storyStateStore = storyStateStore;
         Reload();
     }
 
@@ -124,6 +139,7 @@ public partial class SettingsViewModel : ObservableObject
         AgentTimeoutSeconds = Math.Clamp(config.Agents.TimeoutSeconds, 30, 1800);
         ClaudeCodeExecutable = string.IsNullOrWhiteSpace(config.Agents.ClaudeCode.Executable) ? "claude" : config.Agents.ClaudeCode.Executable;
         AgentCodexExecutable = string.IsNullOrWhiteSpace(config.Agents.CodexCli.Executable) ? DefaultCodexExecutable : config.Agents.CodexCli.Executable;
+        LoadStoryStateDraft();
         ApiKeyInput = string.Empty;
         AdvancedApiKeyInput = string.Empty;
         RefreshSecretStatuses();
@@ -147,6 +163,26 @@ public partial class SettingsViewModel : ObservableObject
         SelectedCharacterSizePresetId = character.Presentation.DefaultSizePresetId;
         SelectedCharacterFramingPresetId = character.Presentation.DefaultFramingPresetId;
         StatusMessage = $"{character.DisplayName} 기본 설정을 불러왔습니다.";
+    }
+
+    [RelayCommand] private void LoadSelectedCharacterStoryTemplate()
+    {
+        var character = CharacterCatalog.Get(SelectedCharacterId);
+        var template = StoryTemplateCatalog.Get(character.Id);
+        if (template is null)
+        {
+            StatusMessage = $"{character.DisplayName}의 기본 스토리 템플릿을 찾지 못했습니다.";
+            return;
+        }
+
+        StoryTitle = template.Title;
+        StoryPlayerRole = template.PlayerRole;
+        StoryScene = template.Scene;
+        StoryOpeningLine = template.OpeningLine;
+        StorySummary = template.Summary;
+        StoryMood = template.Mood;
+        StoryTension = Math.Clamp(template.Tension, 0, 5);
+        StatusMessage = $"{character.DisplayName} 기본 스토리보드를 불러왔습니다. 저장을 눌러 적용하세요.";
     }
 
     [RelayCommand] private void ApplyGeminiFreePreset()
@@ -329,6 +365,7 @@ public partial class SettingsViewModel : ObservableObject
         config.App.ProactiveChatMaxMinutes = ProactiveChatMaxMinutes;
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower, WriteIndented = true });
         File.WriteAllText(_paths.ConfigFile, json);
+        SaveStoryStateDraft();
         if (!string.IsNullOrWhiteSpace(ApiKeyInput))
         {
             _secretStore.SaveBasicApiKey(ApiKeyInput);
@@ -381,6 +418,31 @@ public partial class SettingsViewModel : ObservableObject
         SelectedCharacterFramingPresetId = ResolveFramingPresetId(character, profile.CharacterFramingPresetId);
         OnPropertyChanged(nameof(AvailableCharacterSizePresets));
         OnPropertyChanged(nameof(AvailableCharacterFramingPresets));
+    }
+
+    private void LoadStoryStateDraft()
+    {
+        var state = _storyStateStore.Load();
+        StoryTitle = state.Title;
+        StoryPlayerRole = state.PlayerRole;
+        StoryScene = state.Scene;
+        StoryOpeningLine = state.OpeningLine;
+        StorySummary = state.Summary;
+        StoryMood = state.Mood;
+        StoryTension = Math.Clamp(state.Tension, 0, 5);
+    }
+
+    private void SaveStoryStateDraft()
+    {
+        var state = _storyStateStore.Load();
+        state.Title = string.IsNullOrWhiteSpace(StoryTitle) ? "이야기" : StoryTitle.Trim();
+        state.PlayerRole = string.IsNullOrWhiteSpace(StoryPlayerRole) ? "주인공" : StoryPlayerRole.Trim();
+        state.Scene = StoryScene.Trim();
+        state.OpeningLine = StoryOpeningLine.Trim();
+        state.Summary = StorySummary.Trim();
+        state.Mood = string.IsNullOrWhiteSpace(StoryMood) ? "quiet_tension" : StoryMood.Trim();
+        state.Tension = Math.Clamp(StoryTension, 0, 5);
+        _storyStateStore.Save(state);
     }
 
     private void RefreshSecretStatuses()
