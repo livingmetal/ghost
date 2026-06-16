@@ -39,7 +39,12 @@ public partial class App : Application
         // WPF requires the owner Window to have been shown before another Window can use it as Owner.
         // Setting DataContext after Show prevents startup mode synchronization from creating child
         // windows while MainWindow is still in the not-yet-shown state.
-        mainWindow.DataContext = Services.GetRequiredService<MainViewModel>();
+        var mainViewModel = Services.GetRequiredService<MainViewModel>();
+
+        // Story state persists scene/memory, but startup mode must always be the normal prompt mode.
+        // Users can still re-enable roleplay explicitly from the menu after launch.
+        mainViewModel.SetStoryMode(false);
+        mainWindow.DataContext = mainViewModel;
 
         _trayIconService = new TrayIconService(
             mainWindow.RestoreFromTray,
