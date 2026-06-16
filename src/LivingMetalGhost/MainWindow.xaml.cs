@@ -14,6 +14,7 @@ public partial class MainWindow : Window
     private Point _mouseDownPosition;
     private bool _isDragging;
     private ChatWindow? _chatWindow;
+    private AdvancedWorkbenchWindow? _advancedWorkbenchWindow;
     private MainViewModel? _subscribedViewModel;
     private readonly DispatcherTimer _proactiveChatTimer;
     private DateTimeOffset? _nextProactiveChatAt;
@@ -47,6 +48,7 @@ public partial class MainWindow : Window
     {
         SubscribeToViewModel(DataContext as MainViewModel);
         SyncModeMenuItems();
+        SyncAdvancedWorkbenchVisibility();
         ResetPosition();
     }
 
@@ -54,6 +56,7 @@ public partial class MainWindow : Window
     {
         SubscribeToViewModel(e.NewValue as MainViewModel);
         SyncModeMenuItems();
+        SyncAdvancedWorkbenchVisibility();
     }
 
     private void SubscribeToViewModel(MainViewModel? viewModel)
@@ -85,6 +88,10 @@ public partial class MainWindow : Window
             or nameof(MainViewModel.IsAdvancedModeAvailable))
         {
             SyncModeMenuItems();
+            if (e.PropertyName == nameof(MainViewModel.IsAdvancedMode))
+            {
+                SyncAdvancedWorkbenchVisibility();
+            }
         }
     }
 
@@ -164,6 +171,12 @@ public partial class MainWindow : Window
 
     private void ToggleChatWindow()
     {
+        if (ViewModel.IsAdvancedMode)
+        {
+            OpenAdvancedWorkbench();
+            return;
+        }
+
         EnsureChatWindow();
 
         if (_chatWindow!.IsVisible)
@@ -187,6 +200,12 @@ public partial class MainWindow : Window
     public void OpenChatFromTray()
     {
         RestoreFromTray();
+        if (ViewModel.IsAdvancedMode)
+        {
+            OpenAdvancedWorkbench();
+            return;
+        }
+
         EnsureChatWindow();
         PositionChatWindow();
         _chatWindow!.ShowConsole();
@@ -208,9 +227,26 @@ public partial class MainWindow : Window
         _chatWindow = new ChatWindow
         {
             DataContext = ViewModel,
-            Owner = this
+            Owner = this,
+            Topmost = Topmost
         };
         _chatWindow.Closing += ChatWindow_OnClosing;
+    }
+
+    private void EnsureAdvancedWorkbenchWindow()
+    {
+        if (_advancedWorkbenchWindow is not null)
+        {
+            return;
+        }
+
+        _advancedWorkbenchWindow = new AdvancedWorkbenchWindow
+        {
+            DataContext = ViewModel,
+            Owner = this,
+            Topmost = Topmost
+        };
+        _advancedWorkbenchWindow.Closing += AdvancedWorkbenchWindow_OnClosing;
     }
 
     private void ChatWindow_OnClosing(object? sender, CancelEventArgs e)
@@ -222,6 +258,17 @@ public partial class MainWindow : Window
 
         e.Cancel = true;
         _chatWindow?.Hide();
+    }
+
+    private void AdvancedWorkbenchWindow_OnClosing(object? sender, CancelEventArgs e)
+    {
+        if (Application.Current.Dispatcher.HasShutdownStarted)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        _advancedWorkbenchWindow?.Hide();
     }
 
     private void PositionChatWindow()
@@ -248,9 +295,53 @@ public partial class MainWindow : Window
             workArea.Bottom - _chatWindow.Height);
     }
 
+    private void PositionAdvancedWorkbenchWindow()
+    {
+        if (_advancedWorkbenchWindow is null)
+        {
+            return;
+        }
+
+        var workArea = SystemParameters.WorkArea;
+        _advancedWorkbenchWindow.Left = Math.Clamp(
+            workArea.Left + (workArea.Width - _advancedWorkbenchWindow.Width) / 2,
+            workArea.Left,
+            workArea.Right - _advancedWorkbenchWindow.Width);
+        _advancedWorkbenchWindow.Top = Math.Clamp(
+            workArea.Top + (workArea.Height - _advancedWorkbenchWindow.Height) / 2,
+            workArea.Top,
+            workArea.Bottom - _advancedWorkbenchWindow.Height);
+    }
+
     private void PositionCompanionWindows()
     {
         PositionChatWindow();
+        PositionAdvancedWorkbenchWindow();
+    }
+
+    private void SyncAdvancedWorkbenchVisibility()
+    {
+        if (_subscribedViewModel is null)
+        {
+            return;
+        }
+
+        if (_subscribedViewModel.IsAdvancedMode)
+        {
+            _chatWindow?.Hide();
+            OpenAdvancedWorkbench();
+        }
+        else
+        {
+            _advancedWorkbenchWindow?.Hide();
+        }
+    }
+
+    private void OpenAdvancedWorkbench()
+    {
+        EnsureAdvancedWorkbenchWindow();
+        PositionAdvancedWorkbenchWindow();
+        _advancedWorkbenchWindow!.ShowWorkbench();
     }
 
     private void ResetPosition()
@@ -293,6 +384,12 @@ public partial class MainWindow : Window
 
     private void OpenChatMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        if (ViewModel.IsAdvancedMode)
+        {
+            OpenAdvancedWorkbench();
+            return;
+        }
+
         EnsureChatWindow();
         if (!_chatWindow!.IsVisible)
         {
@@ -322,6 +419,37 @@ public partial class MainWindow : Window
     {
         ViewModel.SetAdvancedMode(AdvancedModeMenuItem.IsChecked);
         SyncModeMenuItems();
+        SyncAdvancedWorkbenchVisibility();
+    }
+
+    private void RoleplayStateMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show(
+            ViewModel.GetRoleplayStateSummary(),
+            "롤플레잉 상태",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void ResetRoleplayStateMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            "롤플레잉 장면 상태와 턴 기억을 초기화할까요?",
+            "롤플레잉 상태 초기화",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        ViewModel.ResetRoleplayState();
+        SyncModeMenuItems();
+        MessageBox.Show(
+            "롤플레잉 상태를 초기화했어요.",
+            "롤플레잉 상태 초기화",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     private void SettingsMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -377,7 +505,7 @@ public partial class MainWindow : Window
     {
         var workArea = SystemParameters.WorkArea;
         Left = Math.Clamp(Left, workArea.Left, Math.Max(workArea.Left, workArea.Right - ActualWidth));
-        Top = Math.Clamp(Top, workArea.Top, Math.Max(workArea.Top, Math.Max(workArea.Top, workArea.Bottom - ActualHeight)));
+        Top = Math.Clamp(Top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - ActualHeight));
         PositionCompanionWindows();
     }
 
@@ -392,6 +520,7 @@ public partial class MainWindow : Window
     private void HideToTrayMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         _chatWindow?.Hide();
+        _advancedWorkbenchWindow?.Hide();
         Hide();
         TrayIconService?.ShowHiddenNotification();
     }
@@ -407,6 +536,11 @@ public partial class MainWindow : Window
         if (_chatWindow is not null)
         {
             _chatWindow.Topmost = Topmost;
+        }
+
+        if (_advancedWorkbenchWindow is not null)
+        {
+            _advancedWorkbenchWindow.Topmost = Topmost;
         }
     }
 
