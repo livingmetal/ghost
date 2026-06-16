@@ -257,44 +257,103 @@
                                     <TextBlock Margin="0,3,0,8"
                                                FontSize="10"
                                                Foreground="#8E9AAF"
-                                               Text="작업 에이전트 상태. 마우스를 올리면 요약을 볼 수 있습니다." />
+                                               Text="승인 카드와 작업 에이전트 상태를 표시합니다." />
                                 </StackPanel>
                                 <ScrollViewer Grid.Row="1"
                                               VerticalScrollBarVisibility="Auto">
-                                    <ItemsControl ItemsSource="{Binding ActiveAgentJobs}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Margin="0,0,0,8"
-                                                        Padding="10,8"
-                                                        CornerRadius="10"
-                                                        Background="#232A3B"
-                                                        BorderBrush="#4A5570"
-                                                        BorderThickness="1"
-                                                        ToolTip="{Binding TooltipText}">
-                                                    <StackPanel>
-                                                        <TextBlock FontFamily="Bahnschrift"
-                                                                   FontSize="12"
-                                                                   FontWeight="SemiBold"
-                                                                   Foreground="#FFFFFF"
-                                                                   Text="{Binding DisplayName}" />
-                                                        <TextBlock Margin="0,2,0,0"
-                                                                   FontSize="10"
-                                                                   Foreground="#AAB3C5"
-                                                                   Text="{Binding StatusLabel}" />
-                                                        <TextBlock Margin="0,2,0,6"
-                                                                   FontSize="10"
-                                                                   Foreground="#7F8AA3"
-                                                                   TextWrapping="Wrap"
-                                                                   Text="{Binding Summary}" />
-                                                        <ProgressBar Height="5"
-                                                                     Minimum="0"
-                                                                     Maximum="1"
-                                                                     Value="{Binding Progress}" />
-                                                    </StackPanel>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <StackPanel>
+                                        <ItemsControl ItemsSource="{Binding PendingApprovals}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="0,0,0,8"
+                                                            Padding="10,8"
+                                                            CornerRadius="10"
+                                                            Background="#302849"
+                                                            BorderBrush="#A78BFA"
+                                                            BorderThickness="1"
+                                                            ToolTip="{Binding TooltipText}">
+                                                        <StackPanel>
+                                                            <TextBlock FontFamily="Bahnschrift"
+                                                                       FontSize="12"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="#FFFFFF"
+                                                                       Text="{Binding Title}" />
+                                                            <TextBlock Margin="0,2,0,0"
+                                                                       FontFamily="Consolas"
+                                                                       FontSize="10"
+                                                                       Foreground="#D9CBFF"
+                                                                       Text="{Binding Command}" />
+                                                            <TextBlock Margin="0,2,0,0"
+                                                                       FontSize="10"
+                                                                       Foreground="#AAB3C5"
+                                                                       Text="{Binding StatusLabel}" />
+                                                            <TextBlock Margin="0,2,0,6"
+                                                                       FontSize="10"
+                                                                       Foreground="#C4B5FD"
+                                                                       TextWrapping="Wrap"
+                                                                       Text="{Binding Reason}" />
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <Button Margin="0,0,6,0"
+                                                                        Padding="8,4"
+                                                                        Background="#7B4FC8"
+                                                                        Foreground="White"
+                                                                        BorderThickness="0"
+                                                                        Click="ApprovePendingApprovalButton_OnClick"
+                                                                        Content="승인" />
+                                                                <Button Padding="8,4"
+                                                                        Background="#232A3B"
+                                                                        Foreground="#D9CBFF"
+                                                                        BorderBrush="#4A5570"
+                                                                        BorderThickness="1"
+                                                                        Click="RejectPendingApprovalButton_OnClick"
+                                                                        Content="거절" />
+                                                            </StackPanel>
+                                                            <TextBlock Margin="0,6,0,0"
+                                                                       FontSize="10"
+                                                                       Foreground="#8E9AAF"
+                                                                       TextWrapping="Wrap"
+                                                                       Text="{Binding ResultText}" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <ItemsControl ItemsSource="{Binding ActiveAgentJobs}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="0,0,0,8"
+                                                            Padding="10,8"
+                                                            CornerRadius="10"
+                                                            Background="#232A3B"
+                                                            BorderBrush="#4A5570"
+                                                            BorderThickness="1"
+                                                            ToolTip="{Binding TooltipText}">
+                                                        <StackPanel>
+                                                            <TextBlock FontFamily="Bahnschrift"
+                                                                       FontSize="12"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="#FFFFFF"
+                                                                       Text="{Binding DisplayName}" />
+                                                            <TextBlock Margin="0,2,0,0"
+                                                                       FontSize="10"
+                                                                       Foreground="#AAB3C5"
+                                                                       Text="{Binding StatusLabel}" />
+                                                            <TextBlock Margin="0,2,0,6"
+                                                                       FontSize="10"
+                                                                       Foreground="#7F8AA3"
+                                                                       TextWrapping="Wrap"
+                                                                       Text="{Binding Summary}" />
+                                                            <ProgressBar Height="5"
+                                                                         Minimum="0"
+                                                                         Maximum="1"
+                                                                         Value="{Binding Progress}" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </ScrollViewer>
                             </Grid>
                         </Border>
