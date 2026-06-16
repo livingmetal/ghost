@@ -119,6 +119,8 @@ public partial class App : Application
         services.AddSingleton(new AppPaths(appDataRoot));
         services.AddSingleton<AppConfigLoader>();
         services.AddSingleton<DpapiSecretStore>();
+        services.AddSingleton<StoryStateStore>();
+        services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
         services.AddSingleton<SpriteDirector>();
