@@ -31,6 +31,10 @@ public sealed class StoryStateStore
         _memoryFile = Path.Combine(_storyRoot, "memory.jsonl");
     }
 
+    public string StoryRoot => _storyRoot;
+    public string StateFile => _stateFile;
+    public string MemoryFile => _memoryFile;
+
     public StoryState Load()
     {
         if (!File.Exists(_stateFile))
@@ -64,6 +68,47 @@ public sealed class StoryStateStore
         state.UpdatedAt = DateTimeOffset.Now;
         Save(state);
         return state;
+    }
+
+    public StoryState Reset(bool keepEnabled)
+    {
+        var resetState = CreateDefaultState();
+        resetState.Enabled = keepEnabled;
+        Save(resetState);
+
+        try
+        {
+            if (File.Exists(_memoryFile))
+            {
+                File.Delete(_memoryFile);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+
+        return resetState;
+    }
+
+    public int CountMemoryEntries()
+    {
+        try
+        {
+            return File.Exists(_memoryFile)
+                ? File.ReadLines(_memoryFile).Count(line => !string.IsNullOrWhiteSpace(line))
+                : 0;
+        }
+        catch (IOException)
+        {
+            return 0;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return 0;
+        }
     }
 
     public void Save(StoryState state)
