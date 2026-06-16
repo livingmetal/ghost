@@ -108,7 +108,9 @@
                                         <DataTemplate>
                                             <Border MaxWidth="560"
                                                     Margin="4,4"
-                                                    Padding="12,9">
+                                                    Padding="12,9"
+                                                    MouseLeftButtonDown="MessageBubble_OnMouseLeftButtonDown"
+                                                    ToolTip="클릭하면 이 말풍선을 프로젝트 기억 후보로 선택합니다.">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="HorizontalAlignment" Value="Left" />
@@ -190,6 +192,11 @@
                                            FontSize="11"
                                            Foreground="#667085"
                                            Text="롤플레잉 장면 상태는 고급 모드에서 사용하지 않습니다." />
+                                <TextBlock x:Name="SelectedMemoryCandidateText"
+                                           Margin="0,8,0,0"
+                                           FontSize="11"
+                                           Foreground="#7B4FC8"
+                                           Text="선택된 기억 후보: 없음" />
                                 <WrapPanel Margin="0,10,0,0">
                                     <Button Margin="0,0,6,6"
                                             Padding="9,5"
@@ -218,7 +225,7 @@
                                             Foreground="White"
                                             BorderThickness="0"
                                             Click="PromoteMemoryButton_OnClick"
-                                            Content="마지막 답변 기억" />
+                                            Content="선택 말풍선 기억" />
                                 </WrapPanel>
                             </StackPanel>
                         </Border>
