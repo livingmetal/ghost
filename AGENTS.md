@@ -17,6 +17,8 @@ Use these files:
 
 - [`AGENT.md`](./AGENT.md): canonical project and agent guide.
 - [`plans/agent-orchestration.md`](./plans/agent-orchestration.md): main-character orchestrator and sub-agent architecture plan.
+- [`plans/advanced-mode-orchestration-research.md`](./plans/advanced-mode-orchestration-research.md): research note for Advanced-mode orchestration design.
+- [`plans/coding-agent-parity-roadmap.md`](./plans/coding-agent-parity-roadmap.md): roadmap toward Codex/Claude-Code-class coding agent app capability.
 - [`plans/agent-workflow.md`](./plans/agent-workflow.md): workflow discipline and completion gate.
 - [`plans/fablize-discipline.md`](./plans/fablize-discipline.md): actionable fablize-style procedures (router, investigation, grounding, multi-story gate, early-stop prevention).
 - [`plans/sprite-emotion-system.md`](./plans/sprite-emotion-system.md): planned sprite/mood tag behavior.
