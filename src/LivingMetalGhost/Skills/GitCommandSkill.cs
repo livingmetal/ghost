@@ -25,7 +25,7 @@ public sealed class GitCommandSkill : IGhostSkill
     }
 
     public string Name => "GitCommand";
-    public string Description => "git status/diff 같은 읽기 전용 명령을 자동 실행하고, 원격 확인/병합 계열 명령은 승인 대상으로 분류한다.";
+    public string Description => "git status/diff 같은 읽기 전용 명령을 고급 모드에서만 자동 확인하고, 원격 확인/병합 계열 명령은 승인 대상으로 분류한다.";
     public IReadOnlyList<string> Examples => ["git status", "git pull 해줘", "원격 브랜치랑 차이 확인해줘"];
 
     public bool CanHandle(UserRequest request)
@@ -45,18 +45,38 @@ public sealed class GitCommandSkill : IGhostSkill
 
     public async Task<SkillResult> HandleAsync(UserRequest request, CancellationToken ct)
     {
-        var workspace = _workspaceStore.Load();
-        if (!WorkspaceGuard.TryResolveRoot(workspace.RootPath, out var workspaceRoot, out var rootError))
+        if (!request.UseAdvancedModel)
         {
             return new SkillResult
             {
-                BubbleText =
-                    "Git 상태를 확인하려면 먼저 Workbench의 워크스페이스 Root Path를 지정해야 해.\n" +
-                    $"현재 문제: {rootError}",
-                Mood = "concerned",
-                Action = "git-workspace-missing",
+                BubbleText = "로컬 Git 작업은 고급 모드에서만 실행할 수 있어. 일반/롤플레잉 모드에서는 명령을 실행하지 않아.",
+                Mood = "serious",
+                Action = "command-blocked-outside-advanced",
                 UsedLlm = false
             };
+        }
+
+        var workspace = _workspaceStore.Load();
+        if (!WorkspaceGuard.TryResolveRoot(workspace.RootPath, out var workspaceRoot, out var rootError))
+        {
+            if (_workspaceStore.TryDetectWorkspaceRoot(out var detectedRoot) &&
+                WorkspaceGuard.TryResolveRoot(detectedRoot, out workspaceRoot, out _))
+            {
+                // 일회성 자동 선택: workspace.json에는 저장하지 않고 이번 요청에서만 사용한다.
+            }
+            else
+            {
+                return new SkillResult
+                {
+                    BubbleText =
+                        "Git 상태를 확인하려면 먼저 Workbench의 워크스페이스 Root Path를 지정해야 해.\n" +
+                        $"현재 문제: {rootError}\n" +
+                        "워크스페이스 설정에서 Root Path를 저장하면 다음부터 주소를 다시 적지 않아도 돼.",
+                    Mood = "concerned",
+                    Action = "git-workspace-missing",
+                    UsedLlm = false
+                };
+            }
         }
 
         if (IsFetchRequest(request.RawText))
