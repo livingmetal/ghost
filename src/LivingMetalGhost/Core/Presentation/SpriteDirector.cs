@@ -10,7 +10,7 @@ public sealed class SpriteDirector
 {
     public string ResolveThinkingMood(ConversationMode mode) => mode switch
     {
-        ConversationMode.Advanced => "serious",
+        ConversationMode.Advanced => "strict",
         ConversationMode.Story => "thinking",
         _ => "thinking"
     };
@@ -19,21 +19,22 @@ public sealed class SpriteDirector
     {
         if (string.IsNullOrWhiteSpace(requestedMood))
         {
-            return mode == ConversationMode.Advanced ? "serious" : "speaking";
+            return mode == ConversationMode.Advanced ? "strict" : "speaking";
         }
 
         var normalized = requestedMood.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "working" when mode == ConversationMode.Advanced => "serious",
-            "speaking" when mode == ConversationMode.Advanced => "serious",
+            "working" when mode == ConversationMode.Advanced => "strict",
+            "speaking" when mode == ConversationMode.Advanced => "strict",
+            "serious" => "strict",
             _ => normalized
         };
     }
 
     public string ResolveRestingMood(ConversationMode mode) => mode switch
     {
-        ConversationMode.Advanced => "serious",
+        ConversationMode.Advanced => "strict",
         ConversationMode.Story => "listening",
         _ => "listening"
     };
@@ -47,7 +48,7 @@ public sealed class SpriteDirector
 
         return mood switch
         {
-            "strict" or "serious" or "skeptical" => 6000,
+            "strict" or "skeptical" => 6000,
             "concerned" or "apologetic" => 5500,
             "happy" or "soft-smile" or "amused" => 4500,
             _ => 4000
