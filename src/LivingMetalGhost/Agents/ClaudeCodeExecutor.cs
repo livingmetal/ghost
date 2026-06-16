@@ -13,7 +13,7 @@ namespace LivingMetalGhost.Agents;
 /// 안전 설계:
 /// - Suggest/Ask 모드에서는 절대 프로세스를 실행하지 않고, 실행될 명령을 "제안"으로만 돌려준다.
 /// - 실제 실행(Apply/Execute)은 config.agents.enable_execution == true 인 경우에만 허용한다(이중 안전장치).
-/// - workspace_root 가 유효해야 하며, 작업 디렉터리를 그 밖으로 벗어나지 않게 고정한다.
+/// - workspace.json 정책의 root/read/write 경로를 검증한다.
 /// - ProcessStartInfo.UseShellExecute = false, 인자는 ArgumentList 로 전달해 shell injection 을 줄인다.
 /// - 타임아웃을 강제하고, 캡처한 stdout/stderr 는 SecretMasker 로 민감정보를 가린 뒤 보관한다.
 ///
@@ -23,11 +23,16 @@ public sealed class ClaudeCodeExecutor : IAgentExecutor
 {
     private readonly AppConfigLoader _configLoader;
     private readonly DpapiSecretStore _secretStore;
+    private readonly AgentWorkspacePolicy _workspacePolicy;
 
-    public ClaudeCodeExecutor(AppConfigLoader configLoader, DpapiSecretStore secretStore)
+    public ClaudeCodeExecutor(
+        AppConfigLoader configLoader,
+        DpapiSecretStore secretStore,
+        AgentWorkspacePolicy workspacePolicy)
     {
         _configLoader = configLoader;
         _secretStore = secretStore;
+        _workspacePolicy = workspacePolicy;
     }
 
     public string Name => "claude-code";
@@ -40,9 +45,7 @@ public sealed class ClaudeCodeExecutor : IAgentExecutor
             ? "claude"
             : Environment.ExpandEnvironmentVariables(agents.ClaudeCode.Executable.Trim());
 
-        var rootConfigured = string.IsNullOrWhiteSpace(request.WorkspaceRoot)
-            ? agents.WorkspaceRoot
-            : request.WorkspaceRoot;
+        var rootConfigured = _workspacePolicy.GetEffectiveRoot(request.WorkspaceRoot, agents.WorkspaceRoot);
 
         // 실행 가능 여부 판정 (이중 안전장치).
         var executionAllowed =
@@ -51,6 +54,7 @@ public sealed class ClaudeCodeExecutor : IAgentExecutor
 
         var arguments = BuildArguments(request.Instruction, agents.ClaudeCode.ExtraArgs);
         var plannedCommand = $"{executable} {string.Join(' ', arguments)}";
+        var policyLabel = _workspacePolicy.BuildExecutionPolicyLabel(request, agents.WorkspaceRoot);
 
         if (!executionAllowed)
         {
@@ -66,20 +70,20 @@ public sealed class ClaudeCodeExecutor : IAgentExecutor
                     $"[Claude Code · 제안 모드] 아래 명령을 실행할 준비가 되었지만 실행하지 않았습니다.\n" +
                     $"- 사유: {reason}\n" +
                     $"- 예정 명령: {plannedCommand}\n" +
-                    $"- 작업 루트: {(string.IsNullOrWhiteSpace(rootConfigured) ? "(미설정)" : rootConfigured)}",
+                    policyLabel,
                 RawOutput = string.Empty,
                 ChangedFiles = Array.Empty<string>(),
                 RequiresUserReview = true
             };
         }
 
-        // 여기서부터는 실행 경로. workspace_root 검증 필수.
-        if (!WorkspaceGuard.TryResolveRoot(rootConfigured, out var workspaceRoot, out var rootError))
+        // 여기서부터는 실행 경로. workspace.json 정책 검증 필수.
+        if (!_workspacePolicy.TryValidateForExecution(request, agents.WorkspaceRoot, out var workspaceRoot, out var policyError))
         {
             return new AgentResult
             {
                 Success = false,
-                Summary = $"[Claude Code] 실행을 중단했습니다: {rootError}",
+                Summary = $"[Claude Code] 실행을 중단했습니다: {policyError}",
                 RequiresUserReview = true
             };
         }
@@ -128,6 +132,19 @@ public sealed class ClaudeCodeExecutor : IAgentExecutor
         var stdout = SecretMasker.Mask(await stdoutTask, apiKey);
         var stderr = SecretMasker.Mask(await stderrTask, apiKey);
         var success = process.ExitCode == 0;
+        var changedFiles = Array.Empty<string>();
+
+        if (!_workspacePolicy.AreChangedFilesAllowed(changedFiles, workspaceRoot, out var escapingPaths))
+        {
+            return new AgentResult
+            {
+                Success = false,
+                Summary = "[Claude Code] 변경 파일 중 workspace 정책 밖의 경로가 있어 결과를 차단했습니다.",
+                RawOutput = string.Join(Environment.NewLine, escapingPaths),
+                ChangedFiles = changedFiles,
+                RequiresUserReview = true
+            };
+        }
 
         return new AgentResult
         {
@@ -137,7 +154,7 @@ public sealed class ClaudeCodeExecutor : IAgentExecutor
                 : $"[Claude Code] 작업이 실패했습니다 (종료 코드 {process.ExitCode}).",
             RawOutput = string.IsNullOrWhiteSpace(stderr) ? stdout : $"{stdout}\n{stderr}",
             // TODO: stdout 에서 변경 파일 목록 파싱 후 WorkspaceGuard.FindEscapingPaths 로 재검증.
-            ChangedFiles = Array.Empty<string>(),
+            ChangedFiles = changedFiles,
             RequiresUserReview = true
         };
     }
