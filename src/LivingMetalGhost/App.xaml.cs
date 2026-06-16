@@ -120,6 +120,7 @@ public partial class App : Application
         services.AddSingleton<AppConfigLoader>();
         services.AddSingleton<DpapiSecretStore>();
         services.AddSingleton<StoryStateStore>();
+        services.AddSingleton<RoleplayStateUpdater>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
