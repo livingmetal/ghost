@@ -161,6 +161,22 @@ public partial class AdvancedWorkbenchWindow : Window
         RefreshContextText();
     }
 
+    private async void GenerateSummaryButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_subscribedViewModel is null)
+        {
+            return;
+        }
+
+        var summaryPath = await _subscribedViewModel.GenerateCurrentAdvancedSessionSummaryAsync(CancellationToken.None);
+        MessageBox.Show(
+            $"현재 고급 세션 요약을 저장했어요.\n\n{summaryPath}",
+            "세션 요약",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+        RefreshContextText();
+    }
+
     private void ProjectMemoryButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_subscribedViewModel is null)
