@@ -94,6 +94,41 @@ public sealed class WorkspaceStore
         return !string.IsNullOrWhiteSpace(rootPath);
     }
 
+    public bool IsAlwaysApproved(string commandLine)
+    {
+        var normalized = NormalizeCommand(commandLine);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return false;
+        }
+
+        return Load().AlwaysApprovedCommands.Any(command =>
+            string.Equals(NormalizeCommand(command), normalized, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public void AddAlwaysApprovedCommand(string commandLine)
+    {
+        var normalized = NormalizeCommand(commandLine);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return;
+        }
+
+        var settings = Load();
+        if (settings.AlwaysApprovedCommands.Any(command =>
+                string.Equals(NormalizeCommand(command), normalized, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        settings.AlwaysApprovedCommands = settings.AlwaysApprovedCommands
+            .Concat(new[] { normalized })
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        Save(settings);
+    }
+
     public string BuildPromptContext()
     {
         var settings = Load();
@@ -106,6 +141,9 @@ public sealed class WorkspaceStore
         var commands = settings.AllowedCommands.Count == 0
             ? "none"
             : string.Join("\n", settings.AllowedCommands.Select(command => $"- {command}"));
+        var alwaysApprovedCommands = settings.AlwaysApprovedCommands.Count == 0
+            ? "none"
+            : string.Join("\n", settings.AlwaysApprovedCommands.Select(command => $"- {command}"));
 
         return $"""
             Workspace policy:
@@ -120,6 +158,8 @@ public sealed class WorkspaceStore
             {writePaths}
             - Allowed commands:
             {commands}
+            - Always-approved commands:
+            {alwaysApprovedCommands}
             """;
     }
 
@@ -145,6 +185,7 @@ public sealed class WorkspaceStore
                 "dotnet build",
                 "dotnet test"
             },
+            AlwaysApprovedCommands = Array.Empty<string>(),
             RequireApprovalForWrite = true,
             RequireApprovalForExecute = true,
             UpdatedAt = DateTimeOffset.Now
@@ -156,11 +197,8 @@ public sealed class WorkspaceStore
         var rootPath = NormalizePath(settings.RootPath);
         var readPaths = NormalizePathList(settings.AllowedReadPaths);
         var writePaths = NormalizePathList(settings.AllowedWritePaths);
-        var commands = settings.AllowedCommands
-            .Where(command => !string.IsNullOrWhiteSpace(command))
-            .Select(command => command.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var commands = NormalizeCommandList(settings.AllowedCommands);
+        var alwaysApprovedCommands = NormalizeCommandList(settings.AlwaysApprovedCommands);
 
         if (!string.IsNullOrWhiteSpace(rootPath))
         {
@@ -183,6 +221,7 @@ public sealed class WorkspaceStore
         settings.AllowedReadPaths = readPaths;
         settings.AllowedWritePaths = writePaths;
         settings.AllowedCommands = commands;
+        settings.AlwaysApprovedCommands = alwaysApprovedCommands;
         return settings;
     }
 
@@ -199,6 +238,28 @@ public sealed class WorkspaceStore
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+    }
+
+    private static IReadOnlyList<string> NormalizeCommandList(IReadOnlyList<string>? commands)
+    {
+        if (commands is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        return commands
+            .Where(command => !string.IsNullOrWhiteSpace(command))
+            .Select(NormalizeCommand)
+            .Where(command => !string.IsNullOrWhiteSpace(command))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static string NormalizeCommand(string? commandLine)
+    {
+        return string.Join(' ', (commandLine ?? string.Empty)
+            .Trim()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 
     private static string NormalizePath(string? path)
