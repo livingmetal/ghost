@@ -17,6 +17,16 @@
             <ContextMenu>
                 <MenuItem Header="대화창 열기"
                           Click="OpenChatMenuItem_OnClick" />
+                <Separator />
+                <MenuItem x:Name="StoryModeMenuItem"
+                          Header="스토리 모드"
+                          IsCheckable="True"
+                          Click="StoryModeMenuItem_OnClick" />
+                <MenuItem x:Name="AdvancedModeMenuItem"
+                          Header="고급 모드"
+                          IsCheckable="True"
+                          Click="AdvancedModeMenuItem_OnClick" />
+                <Separator />
                 <MenuItem Header="대화 로그"
                           Click="ConversationLogMenuItem_OnClick" />
                 <MenuItem Header="설정"
