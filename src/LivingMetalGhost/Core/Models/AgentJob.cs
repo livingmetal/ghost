@@ -1,18 +1,28 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace LivingMetalGhost.Core.Models;
 
 /// <summary>Workbench/Agent Dock에 표시할 백그라운드 작업 상태.</summary>
-public sealed class AgentJob
+public sealed partial class AgentJob : ObservableObject
 {
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
     public string AgentType { get; init; } = "agent";
     public string DisplayName { get; init; } = "Agent";
     public string Title { get; init; } = string.Empty;
-    public string Summary { get; init; } = string.Empty;
-    public AgentJobStatus Status { get; init; } = AgentJobStatus.Queued;
-    public double Progress { get; init; }
-    public bool RequiresApproval { get; init; }
     public DateTimeOffset StartedAt { get; init; } = DateTimeOffset.Now;
     public IReadOnlyList<string> ChangedFiles { get; init; } = Array.Empty<string>();
+
+    [ObservableProperty]
+    private string summary = string.Empty;
+
+    [ObservableProperty]
+    private AgentJobStatus status = AgentJobStatus.Queued;
+
+    [ObservableProperty]
+    private double progress;
+
+    [ObservableProperty]
+    private bool requiresApproval;
 
     public string StatusLabel => Status switch
     {
@@ -41,6 +51,17 @@ public sealed class AgentJob
                    $"{changedFiles}\n" +
                    $"시작: {StartedAt:HH:mm}";
         }
+    }
+
+    partial void OnStatusChanged(AgentJobStatus value)
+    {
+        OnPropertyChanged(nameof(StatusLabel));
+        OnPropertyChanged(nameof(TooltipText));
+    }
+
+    partial void OnSummaryChanged(string value)
+    {
+        OnPropertyChanged(nameof(TooltipText));
     }
 }
 
