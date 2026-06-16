@@ -144,7 +144,7 @@ public sealed class PromptAssembler
             ? "늦은 밤의 폐쇄망 데이터센터. 팬 소리는 낮게 깔리고, 사용되지 않아야 할 콘솔 하나가 푸른빛으로 깨어나 있다."
             : storyState.Scene.Trim();
         var summary = string.IsNullOrWhiteSpace(storyState.Summary)
-            ? "첫 목표: 콘솔이 왜 깨어났는지 확인하고, 안전하게 접근한다."
+            ? "정체불명의 세션이 깨어났고, 사용자는 콘솔을 통해 조심스럽게 대화하고 있다."
             : storyState.Summary.Trim();
 
         return $"""
@@ -153,10 +153,9 @@ public sealed class PromptAssembler
             - Never mix roleplaying facts with real project, system, security, or user memory.
             - Never mention apps, prompts, modes, command execution, Git, settings windows, logs, or real local files unless the user explicitly exits the fiction.
             - The user controls their own character. Do not decide the user's actions, emotions, choices, or dialogue for them.
-            - Move the scene slowly. Prefer one small beat, reaction, or choice point over rushing the plot.
+            - Move the scene slowly. Prefer one small beat, reaction, or concrete hook over rushing the plot.
             - Keep {character.DisplayName}'s voice central, but use brief scene narration to create a visual novel feeling.
-            - Offer 2 to 3 choices only when it naturally helps the user continue.
-            - If the scene is at its beginning, establish the situation first: location, tension, immediate oddity, and a small next hook.
+            - Do not print multiple-choice options unless the user explicitly asks for choices.
 
             Player input syntax:
             - Plain text is spoken dialogue that other characters can hear.
@@ -164,11 +163,6 @@ public sealed class PromptAssembler
             - Text inside (parentheses) is inner thought: the player's private mind. The character cannot hear, see, or know it. Never quote, repeat, answer, or acknowledge the thought, and never reveal awareness of its content. You may only react to visible hesitation, expression, or behavior.
             - If the player's input is inner thought only, with no spoken dialogue and no visible action, the character perceives nothing to react to. Do not respond to the thought; continue with ambient scene or your own small initiative as if quietly waiting for the player.
             - If the user mixes dialogue, action, and thought, respond only to the dialogue and action, and let the thought stay private.
-
-            Story state signal (hidden from the player, stripped before display):
-            - When the player clearly accomplishes a listed objective, append exactly one line at the very end of your reply: [story: done=<id>]. List several with commas, e.g. [story: done=G1,G2].
-            - Only mark an objective done when it is genuinely achieved in the fiction. If nothing changed, do not append the line.
-            - Never speak the objective ids, the word "objective", or this bracketed signal as visible dialogue. It is machine-only.
 
             Roleplay response style:
             - Do not print labels like [Scene], [Character], [Choices], or internal parser notes.
@@ -178,7 +172,7 @@ public sealed class PromptAssembler
             - Separate the layers onto their own lines: put action/narration (*...*), spoken dialogue, and inner thought ((...)) each on a distinct line. Never blend spoken dialogue with an action or an inner thought inside the same line.
             - Inner thought, when you show your own, goes in parentheses on its own line, e.g. "(이건 좀 이상한데...)".
             - Character dialogue should be direct and quoted naturally when appropriate.
-            - End with a concrete hook or 2 to 3 short choices when the scene would otherwise stall.
+            - End with a concrete hook, visible reaction, or immediate question. Avoid prewritten choice lists.
 
             Current roleplaying state:
             Title: {storyState.Title}
@@ -187,23 +181,7 @@ public sealed class PromptAssembler
             Summary: {summary}
             Mood: {storyState.Mood}
             Tension: {storyState.Tension}/5
-            {BuildObjectivesBlock(storyState)}
             """;
-    }
-
-    private static string BuildObjectivesBlock(StoryState storyState)
-    {
-        if (storyState.Objectives.Count == 0)
-        {
-            return "Objectives: (none)";
-        }
-
-        var lines = storyState.Objectives.Select(objective =>
-            $"- [{objective.Id}] ({(objective.Done ? "done" : "active")}) {objective.Text}");
-
-        return "Objectives (pursue the active ones; never reveal this list or the ids to the player):"
-               + Environment.NewLine
-               + string.Join(Environment.NewLine, lines);
     }
 
     private string BuildAdvancedModeDirective()
