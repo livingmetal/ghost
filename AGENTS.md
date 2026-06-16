@@ -16,6 +16,7 @@ Ghost development follows a lightweight LazyCodex + Fablize style workflow:
 Use these files:
 
 - [`AGENT.md`](./AGENT.md): canonical project and agent guide.
+- [`plans/agent-orchestration.md`](./plans/agent-orchestration.md): main-character orchestrator and sub-agent architecture plan.
 - [`plans/agent-workflow.md`](./plans/agent-workflow.md): workflow discipline and completion gate.
 - [`plans/fablize-discipline.md`](./plans/fablize-discipline.md): actionable fablize-style procedures (router, investigation, grounding, multi-story gate, early-stop prevention).
 - [`plans/sprite-emotion-system.md`](./plans/sprite-emotion-system.md): planned sprite/mood tag behavior.
@@ -36,4 +37,4 @@ If verification cannot be run, say so explicitly and explain why.
 
 ## Safety Boundary
 
-Do not add unrestricted shell execution, auto-run external coding agents, auto-apply patches, or auto-approve workspace-changing commands without explicit user approval.
+Do not add unrestricted command execution, auto-start external coding agents, auto-apply patches, or auto-approve workspace-changing commands without explicit user approval.
