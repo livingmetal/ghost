@@ -81,7 +81,8 @@ public partial class ChatWindow : Window
     {
         if (e.PropertyName is nameof(MainViewModel.IsAdvancedMode)
             or nameof(MainViewModel.IsStoryMode)
-            or nameof(MainViewModel.CurrentMode))
+            or nameof(MainViewModel.CurrentMode)
+            or nameof(MainViewModel.ActiveProviderLabel))
         {
             ApplyModeVisuals();
         }
@@ -103,6 +104,8 @@ public partial class ChatWindow : Window
             ConversationMode.Story => "ROLEPLAY CONSOLE",
             _ => "PROMPT CONSOLE"
         };
+        ProviderLabel.Text = (_subscribedViewModel?.ActiveProviderLabel ?? string.Empty)
+            .Replace("STORY:", "ROLEPLAY:", StringComparison.OrdinalIgnoreCase);
         SendButton.Content = mode == ConversationMode.Advanced ? "RUN" : "SEND";
         SendButton.Background = new SolidColorBrush(mode switch
         {
