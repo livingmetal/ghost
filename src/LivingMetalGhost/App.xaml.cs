@@ -31,6 +31,7 @@ public partial class App : Application
         Services = serviceCollection.BuildServiceProvider();
         Services.GetRequiredService<AdvancedSessionLogService>().EnsureWorkspaceFiles();
         Services.GetRequiredService<WorkspaceStore>().EnsureWorkspaceFile();
+        Services.GetRequiredService<StoryStateStore>().SetEnabled(false);
 
         var mainWindow = new MainWindow
         {
@@ -66,7 +67,7 @@ public partial class App : Application
             {
                 MessageBox.Show(
                     "Ghost가 UI 예외를 잡았어요. 프로그램은 계속 실행됩니다.\n" +
-                    "자세한 내용은 %APPDATA%\\LivingMetalGhost\\Logs 의 crash 로그를 확인하세요.",
+                    "자세한 내용은 %APPDATA%\LivingMetalGhost\Logs 의 crash 로그를 확인하세요.",
                     "LivingMetalGhost 오류",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
