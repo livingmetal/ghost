@@ -19,7 +19,7 @@ public sealed class ConversationService
     private readonly StoryStateStore _storyStateStore;
     private readonly RoleplayStateUpdater _roleplayStateUpdater;
     private readonly AdvancedSessionLogService _advancedSessionLogService;
-    private readonly List<LlmHistoryMessage> _history = [];
+    private readonly Dictionary<ConversationMode, List<LlmHistoryMessage>> _histories = new();
     private readonly Lock _historyLock = new();
     private readonly Dictionary<string, HiddenTraitRuntimeState> _hiddenTraitStates = new(StringComparer.OrdinalIgnoreCase);
 
@@ -39,14 +39,22 @@ public sealed class ConversationService
         _advancedSessionLogService = advancedSessionLogService;
     }
 
-    public async Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
+    public Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
+    {
+        var mode = advanced ? ConversationMode.Advanced : ConversationMode.Daily;
+        return ChatAsync(text, mode, cancellationToken);
+    }
+
+    public Task<SkillResult> RoleplayAsync(string text, CancellationToken cancellationToken)
+    {
+        return ChatAsync(text, ConversationMode.Story, cancellationToken);
+    }
+
+    private async Task<SkillResult> ChatAsync(string text, ConversationMode mode, CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
         var character = CharacterCatalog.Get(config.App.GhostId);
         var storyState = _storyStateStore.Load();
-        var mode = advanced
-            ? ConversationMode.Advanced
-            : storyState.Enabled ? ConversationMode.Story : ConversationMode.Daily;
         var userTextForProvider = mode == ConversationMode.Story
             ? RoleplayInputFormatter.FormatForPrompt(text)
             : text;
@@ -64,8 +72,8 @@ public sealed class ConversationService
                 character,
                 mode,
                 storyState,
-                BuildHiddenTraitDirective(character)),
-            History = GetHistorySnapshot()
+                BuildHiddenTraitDirective(character, mode)),
+            History = GetHistorySnapshot(mode)
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
         var (storyCleanText, completedObjectiveIds) = mode == ConversationMode.Story
@@ -75,8 +83,8 @@ public sealed class ConversationService
         var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
                             (response.FromFallback ? "thinking" : "speaking");
 
-        AddToHistory("user", userTextForProvider);
-        AddToHistory("assistant", characterText);
+        AddToHistory(mode, "user", userTextForProvider);
+        AddToHistory(mode, "assistant", characterText);
         if (mode == ConversationMode.Story)
         {
             _roleplayStateUpdater.UpdateAfterTurn(userTextForProvider, characterText, characterMood, completedObjectiveIds);
@@ -111,15 +119,13 @@ public sealed class ConversationService
         var config = _configLoader.Load();
         var character = CharacterCatalog.Get(config.App.GhostId);
         var storyState = _storyStateStore.Load();
-        var mode = storyState.Enabled ? ConversationMode.Story : ConversationMode.Daily;
+        var mode = ConversationMode.Daily;
         // 먼저 말 걸기는 가벼운 기본 대화이므로 항상 기본 llm 설정을 사용한다.
         var options = LlmOptions.FromSettings(config.Llm);
         var provider = _providerFactory.Create(options.Provider);
-        var userText = mode == ConversationMode.Story
-            ? "현재 roleplay_state의 첫 장면이나 이어지는 장면을 짧게 진행해. 장소, 긴장, 바로 보이는 이상 징후를 보여주고 사용자의 행동은 대신 결정하지 마."
-            : "지금 상황에 어울리는 짧은 말 한마디로 먼저 대화를 시작해. " +
-              "질문, 가벼운 안부, 작업 집중 확인, 휴식 제안 중 하나를 자연스럽게 선택해. " +
-              "설명이나 따옴표 없이 실제로 사용자에게 말할 문장만 출력해.";
+        var userText = "지금 상황에 어울리는 짧은 말 한마디로 먼저 대화를 시작해. " +
+                       "질문, 가벼운 안부, 작업 집중 확인, 휴식 제안 중 하나를 자연스럽게 선택해. " +
+                       "설명이나 따옴표 없이 실제로 사용자에게 말할 문장만 출력해.";
         var response = await provider.GenerateAsync(new LlmRequest
         {
             UserText = userText,
@@ -131,28 +137,21 @@ public sealed class ConversationService
                 character,
                 mode,
                 storyState,
-                BuildHiddenTraitDirective(character)),
-            History = GetHistorySnapshot()
+                BuildHiddenTraitDirective(character, mode)),
+            History = GetHistorySnapshot(mode)
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
-        var (storyCleanText, completedObjectiveIds) = mode == ConversationMode.Story
-            ? StoryTagParser.Parse(parsed.Text)
-            : (parsed.Text, (IReadOnlyList<string>)Array.Empty<string>());
-        var characterText = PolishCharacterSpeech(storyCleanText);
+        var characterText = PolishCharacterSpeech(parsed.Text);
         var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
                             (response.FromFallback ? "happy" : "speaking");
 
-        AddToHistory("assistant", characterText);
-        if (mode == ConversationMode.Story)
-        {
-            _roleplayStateUpdater.UpdateAfterTurn(string.Empty, characterText, characterMood, completedObjectiveIds);
-        }
+        AddToHistory(mode, "assistant", characterText);
 
         return new SkillResult
         {
             BubbleText = characterText,
             Mood = characterMood,
-            Action = mode == ConversationMode.Story ? "proactive-roleplay" : "proactive-chat",
+            Action = "proactive-chat",
             UsedLlm = true
         };
     }
@@ -173,14 +172,14 @@ public sealed class ConversationService
         return labels;
     }
 
-    private string BuildHiddenTraitDirective(CharacterProfile character)
+    private string BuildHiddenTraitDirective(CharacterProfile character, ConversationMode mode)
     {
         if (character.HiddenTraits.Count == 0)
         {
             return string.Empty;
         }
 
-        var upcomingReplyIndex = GetAssistantReplyCount() + 1;
+        var upcomingReplyIndex = GetAssistantReplyCount(mode) + 1;
         var activeTraits = GetActiveHiddenTraits(character, upcomingReplyIndex);
         if (activeTraits.Count == 0)
         {
@@ -200,11 +199,11 @@ public sealed class ConversationService
             """;
     }
 
-    private int GetAssistantReplyCount()
+    private int GetAssistantReplyCount(ConversationMode mode)
     {
         lock (_historyLock)
         {
-            return _history.Count(message => string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase));
+            return GetHistory(mode).Count(message => string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -364,11 +363,22 @@ public sealed class ConversationService
         return polished.Trim();
     }
 
-    private IReadOnlyList<LlmHistoryMessage> GetHistorySnapshot()
+    private List<LlmHistoryMessage> GetHistory(ConversationMode mode)
+    {
+        if (!_histories.TryGetValue(mode, out var history))
+        {
+            history = [];
+            _histories[mode] = history;
+        }
+
+        return history;
+    }
+
+    private IReadOnlyList<LlmHistoryMessage> GetHistorySnapshot(ConversationMode mode)
     {
         lock (_historyLock)
         {
-            return _history
+            return GetHistory(mode)
                 .Select(message => new LlmHistoryMessage
                 {
                     Role = message.Role,
@@ -378,20 +388,21 @@ public sealed class ConversationService
         }
     }
 
-    private void AddToHistory(string role, string content)
+    private void AddToHistory(ConversationMode mode, string role, string content)
     {
         lock (_historyLock)
         {
-            _history.Add(new LlmHistoryMessage
+            var history = GetHistory(mode);
+            history.Add(new LlmHistoryMessage
             {
                 Role = role,
                 Content = content
             });
 
-            while (_history.Count > MaximumHistoryMessages ||
-                   _history.Sum(message => message.Content.Length) > MaximumHistoryCharacters)
+            while (history.Count > MaximumHistoryMessages ||
+                   history.Sum(message => message.Content.Length) > MaximumHistoryCharacters)
             {
-                _history.RemoveAt(0);
+                history.RemoveAt(0);
             }
         }
     }
