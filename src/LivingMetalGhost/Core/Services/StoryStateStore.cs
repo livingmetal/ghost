@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
@@ -6,15 +7,20 @@ using LivingMetalGhost.Core.Models;
 namespace LivingMetalGhost.Core.Services;
 
 /// <summary>
-/// StoryMode 상태를 로컬 JSON으로 저장한다. project/user memory와 의도적으로 분리한다.
+/// 롤플레잉 상태를 로컬 JSON으로 저장한다. project/user memory와 의도적으로 분리한다.
 /// </summary>
 public sealed class StoryStateStore
 {
     private readonly string _storyRoot;
     private readonly string _stateFile;
+    private readonly string _memoryFile;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+    };
+    private readonly JsonSerializerOptions _jsonLineOptions = new()
+    {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
 
@@ -22,6 +28,7 @@ public sealed class StoryStateStore
     {
         _storyRoot = Path.Combine(paths.Root, "Stories", "default");
         _stateFile = Path.Combine(_storyRoot, "story_state.json");
+        _memoryFile = Path.Combine(_storyRoot, "memory.jsonl");
     }
 
     public StoryState Load()
@@ -65,6 +72,13 @@ public sealed class StoryStateStore
         state.UpdatedAt = DateTimeOffset.Now;
         var json = JsonSerializer.Serialize(state, _jsonOptions);
         File.WriteAllText(_stateFile, json);
+    }
+
+    public void AppendMemory(RoleplayMemoryEntry entry)
+    {
+        Directory.CreateDirectory(_storyRoot);
+        var json = JsonSerializer.Serialize(entry, _jsonLineOptions);
+        File.AppendAllText(_memoryFile, json + Environment.NewLine, Encoding.UTF8);
     }
 
     private static StoryState CreateDefaultState()
