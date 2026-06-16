@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.UI.ViewModels;
@@ -9,6 +10,8 @@ namespace LivingMetalGhost.UI.Views;
 
 public partial class StoryWindow : Window
 {
+    private const double MaximumResizeWidth = 1100;
+    private const double MaximumResizeHeight = 950;
     private MainViewModel? _subscribedViewModel;
 
     public StoryWindow()
@@ -104,6 +107,16 @@ public partial class StoryWindow : Window
         {
             DragMove();
         }
+    }
+
+    private void ResizeThumb_OnDragDelta(object sender, DragDeltaEventArgs e)
+    {
+        var workArea = SystemParameters.WorkArea;
+        var maximumWidth = Math.Min(MaximumResizeWidth, Math.Max(MinWidth, workArea.Right - Left - 12));
+        var maximumHeight = Math.Min(MaximumResizeHeight, Math.Max(MinHeight, workArea.Bottom - Top - 12));
+
+        Width = Math.Clamp(Width + e.HorizontalChange, MinWidth, maximumWidth);
+        Height = Math.Clamp(Height + e.VerticalChange, MinHeight, maximumHeight);
     }
 
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)
