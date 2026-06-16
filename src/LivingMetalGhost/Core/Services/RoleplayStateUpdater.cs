@@ -20,8 +20,7 @@ public sealed class RoleplayStateUpdater
     public void UpdateAfterTurn(
         string userText,
         string assistantText,
-        string mood,
-        IReadOnlyList<string>? completedObjectiveIds = null)
+        string mood)
     {
         var state = _storyStateStore.Load();
         if (!state.Enabled)
@@ -31,10 +30,8 @@ public sealed class RoleplayStateUpdater
 
         var cleanUserText = CleanText(userText);
         var cleanAssistantText = CleanText(assistantText);
-        var hasObjectiveUpdate = MarkObjectivesDone(state, completedObjectiveIds);
         if (string.IsNullOrWhiteSpace(cleanUserText) &&
-            string.IsNullOrWhiteSpace(cleanAssistantText) &&
-            !hasObjectiveUpdate)
+            string.IsNullOrWhiteSpace(cleanAssistantText))
         {
             return;
         }
@@ -54,27 +51,6 @@ public sealed class RoleplayStateUpdater
             Tension = state.Tension,
             Scene = state.Scene
         });
-    }
-
-    private static bool MarkObjectivesDone(StoryState state, IReadOnlyList<string>? completedObjectiveIds)
-    {
-        if (completedObjectiveIds is not { Count: > 0 } || state.Objectives.Count == 0)
-        {
-            return false;
-        }
-
-        var changed = false;
-        foreach (var objective in state.Objectives)
-        {
-            if (!objective.Done &&
-                completedObjectiveIds.Any(id => string.Equals(id, objective.Id, StringComparison.OrdinalIgnoreCase)))
-            {
-                objective.Done = true;
-                changed = true;
-            }
-        }
-
-        return changed;
     }
 
     private static string UpdateScene(string currentScene, string userText, string assistantText)
