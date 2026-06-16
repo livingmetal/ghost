@@ -11,62 +11,24 @@ namespace LivingMetalGhost.UI.Controls;
 
 public partial class CharacterHost : UserControl
 {
-    public static readonly DependencyProperty CharacterIdProperty = DependencyProperty.Register(
-        nameof(CharacterId),
-        typeof(string),
-        typeof(CharacterHost),
-        new PropertyMetadata("ssuang", OnVisualStateChanged));
-
-    public static readonly DependencyProperty MoodProperty = DependencyProperty.Register(
-        nameof(Mood),
-        typeof(string),
-        typeof(CharacterHost),
-        new PropertyMetadata("idle", OnVisualStateChanged));
-
-    public static readonly DependencyProperty IsSpeakingProperty = DependencyProperty.Register(
-        nameof(IsSpeaking),
-        typeof(bool),
-        typeof(CharacterHost),
-        new PropertyMetadata(false, OnVisualStateChanged));
-
-    public static readonly DependencyProperty SizePresetIdProperty = DependencyProperty.Register(
-        nameof(SizePresetId),
-        typeof(string),
-        typeof(CharacterHost),
-        new PropertyMetadata("normal", OnVisualStateChanged));
-
-    public static readonly DependencyProperty FramingPresetIdProperty = DependencyProperty.Register(
-        nameof(FramingPresetId),
-        typeof(string),
-        typeof(CharacterHost),
-        new PropertyMetadata("full-body", OnVisualStateChanged));
-
-    public static readonly DependencyProperty UserScaleProperty = DependencyProperty.Register(
-        nameof(UserScale),
-        typeof(double),
-        typeof(CharacterHost),
-        new PropertyMetadata(1.0, OnVisualStateChanged));
+    private static readonly Dictionary<string, BitmapImage> ImageCache = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly DispatcherTimer _blinkTimer;
     private readonly DispatcherTimer _speakingTimer;
     private readonly DispatcherTimer _moodCycleTimer;
-    private SpriteCharacterVisualProfile? _spriteVisual;
-    private ModularCharacterVisualProfile? _modularVisual;
+    private bool _isBlinking;
     private int _speakingFrameIndex;
     private int _moodCycleFrameIndex;
-    private bool _isBlinking;
+    private SpriteCharacterVisualProfile? _spriteVisual;
+    private ModularCharacterVisualProfile? _modularVisual;
     private readonly Dictionary<string, Image> _modularLayerImages = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly Dictionary<string, BitmapImage> ImageCache = new(StringComparer.OrdinalIgnoreCase);
 
     public CharacterHost()
     {
         InitializeComponent();
-        Loaded += OnLoaded;
-        Unloaded += OnUnloaded;
 
         _blinkTimer = new DispatcherTimer();
         _blinkTimer.Tick += BlinkTimer_OnTick;
-        ScheduleNextBlink();
 
         _speakingTimer = new DispatcherTimer
         {
@@ -79,7 +41,45 @@ public partial class CharacterHost : UserControl
             Interval = TimeSpan.FromMilliseconds(500)
         };
         _moodCycleTimer.Tick += MoodCycleTimer_OnTick;
+
+        Loaded += (_, _) => RefreshCharacter();
     }
+
+    public static readonly DependencyProperty CharacterIdProperty = DependencyProperty.Register(
+        nameof(CharacterId),
+        typeof(string),
+        typeof(CharacterHost),
+        new PropertyMetadata("ssuang", OnCharacterChanged));
+
+    public static readonly DependencyProperty MoodProperty = DependencyProperty.Register(
+        nameof(Mood),
+        typeof(string),
+        typeof(CharacterHost),
+        new PropertyMetadata("idle", OnCharacterChanged));
+
+    public static readonly DependencyProperty IsSpeakingProperty = DependencyProperty.Register(
+        nameof(IsSpeaking),
+        typeof(bool),
+        typeof(CharacterHost),
+        new PropertyMetadata(false, OnCharacterChanged));
+
+    public static readonly DependencyProperty SizePresetIdProperty = DependencyProperty.Register(
+        nameof(SizePresetId),
+        typeof(string),
+        typeof(CharacterHost),
+        new PropertyMetadata("normal", OnCharacterChanged));
+
+    public static readonly DependencyProperty FramingPresetIdProperty = DependencyProperty.Register(
+        nameof(FramingPresetId),
+        typeof(string),
+        typeof(CharacterHost),
+        new PropertyMetadata("full-body", OnCharacterChanged));
+
+    public static readonly DependencyProperty UserScaleProperty = DependencyProperty.Register(
+        nameof(UserScale),
+        typeof(double),
+        typeof(CharacterHost),
+        new PropertyMetadata(1.0, OnCharacterChanged));
 
     public string CharacterId
     {
@@ -117,36 +117,23 @@ public partial class CharacterHost : UserControl
         set => SetValue(UserScaleProperty, value);
     }
 
-    private static void OnVisualStateChanged(
-        DependencyObject dependencyObject,
-        DependencyPropertyChangedEventArgs e)
+    private static void OnCharacterChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
     {
         if (dependencyObject is CharacterHost host && host.IsLoaded)
         {
-            host.ApplyVisualState();
+            host.RefreshCharacter();
         }
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        ApplyVisualState();
-    }
-
-    private void OnUnloaded(object sender, RoutedEventArgs e)
-    {
-        _blinkTimer.Stop();
-        _speakingTimer.Stop();
-        _moodCycleTimer.Stop();
-        StopMotion();
-    }
-
-    private void ApplyVisualState()
+    private void RefreshCharacter()
     {
         var character = CharacterCatalog.Get(CharacterId);
+        CharacterNameLabel.Text = character.DisplayName;
         _spriteVisual = character.Visual as SpriteCharacterVisualProfile;
         _modularVisual = character.Visual as ModularCharacterVisualProfile;
-
         var usesCustomVisual = _spriteVisual is not null || _modularVisual is not null;
+
+        DefaultCharacter.Visibility = usesCustomVisual ? Visibility.Collapsed : Visibility.Visible;
         SpriteCharacter.Visibility = usesCustomVisual ? Visibility.Visible : Visibility.Collapsed;
 
         _blinkTimer.Stop();
@@ -327,8 +314,8 @@ public partial class CharacterHost : UserControl
         }
 
         SpritePoseLayer.Source = LoadBitmap(spritePath);
-        SpritePoseLayer.Visibility = Visibility.Visible;
-        SpriteBaseLayer.Visibility = Visibility.Collapsed;
+        SpritePoseLayer.Visibility = SpritePoseLayer.Source is null ? Visibility.Collapsed : Visibility.Visible;
+        SpriteBaseLayer.Visibility = SpritePoseLayer.Source is null ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void HidePose()
@@ -592,13 +579,21 @@ public partial class CharacterHost : UserControl
             return cached;
         }
 
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.UriSource = new Uri(path, UriKind.Absolute);
-        bitmap.EndInit();
-        bitmap.Freeze();
-        ImageCache[path] = bitmap;
-        return bitmap;
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.UriSource = new Uri(path, UriKind.Absolute);
+            bitmap.EndInit();
+            bitmap.Freeze();
+            ImageCache[path] = bitmap;
+            return bitmap;
+        }
+        catch (Exception ex)
+        {
+            App.WriteCrashLog("sprite-load", ex);
+            return null;
+        }
     }
 }
