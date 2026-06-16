@@ -8,6 +8,8 @@ The user should talk to one main character. That character decides whether to an
 
 This is the long-term direction for making Ghost more than a mascot chat window: the main character becomes the conductor, and helper agents become summoned specialists.
 
+For deeper Advanced-mode implementation rationale, see [`advanced-mode-orchestration-research.md`](./advanced-mode-orchestration-research.md).
+
 ## Core Principle
 
 The user talks to the main character, not to a pile of tools.
