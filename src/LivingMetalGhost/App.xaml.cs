@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using LivingMetalGhost.Agents;
 using LivingMetalGhost.Core.Config;
+using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Security;
 using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.Providers.Llm;
@@ -58,6 +59,7 @@ public partial class App : Application
         services.AddSingleton<DpapiSecretStore>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
+        services.AddSingleton<SpriteDirector>();
         services.AddSingleton<IntentRouter>();
         services.AddSingleton<SkillRegistry>();
         services.AddSingleton<ILlmProviderFactory, LlmProviderFactory>();
