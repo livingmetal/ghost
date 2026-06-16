@@ -16,7 +16,6 @@ public partial class MainWindow : Window
     private ChatWindow? _chatWindow;
     private AdvancedWorkbenchWindow? _advancedWorkbenchWindow;
     private StoryWindow? _storyWindow;
-    private bool _hiddenForStory;
     private MainViewModel? _subscribedViewModel;
     private readonly DispatcherTimer _proactiveChatTimer;
     private DateTimeOffset? _nextProactiveChatAt;
@@ -292,7 +291,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 창을 닫는 대신 롤플레잉을 끄고 데스크톱 동반자로 복귀시킨다.
         e.Cancel = true;
         if (_subscribedViewModel is { IsStoryMode: true, IsAdvancedMode: false })
         {
@@ -335,23 +333,9 @@ public partial class MainWindow : Window
             EnsureStoryWindow();
             PositionStoryWindow();
             _storyWindow!.ShowConsole();
-
-            // 스프라이트가 두 곳에 보이지 않도록 데스크톱 동반자 창은 숨긴다(닫는 게 아님).
-            if (IsVisible)
-            {
-                Hide();
-                _hiddenForStory = true;
-            }
         }
         else
         {
-            if (_hiddenForStory)
-            {
-                Show();
-                Topmost = AlwaysOnTopMenuItem.IsChecked;
-                _hiddenForStory = false;
-            }
-
             _storyWindow?.Hide();
         }
     }
@@ -413,6 +397,7 @@ public partial class MainWindow : Window
     {
         PositionChatWindow();
         PositionAdvancedWorkbenchWindow();
+        PositionStoryWindow();
     }
 
     private void SyncAdvancedWorkbenchVisibility()
@@ -425,6 +410,7 @@ public partial class MainWindow : Window
         if (_subscribedViewModel.IsAdvancedMode)
         {
             _chatWindow?.Hide();
+            _storyWindow?.Hide();
             OpenAdvancedWorkbench();
         }
         else
@@ -509,6 +495,7 @@ public partial class MainWindow : Window
 
         ViewModel.SetStoryMode(StoryModeMenuItem.IsChecked);
         SyncModeMenuItems();
+        SyncStoryWindowVisibility();
     }
 
     private void AdvancedModeMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -516,6 +503,7 @@ public partial class MainWindow : Window
         ViewModel.SetAdvancedMode(AdvancedModeMenuItem.IsChecked);
         SyncModeMenuItems();
         SyncAdvancedWorkbenchVisibility();
+        SyncStoryWindowVisibility();
     }
 
     private void RoleplayStateMenuItem_OnClick(object sender, RoutedEventArgs e)
@@ -617,6 +605,7 @@ public partial class MainWindow : Window
     {
         _chatWindow?.Hide();
         _advancedWorkbenchWindow?.Hide();
+        _storyWindow?.Hide();
         Hide();
         TrayIconService?.ShowHiddenNotification();
     }
@@ -637,6 +626,11 @@ public partial class MainWindow : Window
         if (_advancedWorkbenchWindow is not null)
         {
             _advancedWorkbenchWindow.Topmost = Topmost;
+        }
+
+        if (_storyWindow is not null)
+        {
+            _storyWindow.Topmost = Topmost;
         }
     }
 
