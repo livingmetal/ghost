@@ -1,6 +1,7 @@
 using LivingMetalGhost.Agents;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Services;
 
 namespace LivingMetalGhost.Skills;
 
@@ -24,11 +25,19 @@ public sealed class CodingAgentSkill : IGhostSkill
 
     private readonly AppConfigLoader _configLoader;
     private readonly IAgentExecutorFactory _executorFactory;
+    private readonly WorkspaceStore _workspaceStore;
+    private readonly AgentWorkspacePolicy _workspacePolicy;
 
-    public CodingAgentSkill(AppConfigLoader configLoader, IAgentExecutorFactory executorFactory)
+    public CodingAgentSkill(
+        AppConfigLoader configLoader,
+        IAgentExecutorFactory executorFactory,
+        WorkspaceStore workspaceStore,
+        AgentWorkspacePolicy workspacePolicy)
     {
         _configLoader = configLoader;
         _executorFactory = executorFactory;
+        _workspaceStore = workspaceStore;
+        _workspacePolicy = workspacePolicy;
     }
 
     public string Name => "CodingAgent";
@@ -51,7 +60,7 @@ public sealed class CodingAgentSkill : IGhostSkill
         var config = _configLoader.Load();
         var agents = config.Agents;
         var approvalMode = ParseApprovalMode(agents.ApprovalMode);
-        var workspaceRoot = agents.WorkspaceRoot;
+        var workspaceRoot = ResolveWorkspaceRoot(agents.WorkspaceRoot);
 
         // 고급 콘솔 모드: Codex(분석) + Claude Code(적용) 동시 실행
         if (request.UseAdvancedModel)
@@ -61,22 +70,23 @@ public sealed class CodingAgentSkill : IGhostSkill
 
         // 기본 모드: 설정된 단일 실행기 사용 (suggest 전용 — 파일 변경 없음)
         var executor = _executorFactory.Create(agents.DefaultExecutor);
-        var agentResult = await executor.RunAsync(
-            new AgentRequest
-            {
-                Instruction = request.RawText,
-                WorkspaceRoot = workspaceRoot,
-                ApprovalMode = AgentApprovalMode.Suggest
-            },
-            ct);
+        var agentRequest = new AgentRequest
+        {
+            Instruction = request.RawText,
+            WorkspaceRoot = workspaceRoot,
+            ApprovalMode = AgentApprovalMode.Suggest
+        };
+        var agentResult = await executor.RunAsync(agentRequest, ct);
 
         var bubble =
             "이 요청은 고급 작업 모드가 필요합니다.\n" +
             $"대상 작업: {request.RawText}\n" +
             "예상 권한: 파일 읽기 / 패치 제안 / 명령 실행\n" +
             $"현재 승인 모드: {DescribeMode(approvalMode)}\n" +
-            $"작업 루트: {(string.IsNullOrWhiteSpace(workspaceRoot) ? "(미설정 — 설정에서 지정하세요)" : workspaceRoot)}\n" +
+            $"작업 루트: {(string.IsNullOrWhiteSpace(workspaceRoot) ? "(미설정 — 워크스페이스에서 지정하세요)" : workspaceRoot)}\n" +
             $"사용 에이전트: {executor.Name}\n" +
+            "Workspace policy:\n" +
+            _workspacePolicy.BuildExecutionPolicyLabel(agentRequest, agents.WorkspaceRoot) + "\n" +
             "진행하려면 고급 작업 실행을 승인하세요.\n\n" +
             agentResult.Summary;
 
@@ -117,14 +127,16 @@ public sealed class CodingAgentSkill : IGhostSkill
         var claudeResult = await claudeTask;
 
         var rootLabel = string.IsNullOrWhiteSpace(workspaceRoot)
-            ? "(미설정 — 설정에서 지정하세요)"
+            ? "(미설정 — 워크스페이스에서 지정하세요)"
             : workspaceRoot;
 
         var bubble =
             "고급 콘솔 모드 — Codex + Claude Code 분석 결과\n" +
             $"대상 작업: {request.RawText}\n" +
             $"작업 루트: {rootLabel}\n" +
-            $"현재 승인 모드: {DescribeMode(approvalMode)}\n\n" +
+            $"현재 승인 모드: {DescribeMode(approvalMode)}\n" +
+            "Workspace policy:\n" +
+            _workspacePolicy.BuildExecutionPolicyLabel(agentRequest, agents.WorkspaceRoot) + "\n\n" +
             $"[Codex]\n{codexResult.Summary}\n\n" +
             $"[Claude Code]\n{claudeResult.Summary}";
 
@@ -136,6 +148,14 @@ public sealed class CodingAgentSkill : IGhostSkill
             UsedLlm = false,
             RawData = new { Codex = codexResult, ClaudeCode = claudeResult }
         };
+    }
+
+    private string ResolveWorkspaceRoot(string agentsWorkspaceRoot)
+    {
+        var workspace = _workspaceStore.Load();
+        return string.IsNullOrWhiteSpace(workspace.RootPath)
+            ? agentsWorkspaceRoot
+            : workspace.RootPath;
     }
 
     private static AgentApprovalMode ParseApprovalMode(string? value) =>
