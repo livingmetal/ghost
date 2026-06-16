@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.UI.ViewModels;
 
 namespace LivingMetalGhost.UI.Views;
@@ -67,7 +68,7 @@ public partial class AdvancedWorkbenchWindow : Window
     {
         if (e.NewItems is not null)
         {
-            foreach (var item in e.NewItems.OfType<Core.Models.ChatMessage>())
+            foreach (var item in e.NewItems.OfType<ChatMessage>())
             {
                 item.PropertyChanged += Message_OnPropertyChanged;
             }
@@ -75,7 +76,7 @@ public partial class AdvancedWorkbenchWindow : Window
 
         if (e.OldItems is not null)
         {
-            foreach (var item in e.OldItems.OfType<Core.Models.ChatMessage>())
+            foreach (var item in e.OldItems.OfType<ChatMessage>())
             {
                 item.PropertyChanged -= Message_OnPropertyChanged;
             }
@@ -86,7 +87,7 @@ public partial class AdvancedWorkbenchWindow : Window
 
     private void Message_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(Core.Models.ChatMessage.Text) or nameof(Core.Models.ChatMessage.DisplayText))
+        if (e.PropertyName is nameof(ChatMessage.Text) or nameof(ChatMessage.DisplayText))
         {
             ScrollToLatestMessage();
         }
