@@ -28,6 +28,15 @@ public partial class MainViewModel
         BubbleText = "새 고급 작업 세션을 시작했어요.";
     }
 
+    public async Task<string> GenerateCurrentAdvancedSessionSummaryAsync(CancellationToken cancellationToken)
+    {
+        var sessionLog = global::LivingMetalGhost.App.Services.GetRequiredService<AdvancedSessionLogService>();
+        var summaryPath = await sessionLog.GenerateCurrentSessionSummaryAsync(cancellationToken);
+        AdvancedContextRevision++;
+        BubbleText = "현재 고급 세션 요약을 저장했어요.";
+        return summaryPath;
+    }
+
     public string? GetLastCompletedAssistantMessageText()
     {
         return Messages
