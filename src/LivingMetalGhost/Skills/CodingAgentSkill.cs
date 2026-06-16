@@ -9,9 +9,8 @@ namespace LivingMetalGhost.Skills;
 /// "코드 수정 / 파일 고쳐 / 빌드 / 테스트 / 저장소 분석 / PR" 처럼 무거운 작업 요청을 받아
 /// 고급 작업 모드(Agent Executor)로 넘기는 진입점.
 ///
-/// MVP 정책: 절대 바로 실행하지 않는다. 어떤 작업이 필요한지, 어떤 권한이 예상되는지,
-/// 현재 승인 모드가 무엇인지 정리해 "승인 요청" 메시지를 돌려준다. 실제 실행은 사용자가
-/// 고급 작업 실행을 승인(apply/execute + enable_execution)한 뒤에만 일어난다.
+/// MVP 정책: 실제 작업성 명령은 고급 모드에서만 처리한다. 일반/롤플레잉 모드에서는
+/// 캐릭터 대화와 명령 실행 경계를 분리하기 위해 작업 실행 후보도 만들지 않는다.
 /// </summary>
 public sealed class CodingAgentSkill : IGhostSkill
 {
@@ -57,47 +56,23 @@ public sealed class CodingAgentSkill : IGhostSkill
 
     public async Task<SkillResult> HandleAsync(UserRequest request, CancellationToken ct)
     {
+        if (!request.UseAdvancedModel)
+        {
+            return new SkillResult
+            {
+                BubbleText = "코드/파일/빌드 같은 작업 명령은 고급 모드에서만 처리할 수 있어. 일반/롤플레잉 모드에서는 명령 후보를 만들지 않아.",
+                Mood = "serious",
+                Action = "command-blocked-outside-advanced",
+                UsedLlm = false
+            };
+        }
+
         var config = _configLoader.Load();
         var agents = config.Agents;
         var approvalMode = ParseApprovalMode(agents.ApprovalMode);
         var workspaceRoot = ResolveWorkspaceRoot(agents.WorkspaceRoot);
 
-        // 고급 콘솔 모드: Codex(분석) + Claude Code(적용) 동시 실행
-        if (request.UseAdvancedModel)
-        {
-            return await HandleAdvancedCodingAsync(request, agents, approvalMode, workspaceRoot, ct);
-        }
-
-        // 기본 모드: 설정된 단일 실행기 사용 (suggest 전용 — 파일 변경 없음)
-        var executor = _executorFactory.Create(agents.DefaultExecutor);
-        var agentRequest = new AgentRequest
-        {
-            Instruction = request.RawText,
-            WorkspaceRoot = workspaceRoot,
-            ApprovalMode = AgentApprovalMode.Suggest
-        };
-        var agentResult = await executor.RunAsync(agentRequest, ct);
-
-        var bubble =
-            "이 요청은 고급 작업 모드가 필요합니다.\n" +
-            $"대상 작업: {request.RawText}\n" +
-            "예상 권한: 파일 읽기 / 패치 제안 / 명령 실행\n" +
-            $"현재 승인 모드: {DescribeMode(approvalMode)}\n" +
-            $"작업 루트: {(string.IsNullOrWhiteSpace(workspaceRoot) ? "(미설정 — 워크스페이스에서 지정하세요)" : workspaceRoot)}\n" +
-            $"사용 에이전트: {executor.Name}\n" +
-            "Workspace policy:\n" +
-            _workspacePolicy.BuildExecutionPolicyLabel(agentRequest, agents.WorkspaceRoot) + "\n" +
-            "진행하려면 고급 작업 실행을 승인하세요.\n\n" +
-            agentResult.Summary;
-
-        return new SkillResult
-        {
-            BubbleText = bubble,
-            Mood = "serious",
-            Action = "advanced-task-suggested",
-            UsedLlm = false,
-            RawData = agentResult
-        };
+        return await HandleAdvancedCodingAsync(request, agents, approvalMode, workspaceRoot, ct);
     }
 
     private async Task<SkillResult> HandleAdvancedCodingAsync(
@@ -107,7 +82,6 @@ public sealed class CodingAgentSkill : IGhostSkill
         string workspaceRoot,
         CancellationToken ct)
     {
-        // 고급 콘솔 모드에서는 Codex와 Claude Code를 병렬로 실행해 각각 제안을 수집한다.
         var codexExecutor = _executorFactory.Create("codex-cli");
         var claudeExecutor = _executorFactory.Create("claude-code");
 
