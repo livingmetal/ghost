@@ -121,6 +121,8 @@ Long term, the main Ghost character should become the user-facing orchestrator: 
 
 See [`plans/agent-orchestration.md`](./plans/agent-orchestration.md) for the planned orchestrator skeleton.
 
+For the roadmap toward Codex/Claude-Code-class Advanced mode capability, see [`plans/coding-agent-parity-roadmap.md`](./plans/coding-agent-parity-roadmap.md).
+
 ## Character and Sprite Direction
 
 Ghost is sprite-friendly by design.
@@ -144,6 +146,8 @@ Important files:
 - [`AGENTS.md`](./AGENTS.md): conventional entry point for coding agents.
 - [`AGENT.md`](./AGENT.md): canonical repository handoff and project direction.
 - [`plans/agent-orchestration.md`](./plans/agent-orchestration.md): long-term main-character orchestrator and sub-agent architecture.
+- [`plans/advanced-mode-orchestration-research.md`](./plans/advanced-mode-orchestration-research.md): research note for Advanced-mode orchestration design.
+- [`plans/coding-agent-parity-roadmap.md`](./plans/coding-agent-parity-roadmap.md): roadmap toward Codex/Claude-Code-class coding agent app capability.
 - [`plans/agent-workflow.md`](./plans/agent-workflow.md): plan-first and evidence-first workflow.
 - [`scripts/verify.ps1`](./scripts/verify.ps1): standard verification script.
 - [`.ghost-work/README.md`](./.ghost-work/README.md): evidence note guidance.
