@@ -18,6 +18,11 @@ public sealed class ConversationLogService
         _paths = paths;
     }
 
+    public Task AppendAsync(ConversationLogEntry entry)
+    {
+        return AppendAsync(entry, CancellationToken.None);
+    }
+
     public async Task AppendAsync(ConversationLogEntry entry, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(_paths.Logs);
