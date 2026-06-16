@@ -189,6 +189,33 @@ public partial class MainViewModel : ObservableObject
         _configLoader.Save(config);
     }
 
+    public void SetAdvancedMode(bool enabled)
+    {
+        if (enabled && !IsAdvancedModeAvailable)
+        {
+            IsAdvancedMode = false;
+            return;
+        }
+
+        IsAdvancedMode = enabled;
+    }
+
+    public void ToggleAdvancedMode()
+    {
+        SetAdvancedMode(!IsAdvancedMode);
+    }
+
+    public void SetStoryMode(bool enabled)
+    {
+        _storyStateStore.SetEnabled(enabled);
+        IsStoryMode = enabled;
+    }
+
+    public void ToggleStoryMode()
+    {
+        SetStoryMode(!IsStoryMode);
+    }
+
     partial void OnIsAdvancedModeChanged(bool value)
     {
         RefreshModePresentation();
@@ -264,14 +291,6 @@ public partial class MainViewModel : ObservableObject
                 break;
             case AppCommandActions.OpenLog:
                 OpenConversationLog();
-                break;
-            case AppCommandActions.EnableStoryMode:
-                _storyStateStore.SetEnabled(true);
-                IsStoryMode = true;
-                break;
-            case AppCommandActions.DisableStoryMode:
-                _storyStateStore.SetEnabled(false);
-                IsStoryMode = false;
                 break;
             // TODO: AppCommandActions.ExitApp 는 확인 절차를 둔 뒤 Application.Current.Shutdown() 연결.
         }
