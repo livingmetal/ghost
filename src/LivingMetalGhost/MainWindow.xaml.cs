@@ -352,10 +352,16 @@ public partial class MainWindow : Window
         }
 
         var workArea = SystemParameters.WorkArea;
-        var preferredLeft = Left - _chatWindow.Width + 32;
+
+        // Character sprites often include a large transparent canvas. Intentionally overlap the
+        // companion window so the visible speech bubble sits closer to the rendered character.
+        var horizontalOverlap = Math.Clamp(Width * 0.38, 128, 220);
+        var verticalOffset = Math.Clamp(Height * 0.08, 12, 48);
+
+        var preferredLeft = Left - _chatWindow.Width + horizontalOverlap;
         if (preferredLeft < workArea.Left)
         {
-            preferredLeft = Left + Width - 32;
+            preferredLeft = Left + Width - horizontalOverlap;
         }
 
         _chatWindow.Left = Math.Clamp(
@@ -363,7 +369,7 @@ public partial class MainWindow : Window
             workArea.Left,
             workArea.Right - _chatWindow.Width);
         _chatWindow.Top = Math.Clamp(
-            Top + 55,
+            Top + verticalOffset,
             workArea.Top,
             workArea.Bottom - _chatWindow.Height);
     }
