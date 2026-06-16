@@ -14,7 +14,12 @@ public sealed class WorkspaceSettings
     public IReadOnlyList<string> AllowedCommands { get; set; } = new[]
     {
         "git status",
+        "git branch",
         "git diff",
+        "git log",
+        "git remote",
+        "git fetch",
+        "git pull",
         "dotnet build",
         "dotnet test"
     };
