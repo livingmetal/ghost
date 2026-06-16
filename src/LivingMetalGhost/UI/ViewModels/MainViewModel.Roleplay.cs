@@ -22,16 +22,6 @@ public partial class MainViewModel
         builder.AppendLine($"플레이어 역할: {state.PlayerRole}");
         builder.AppendLine($"분위기: {state.Mood}");
         builder.AppendLine($"긴장도: {state.Tension}/5");
-        if (state.Objectives.Count > 0)
-        {
-            var doneCount = state.Objectives.Count(objective => objective.Done);
-            builder.AppendLine($"목표: {doneCount}/{state.Objectives.Count} 달성");
-            foreach (var objective in state.Objectives)
-            {
-                builder.AppendLine($"  {(objective.Done ? "[v]" : "[ ]")} {objective.Text}");
-            }
-        }
-
         builder.AppendLine($"저장된 턴: {memoryEntries}");
         builder.AppendLine($"수정 시각: {state.UpdatedAt:yyyy-MM-dd HH:mm:ss}");
         builder.AppendLine();
