@@ -86,6 +86,7 @@ public sealed class AdvancedSessionLogService
     {
         Directory.CreateDirectory(_workspaceRoot);
         var memoryCount = CountJsonlLines(_projectMemoryFile);
+        var enabledMemoryCount = ReadEnabledProjectMemoryEntries().Count;
         var pinnedLength = File.Exists(_pinnedContextFile)
             ? SafeReadAllText(_pinnedContextFile).Length
             : 0;
@@ -95,7 +96,7 @@ public sealed class AdvancedSessionLogService
             Workspace: {WorkspaceId}
             Session: {CurrentSessionId}
             Turns: {_currentTurnCount}
-            Project memory: {memoryCount} entries
+            Project memory: {enabledMemoryCount}/{memoryCount} enabled
             Pinned context: {pinnedLength} chars
             Summary: {summaryState}
             Session file:
@@ -114,7 +115,7 @@ public sealed class AdvancedSessionLogService
             blocks.Add($"Pinned context:\n{pinned}");
         }
 
-        var memory = ReadLastJsonLines(_projectMemoryFile, 12);
+        var memory = BuildEnabledProjectMemoryPromptBlock(12);
         if (!string.IsNullOrWhiteSpace(memory))
         {
             blocks.Add($"Project memory entries:\n{memory}");
@@ -244,6 +245,56 @@ public sealed class AdvancedSessionLogService
         return entries.OrderBy(entry => entry.Timestamp).ToArray();
     }
 
+    private IReadOnlyList<ProjectMemoryEntry> ReadEnabledProjectMemoryEntries()
+    {
+        if (!File.Exists(_projectMemoryFile))
+        {
+            return [];
+        }
+
+        var entries = new List<ProjectMemoryEntry>();
+        foreach (var line in SafeReadLines(_projectMemoryFile))
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            try
+            {
+                var entry = JsonSerializer.Deserialize<ProjectMemoryEntry>(line, _jsonOptions);
+                if (entry is not null && entry.IsEnabled && !string.IsNullOrWhiteSpace(entry.Content))
+                {
+                    entries.Add(entry);
+                }
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        return entries
+            .OrderByDescending(entry => entry.CreatedAt)
+            .ToArray();
+    }
+
+    private string BuildEnabledProjectMemoryPromptBlock(int maximumEntries)
+    {
+        var entries = ReadEnabledProjectMemoryEntries().Take(maximumEntries).ToArray();
+        if (entries.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        var builder = new StringBuilder();
+        foreach (var entry in entries)
+        {
+            builder.AppendLine($"- [{entry.Type}] {entry.Content}");
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
     private static IReadOnlyList<string> ExtractCandidateMemoryLines(IEnumerable<AdvancedSessionLogEntry> entries)
     {
         var keywords = new[]
@@ -312,30 +363,6 @@ public sealed class AdvancedSessionLogService
         catch (UnauthorizedAccessException)
         {
             return 0;
-        }
-    }
-
-    private static string ReadLastJsonLines(string filePath, int count)
-    {
-        try
-        {
-            if (!File.Exists(filePath))
-            {
-                return string.Empty;
-            }
-
-            return string.Join(Environment.NewLine,
-                File.ReadLines(filePath)
-                    .Where(line => !string.IsNullOrWhiteSpace(line))
-                    .TakeLast(count));
-        }
-        catch (IOException)
-        {
-            return string.Empty;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return string.Empty;
         }
     }
 
