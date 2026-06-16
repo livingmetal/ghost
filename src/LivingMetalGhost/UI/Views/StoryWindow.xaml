@@ -2,12 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:behaviors="clr-namespace:LivingMetalGhost.UI.Behaviors"
-        xmlns:controls="clr-namespace:LivingMetalGhost.UI.Controls"
-        Title="LivingMetalGhost Story"
-        Width="560"
-        Height="840"
-        MinWidth="520"
-        MinHeight="780"
+        Title="LivingMetalGhost Roleplay"
+        Width="470"
+        Height="630"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -15,13 +12,14 @@
         ShowInTaskbar="False"
         ShowActivated="False">
     <Grid Background="Transparent">
-        <Border Margin="8"
-                Padding="14"
+        <Border x:Name="RootBorder"
+                Margin="8"
+                Padding="16"
                 Background="#F4EFE5"
                 BorderThickness="2"
                 CornerRadius="22">
             <Border.BorderBrush>
-                <SolidColorBrush Color="#9B6AD6" />
+                <SolidColorBrush x:Name="BorderAccent" Color="#9B6AD6" />
             </Border.BorderBrush>
             <Border.Effect>
                 <DropShadowEffect BlurRadius="20"
@@ -32,7 +30,6 @@
 
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
@@ -45,17 +42,18 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock FontFamily="Bahnschrift"
+                        <TextBlock x:Name="TitleLabel"
+                                   FontFamily="Bahnschrift"
                                    FontSize="20"
                                    FontWeight="SemiBold"
                                    Foreground="#3A2E6B"
-                                   Text="ROLEPLAY" />
-                        <TextBlock x:Name="StoryTitleLabel"
+                                   Text="ROLEPLAY CONSOLE" />
+                        <TextBlock x:Name="ProviderLabel"
                                    Margin="0,2,0,0"
                                    FontFamily="Consolas"
                                    FontSize="10"
                                    Foreground="#7A6BA8"
-                                   Text="" />
+                                   Text="{Binding StoryProviderLabel}" />
                     </StackPanel>
                     <Button Grid.Column="1"
                             Width="30"
@@ -65,38 +63,11 @@
                             Foreground="White"
                             BorderThickness="0"
                             Click="CloseButton_OnClick"
-                            Content="×"
-                            ToolTip="롤플레잉을 끝내고 데스크톱으로 돌아갑니다." />
+                            Content="×" />
                 </Grid>
 
                 <Border Grid.Row="1"
-                        Height="420"
-                        Margin="0,12,0,10"
-                        CornerRadius="16"
-                        Background="#ECE6FB"
-                        BorderBrush="#D8CEF2"
-                        BorderThickness="1"
-                        ClipToBounds="False">
-                    <Grid Margin="8"
-                          ClipToBounds="True">
-                        <Viewbox Stretch="Uniform"
-                                 StretchDirection="DownOnly"
-                                 HorizontalAlignment="Center"
-                                 VerticalAlignment="Bottom">
-                            <controls:CharacterHost x:Name="StoryCharacterHost"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Bottom"
-                                                    CharacterId="{Binding SelectedCharacterId}"
-                                                    Mood="{Binding CharacterMood}"
-                                                    IsSpeaking="{Binding IsCharacterSpeaking}"
-                                                    SizePresetId="{Binding SelectedCharacterSizePresetId}"
-                                                    FramingPresetId="{Binding SelectedCharacterFramingPresetId}"
-                                                    UserScale="{Binding CharacterScale}" />
-                        </Viewbox>
-                    </Grid>
-                </Border>
-
-                <Border Grid.Row="2"
+                        Margin="0,14,0,10"
                         Padding="8"
                         CornerRadius="16"
                         Background="#FFFDF8"
@@ -104,10 +75,10 @@
                         BorderThickness="1">
                     <ScrollViewer x:Name="ConversationScrollViewer"
                                   VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding Messages}">
+                        <ItemsControl ItemsSource="{Binding StoryMessages}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border MaxWidth="480"
+                                    <Border MaxWidth="370"
                                             Margin="5,4"
                                             Padding="11,9"
                                             HorizontalAlignment="Stretch">
@@ -166,13 +137,13 @@
                     </ScrollViewer>
                 </Border>
 
-                <Grid Grid.Row="3" Margin="0,10,0,0">
+                <Grid Grid.Row="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="PromptTextBox"
-                             MinHeight="60"
+                             MinHeight="64"
                              MaxHeight="120"
                              Padding="12,10"
                              AcceptsReturn="True"
@@ -181,7 +152,7 @@
                              BorderBrush="#B8AEDA"
                              BorderThickness="1"
                              PreviewKeyDown="PromptTextBox_OnPreviewKeyDown"
-                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                             Text="{Binding StoryInputText, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="평문=대사 · *행동* · (속마음)" />
                     <Button x:Name="SendButton"
                             Grid.Column="1"
@@ -192,7 +163,7 @@
                             Background="#9B6AD6"
                             Foreground="White"
                             BorderThickness="0"
-                            Command="{Binding SendCommand}"
+                            Command="{Binding StorySendCommand}"
                             Content="SEND" />
                 </Grid>
             </Grid>
