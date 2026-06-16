@@ -34,6 +34,7 @@ public partial class ChatWindow : Window
         {
             SubscribeToViewModel(DataContext as MainViewModel);
             ApplyModeVisuals();
+            ApplySavedPlacement();
             HideBubble(immediate: true);
         };
         PreviewMouseMove += (_, _) => RestartWindowIdleTimer();
@@ -68,6 +69,7 @@ public partial class ChatWindow : Window
         }
 
         Show();
+        ApplySavedPlacement();
         Activate();
         SetDailyAwakeState();
         FocusPrompt();
@@ -86,6 +88,7 @@ public partial class ChatWindow : Window
     {
         SubscribeToViewModel(e.NewValue as MainViewModel);
         ApplyModeVisuals();
+        ApplySavedPlacement();
     }
 
     private void SubscribeToViewModel(MainViewModel? viewModel)
@@ -339,7 +342,7 @@ public partial class ChatWindow : Window
         if (e.ButtonState == MouseButtonState.Pressed)
         {
             DragMove();
-            HasManualPosition = true;
+            RememberManualPlacement();
             RestartWindowIdleTimer();
         }
     }
@@ -364,13 +367,41 @@ public partial class ChatWindow : Window
             try
             {
                 DragMove();
-                HasManualPosition = true;
+                RememberManualPlacement();
                 e.Handled = true;
             }
             catch (InvalidOperationException)
             {
             }
         }
+    }
+
+    private void ApplySavedPlacement()
+    {
+        if (_subscribedViewModel is null)
+        {
+            return;
+        }
+
+        var placement = _subscribedViewModel.GetDailyChatWindowPlacement();
+        if (!placement.HasPosition)
+        {
+            return;
+        }
+
+        var workArea = SystemParameters.WorkArea;
+        Left = Math.Clamp(placement.Left, workArea.Left, Math.Max(workArea.Left, workArea.Right - Width));
+        Top = Math.Clamp(placement.Top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - Height));
+        HasManualPosition = true;
+    }
+
+    private void RememberManualPlacement()
+    {
+        HasManualPosition = true;
+        var workArea = SystemParameters.WorkArea;
+        Left = Math.Clamp(Left, workArea.Left, Math.Max(workArea.Left, workArea.Right - Width));
+        Top = Math.Clamp(Top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - Height));
+        _subscribedViewModel?.SaveDailyChatWindowPlacement(Left, Top);
     }
 
     private void ToggleAdvancedMode()
