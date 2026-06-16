@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -22,6 +23,8 @@ public partial class ChatWindow : Window
     private readonly DispatcherTimer _windowIdleTimer;
     private MainViewModel? _subscribedViewModel;
     private ChatMessage? _trackedAssistantMessage;
+
+    public bool HasManualPosition { get; private set; }
 
     public ChatWindow()
     {
@@ -66,6 +69,7 @@ public partial class ChatWindow : Window
 
         Show();
         Activate();
+        SetDailyAwakeState();
         FocusPrompt();
         RestartWindowIdleTimer();
     }
@@ -75,6 +79,7 @@ public partial class ChatWindow : Window
         _windowIdleTimer.Stop();
         HideBubble(immediate: true);
         Hide();
+        SetDailySleepState();
     }
 
     private void ChatWindow_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -334,6 +339,7 @@ public partial class ChatWindow : Window
         if (e.ButtonState == MouseButtonState.Pressed)
         {
             DragMove();
+            HasManualPosition = true;
             RestartWindowIdleTimer();
         }
     }
@@ -345,6 +351,25 @@ public partial class ChatWindow : Window
         {
             e.Handled = true;
             ToggleAdvancedMode();
+            return;
+        }
+
+        if (sender is TextBox || e.OriginalSource is TextBox)
+        {
+            return;
+        }
+
+        if (e.ButtonState == MouseButtonState.Pressed)
+        {
+            try
+            {
+                DragMove();
+                HasManualPosition = true;
+                e.Handled = true;
+            }
+            catch (InvalidOperationException)
+            {
+            }
         }
     }
 
@@ -371,5 +396,27 @@ public partial class ChatWindow : Window
         {
             viewModel.SendCommand.Execute(null);
         }
+    }
+
+    private void SetDailyAwakeState()
+    {
+        if (_subscribedViewModel is null || _subscribedViewModel.IsAdvancedMode || _subscribedViewModel.IsStoryMode)
+        {
+            return;
+        }
+
+        _subscribedViewModel.CharacterMood = "listening";
+        _subscribedViewModel.CharacterStateLabel = "DAILY:LISTENING";
+    }
+
+    private void SetDailySleepState()
+    {
+        if (_subscribedViewModel is null || _subscribedViewModel.IsAdvancedMode || _subscribedViewModel.IsStoryMode || _subscribedViewModel.IsCharacterSpeaking)
+        {
+            return;
+        }
+
+        _subscribedViewModel.CharacterMood = "idle";
+        _subscribedViewModel.CharacterStateLabel = "DAILY:IDLE";
     }
 }
