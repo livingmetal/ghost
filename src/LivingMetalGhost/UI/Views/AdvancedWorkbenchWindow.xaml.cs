@@ -17,7 +17,7 @@ public partial class AdvancedWorkbenchWindow : Window
     public AdvancedWorkbenchWindow()
     {
         InitializeComponent();
-        _advancedSessionLogService = App.Services.GetRequiredService<AdvancedSessionLogService>();
+        _advancedSessionLogService = global::LivingMetalGhost.App.Services.GetRequiredService<AdvancedSessionLogService>();
         DataContextChanged += AdvancedWorkbenchWindow_OnDataContextChanged;
         Loaded += (_, _) =>
         {
@@ -170,7 +170,7 @@ public partial class AdvancedWorkbenchWindow : Window
 
         MessageBox.Show(
             _subscribedViewModel.GetProjectMemorySummary(),
-            "Project Memory",
+            "프로젝트 기억",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
         RefreshContextText();
@@ -183,22 +183,39 @@ public partial class AdvancedWorkbenchWindow : Window
             return;
         }
 
-        var result = MessageBox.Show(
-            "Save the last advanced reply as project memory?",
-            "Project Memory",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-        if (result != MessageBoxResult.Yes)
+        var lastReply = _subscribedViewModel.GetLastCompletedAssistantMessageText();
+        if (string.IsNullOrWhiteSpace(lastReply))
+        {
+            MessageBox.Show(
+                "저장할 완료된 답변을 찾지 못했어요.",
+                "프로젝트 기억 저장",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var editor = new ProjectMemoryEditorWindow(
+            _subscribedViewModel.GetCurrentAdvancedSessionId(),
+            lastReply)
+        {
+            Owner = this
+        };
+
+        if (editor.ShowDialog() != true)
         {
             return;
         }
 
-        var entry = await _subscribedViewModel.PromoteLastAdvancedAssistantMessageAsync(CancellationToken.None);
+        var entry = await _subscribedViewModel.SaveProjectMemoryAsync(
+            editor.MemoryContent,
+            editor.MemoryType,
+            CancellationToken.None);
+
         MessageBox.Show(
-            entry is null ? "No completed assistant reply found." : "Saved to project memory.",
-            "Project Memory",
+            $"프로젝트 기억으로 저장했어요.\n\n[{entry.Type}] {entry.Content}",
+            "프로젝트 기억 저장",
             MessageBoxButton.OK,
-            entry is null ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            MessageBoxImage.Information);
         RefreshContextText();
     }
 
