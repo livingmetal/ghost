@@ -17,6 +17,7 @@ Use these files:
 
 - [`AGENT.md`](./AGENT.md): canonical project and agent guide.
 - [`plans/agent-workflow.md`](./plans/agent-workflow.md): workflow discipline and completion gate.
+- [`plans/fablize-discipline.md`](./plans/fablize-discipline.md): actionable fablize-style procedures (router, investigation, grounding, multi-story gate, early-stop prevention).
 - [`plans/sprite-emotion-system.md`](./plans/sprite-emotion-system.md): planned sprite/mood tag behavior.
 - [`scripts/verify.ps1`](./scripts/verify.ps1): restore/build verification script.
 - [`.ghost-work/README.md`](./.ghost-work/README.md): evidence note guidance.

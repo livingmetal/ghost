@@ -9,6 +9,11 @@ In this repository:
 - LazyCodex-style means plan-first work with explicit tasks.
 - Fablize-style means evidence-first completion with build and verification notes.
 
+The concrete fablize procedures (per-task router, investigation protocol,
+verification grounding, multi-story gate, early-stop prevention) are written out
+in [`fablize-discipline.md`](./fablize-discipline.md). This plan covers the
+overall workflow and completion gate; that file covers the per-task discipline.
+
 ## Scope
 
 This plan covers agent and maintainer workflow only.
