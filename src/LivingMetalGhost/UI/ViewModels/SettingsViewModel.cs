@@ -11,14 +11,12 @@ namespace LivingMetalGhost.UI.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
-    private const string DefaultCodexExecutable =
-        @"%APPDATA%\LivingMetalGhost\tools\codex-cli\node_modules\.bin\codex.cmd";
+    private const string DefaultCodexExecutable = @"%APPDATA%\LivingMetalGhost\tools\codex-cli\node_modules\.bin\codex.cmd";
     private readonly AppConfigLoader _configLoader;
     private readonly AppPaths _paths;
     private readonly DpapiSecretStore _secretStore;
     private readonly ILlmProviderFactory _providerFactory;
-    private readonly Dictionary<string, CharacterPromptSettings> _characterProfileDrafts =
-        new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, CharacterPromptSettings> _characterProfileDrafts = new(StringComparer.OrdinalIgnoreCase);
     private string _loadedCharacterId = string.Empty;
     private bool _isReloading;
 
@@ -26,6 +24,7 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string selectedCharacterId = "ssuang";
     [ObservableProperty] private string characterAppearance = string.Empty;
     [ObservableProperty] private string characterBackground = string.Empty;
+    [ObservableProperty] private string storyTemplate = string.Empty;
     [ObservableProperty] private string selectedCharacterSizePresetId = string.Empty;
     [ObservableProperty] private string selectedCharacterFramingPresetId = string.Empty;
     [ObservableProperty] private string model = "mock";
@@ -144,6 +143,7 @@ public partial class SettingsViewModel : ObservableObject
         CharacterAppearance = character.DefaultAppearance;
         CharacterBackground = character.DefaultBackground;
         PersonalityPrompt = character.DefaultPersonality;
+        StoryTemplate = character.DefaultStoryTemplate;
         SelectedCharacterSizePresetId = character.Presentation.DefaultSizePresetId;
         SelectedCharacterFramingPresetId = character.Presentation.DefaultFramingPresetId;
         StatusMessage = $"{character.DisplayName} 기본 설정을 불러왔습니다.";
@@ -351,6 +351,7 @@ public partial class SettingsViewModel : ObservableObject
             Appearance = CharacterAppearance.Trim(),
             Background = CharacterBackground.Trim(),
             Personality = PersonalityPrompt.Trim(),
+            StoryTemplate = StoryTemplate.Trim(),
             CharacterScale = _characterProfileDrafts.TryGetValue(_loadedCharacterId, out var existing) ? existing.CharacterScale : 1.0,
             CharacterSizePresetId = SelectedCharacterSizePresetId.Trim(),
             CharacterFramingPresetId = SelectedCharacterFramingPresetId.Trim()
@@ -367,6 +368,7 @@ public partial class SettingsViewModel : ObservableObject
                 Appearance = character.DefaultAppearance,
                 Background = character.DefaultBackground,
                 Personality = character.DefaultPersonality,
+                StoryTemplate = character.DefaultStoryTemplate,
                 CharacterScale = 1.0,
                 CharacterSizePresetId = character.Presentation.DefaultSizePresetId,
                 CharacterFramingPresetId = character.Presentation.DefaultFramingPresetId
@@ -377,6 +379,7 @@ public partial class SettingsViewModel : ObservableObject
         CharacterAppearance = string.IsNullOrWhiteSpace(profile.Appearance) ? character.DefaultAppearance : profile.Appearance;
         CharacterBackground = string.IsNullOrWhiteSpace(profile.Background) ? character.DefaultBackground : profile.Background;
         PersonalityPrompt = string.IsNullOrWhiteSpace(profile.Personality) ? character.DefaultPersonality : profile.Personality;
+        StoryTemplate = string.IsNullOrWhiteSpace(profile.StoryTemplate) ? character.DefaultStoryTemplate : profile.StoryTemplate;
         SelectedCharacterSizePresetId = ResolveSizePresetId(character, profile.CharacterSizePresetId);
         SelectedCharacterFramingPresetId = ResolveFramingPresetId(character, profile.CharacterFramingPresetId);
         OnPropertyChanged(nameof(AvailableCharacterSizePresets));
@@ -394,6 +397,7 @@ public partial class SettingsViewModel : ObservableObject
         Appearance = profile.Appearance,
         Background = profile.Background,
         Personality = profile.Personality,
+        StoryTemplate = profile.StoryTemplate,
         CharacterScale = profile.CharacterScale,
         CharacterSizePresetId = profile.CharacterSizePresetId,
         CharacterFramingPresetId = profile.CharacterFramingPresetId
