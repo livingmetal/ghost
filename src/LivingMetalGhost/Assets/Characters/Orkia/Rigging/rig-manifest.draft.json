@@ -1,0 +1,125 @@
+{
+  "$schema": "https://livingmetal.local/schemas/ghost-puppet-rig-draft.schema.json",
+  "id": "orkia-puppet-rig-draft",
+  "character_id": "orkia",
+  "status": "draft",
+  "non_destructive_rule": "Do not edit CharacterBases/ approved images. Put derived experimental assets under Rigging/ only.",
+  "canvas": {
+    "width": 300,
+    "height": 598
+  },
+  "fallback": {
+    "mode": "modular-base-image",
+    "manifest_path": "../manifest.json",
+    "image_root": "../CharacterBases"
+  },
+  "pose_templates": [
+    {
+      "id": "neutral_stand",
+      "template": "body-templates/neutral_stand.svg",
+      "description": "Default upright assistant pose. Use this as the first outfit and accessory fitting target.",
+      "anchors": {
+        "head": { "x": 150, "y": 126 },
+        "neck": { "x": 150, "y": 190 },
+        "torso": { "x": 150, "y": 292 },
+        "left_shoulder": { "x": 104, "y": 218 },
+        "right_shoulder": { "x": 196, "y": 218 },
+        "left_elbow": { "x": 90, "y": 322 },
+        "right_elbow": { "x": 210, "y": 322 },
+        "left_hand": { "x": 88, "y": 430 },
+        "right_hand": { "x": 212, "y": 430 },
+        "hip": { "x": 150, "y": 430 }
+      }
+    },
+    {
+      "id": "thinking_tilt",
+      "template": "body-templates/thinking_tilt.svg",
+      "description": "Slight head tilt and reserved posture for thinking, skeptical, or diagnostic states.",
+      "anchors": {
+        "head": { "x": 143, "y": 128 },
+        "neck": { "x": 150, "y": 191 },
+        "torso": { "x": 150, "y": 292 },
+        "left_shoulder": { "x": 104, "y": 219 },
+        "right_shoulder": { "x": 196, "y": 218 },
+        "left_elbow": { "x": 90, "y": 323 },
+        "right_elbow": { "x": 210, "y": 323 },
+        "left_hand": { "x": 88, "y": 430 },
+        "right_hand": { "x": 212, "y": 430 },
+        "hip": { "x": 150, "y": 430 }
+      }
+    },
+    {
+      "id": "explain_hand",
+      "template": "body-templates/explain_hand.svg",
+      "description": "One-hand explanation gesture for architecture notes, guidance, and tutorial-like responses.",
+      "anchors": {
+        "head": { "x": 150, "y": 126 },
+        "neck": { "x": 150, "y": 190 },
+        "torso": { "x": 150, "y": 292 },
+        "left_shoulder": { "x": 104, "y": 218 },
+        "right_shoulder": { "x": 196, "y": 218 },
+        "left_elbow": { "x": 90, "y": 322 },
+        "right_elbow": { "x": 225, "y": 282 },
+        "left_hand": { "x": 88, "y": 430 },
+        "right_hand": { "x": 238, "y": 245 },
+        "hip": { "x": 150, "y": 430 }
+      }
+    }
+  ],
+  "slots": [
+    { "id": "body_base", "kind": "body", "z": 10, "required": true },
+    { "id": "skin_overlay", "kind": "body-detail", "z": 20, "required": false },
+    { "id": "inner_top", "kind": "clothes", "z": 30, "required": false },
+    { "id": "outer_top", "kind": "clothes", "z": 40, "required": false },
+    { "id": "sleeve_left", "kind": "clothes", "z": 45, "required": false },
+    { "id": "sleeve_right", "kind": "clothes", "z": 46, "required": false },
+    { "id": "neck_item", "kind": "accessory", "z": 55, "required": false },
+    { "id": "head_base", "kind": "head", "z": 70, "required": true },
+    { "id": "ear_left", "kind": "head", "z": 68, "required": false, "parent": "head_base" },
+    { "id": "ear_right", "kind": "head", "z": 68, "required": false, "parent": "head_base" },
+    { "id": "hair_back", "kind": "hair", "z": 60, "required": false, "parent": "head_base" },
+    { "id": "hair_front", "kind": "hair", "z": 90, "required": false, "parent": "head_base" },
+    { "id": "eye_left", "kind": "face", "z": 100, "required": false, "parent": "head_base" },
+    { "id": "eye_right", "kind": "face", "z": 100, "required": false, "parent": "head_base" },
+    { "id": "pupil_left", "kind": "face", "z": 101, "required": false, "parent": "eye_left" },
+    { "id": "pupil_right", "kind": "face", "z": 101, "required": false, "parent": "eye_right" },
+    { "id": "brow_left", "kind": "face", "z": 102, "required": false, "parent": "head_base" },
+    { "id": "brow_right", "kind": "face", "z": 102, "required": false, "parent": "head_base" },
+    { "id": "mouth", "kind": "face", "z": 103, "required": false, "parent": "head_base" },
+    { "id": "face_accessory", "kind": "accessory", "z": 110, "required": false, "parent": "head_base" },
+    { "id": "head_accessory", "kind": "accessory", "z": 120, "required": false, "parent": "head_base" },
+    { "id": "hand_item_left", "kind": "accessory", "z": 130, "required": false },
+    { "id": "hand_item_right", "kind": "accessory", "z": 131, "required": false }
+  ],
+  "state_pose_map": {
+    "idle": "neutral_stand",
+    "listening": "neutral_stand",
+    "speaking": "neutral_stand",
+    "acknowledging": "neutral_stand",
+    "soft-smile": "neutral_stand",
+    "happy": "neutral_stand",
+    "thinking": "thinking_tilt",
+    "skeptical": "thinking_tilt",
+    "confused": "thinking_tilt",
+    "concerned": "thinking_tilt",
+    "strict": "neutral_stand",
+    "serious": "neutral_stand",
+    "curious": "explain_hand"
+  },
+  "first_target_states": [
+    "idle",
+    "speaking",
+    "thinking",
+    "concerned"
+  ],
+  "animation_limits": {
+    "breathing_y_px": 2,
+    "head_idle_rotate_degrees": 1.5,
+    "speaking_bob_y_px": 2,
+    "thinking_head_rotate_degrees": 3,
+    "pupil_x_px": 3,
+    "pupil_y_px": 2,
+    "blink_closed_ms_min": 80,
+    "blink_closed_ms_max": 140
+  }
+}
