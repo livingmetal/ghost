@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="598" viewBox="0 0 300 598">
+  <title>Orkia thinking_tilt pose template</title>
+  <desc>Transparent pose-fitting silhouette for Orkia thinking or diagnostic puppet-rig assets.</desc>
+
+  <defs>
+    <style>
+      .guide { fill: none; stroke: #6b7280; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .body { fill: rgba(107,114,128,0.08); stroke: #4b5563; stroke-width: 2; }
+      .anchor { fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+      .label { font-family: Segoe UI, Arial, sans-serif; font-size: 9px; fill: #374151; }
+      .center { stroke: #9ca3af; stroke-width: 1; stroke-dasharray: 4 4; }
+    </style>
+  </defs>
+
+  <line class="center" x1="150" y1="0" x2="150" y2="598" />
+
+  <!-- silhouette -->
+  <ellipse class="body" cx="143" cy="128" rx="43" ry="55" transform="rotate(-5 143 128)" />
+  <path class="guide" d="M103 120 C72 122 56 139 44 166" />
+  <path class="guide" d="M185 114 C218 113 239 130 254 160" />
+  <path class="body" d="M104 219 C116 193 185 192 196 218 C207 284 205 360 182 430 L118 430 C95 360 93 284 104 219 Z" />
+  <path class="guide" d="M104 219 C93 266 89 332 88 430" />
+  <path class="guide" d="M196 218 C207 265 211 332 212 430" />
+  <path class="guide" d="M118 430 C123 485 128 535 132 585" />
+  <path class="guide" d="M182 430 C177 485 172 535 168 585" />
+
+  <!-- anchors -->
+  <circle class="anchor" cx="143" cy="128" r="3"/><text class="label" x="149" y="126">head</text>
+  <circle class="anchor" cx="150" cy="191" r="3"/><text class="label" x="156" y="195">neck</text>
+  <circle class="anchor" cx="150" cy="292" r="3"/><text class="label" x="156" y="296">torso</text>
+  <circle class="anchor" cx="104" cy="219" r="3"/><text class="label" x="62" y="215">left_shoulder</text>
+  <circle class="anchor" cx="196" cy="218" r="3"/><text class="label" x="202" y="214">right_shoulder</text>
+  <circle class="anchor" cx="90" cy="323" r="3"/><text class="label" x="47" y="327">left_elbow</text>
+  <circle class="anchor" cx="210" cy="323" r="3"/><text class="label" x="216" y="327">right_elbow</text>
+  <circle class="anchor" cx="88" cy="430" r="3"/><text class="label" x="45" y="434">left_hand</text>
+  <circle class="anchor" cx="212" cy="430" r="3"/><text class="label" x="218" y="434">right_hand</text>
+  <circle class="anchor" cx="150" cy="430" r="3"/><text class="label" x="156" y="434">hip</text>
+</svg>
