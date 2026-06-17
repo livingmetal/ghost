@@ -88,6 +88,7 @@ public sealed class ConversationService
         if (mode == ConversationMode.Story)
         {
             _roleplayStateUpdater.UpdateAfterTurn(text, characterText, characterMood);
+            await MaybeDigestStoryMemoryAsync(options, cancellationToken);
         }
         else if (mode == ConversationMode.Advanced)
         {
@@ -154,6 +155,88 @@ public sealed class ConversationService
             Action = "proactive-chat",
             UsedLlm = true
         };
+    }
+
+    private const int StoryDigestEveryTurns = 6;
+
+    // N턴마다 최근 기억을 LLM으로 요약해 StoryState.Facts(관계 텍스처/미해결 질문 등)를 갱신한다.
+    // 실패는 조용히 무시하고 기존 facts를 유지한다(추가 LLM 호출 1회 비용).
+    private async Task MaybeDigestStoryMemoryAsync(LlmOptions options, CancellationToken cancellationToken)
+    {
+        var turnCount = _storyStateStore.CountMemoryEntries();
+        if (turnCount == 0 || turnCount % StoryDigestEveryTurns != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var state = _storyStateStore.Load();
+            var recent = _storyStateStore.ReadRecentMemory(StoryDigestEveryTurns);
+            if (recent.Count == 0)
+            {
+                return;
+            }
+
+            var existingFacts = string.Join(
+                Environment.NewLine,
+                state.Facts.Select(fact => $"- ({fact.Kind}, w{fact.Weight}) {fact.Text}"));
+            var recentTurns = string.Join(
+                Environment.NewLine,
+                recent.Select(entry => $"User: {entry.UserText}\nCharacter: {entry.AssistantText}"));
+
+            var systemPrompt = """
+                You maintain a compact fictional-roleplay memory. You are not a character; you only summarize.
+                Given existing memory facts and the most recent turns, return an UPDATED fact list.
+                Output rules:
+                - Output a JSON array only. No prose, no code fences.
+                - Each item: {"kind": "...", "text": "...", "weight": 1-5}.
+                - kind is one of: premise, self, relationship, question.
+                - Keep premise and self facts stable. Update relationship texture and open questions from recent events.
+                - Merge duplicates. Keep at most 8 facts. Write text in Korean, one short sentence each.
+                """;
+            var userText = $"""
+                Existing facts:
+                {existingFacts}
+
+                Recent turns:
+                {recentTurns}
+
+                Return the updated JSON fact array.
+                """;
+
+            var provider = _providerFactory.Create(options.Provider);
+            var response = await provider.GenerateAsync(new LlmRequest
+            {
+                UserText = userText,
+                UserTitle = string.Empty,
+                Model = options.Model,
+                Options = options,
+                SystemPrompt = systemPrompt,
+                History = []
+            }, cancellationToken);
+
+            var digested = StoryMemoryDigestParser.Parse(response.Text);
+            if (digested.Count == 0)
+            {
+                return;
+            }
+
+            // 최신 상태를 다시 읽어 덮어쓰기 경합을 줄이고 facts만 교체한다.
+            var latest = _storyStateStore.Load();
+            latest.Facts = digested
+                .Select(fact => new StoryMemoryFact { Kind = fact.Kind, Text = fact.Text, Weight = fact.Weight })
+                .ToList();
+            _storyStateStore.Save(latest);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // 기억 요약은 보조 기능이므로 실패해도 대화 흐름을 막지 않는다.
+        }
     }
 
     /// <summary>스토리 모드 idle 비트: 사용자 입력 없이 짧은 존재감만 보여준다. 플롯은 진행하지 않는다.</summary>

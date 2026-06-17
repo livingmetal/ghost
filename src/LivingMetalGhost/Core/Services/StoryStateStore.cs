@@ -138,6 +138,49 @@ public sealed class StoryStateStore
         File.WriteAllText(_stateFile, json);
     }
 
+    public IReadOnlyList<RoleplayMemoryEntry> ReadRecentMemory(int count)
+    {
+        if (count <= 0 || !File.Exists(_memoryFile))
+        {
+            return [];
+        }
+
+        try
+        {
+            var entries = new List<RoleplayMemoryEntry>();
+            foreach (var line in File.ReadLines(_memoryFile))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var entry = JsonSerializer.Deserialize<RoleplayMemoryEntry>(line, _jsonLineOptions);
+                    if (entry is not null)
+                    {
+                        entries.Add(entry);
+                    }
+                }
+                catch (JsonException)
+                {
+                    // 손상된 줄은 건너뛴다.
+                }
+            }
+
+            return entries.Count <= count ? entries : entries.GetRange(entries.Count - count, count);
+        }
+        catch (IOException)
+        {
+            return [];
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
     public void AppendMemory(RoleplayMemoryEntry entry)
     {
         Directory.CreateDirectory(_storyRoot);
