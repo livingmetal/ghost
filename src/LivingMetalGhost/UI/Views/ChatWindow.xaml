@@ -3,7 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="LivingMetalGhost Chat"
         Width="486"
-        Height="254"
+        MinHeight="254"
+        MaxHeight="640"
+        SizeToContent="Height"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -32,7 +34,7 @@
 
         <Grid Margin="8">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
@@ -40,8 +42,7 @@
                   Grid.Row="0"
                   Margin="0,0,42,12"
                   Visibility="Collapsed"
-                  Opacity="0"
-                  IsHitTestVisible="False">
+                  Opacity="0">
                 <Grid.Effect>
                     <DropShadowEffect BlurRadius="26"
                                       ShadowDepth="7"
@@ -81,7 +82,7 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
                         <StackPanel>
@@ -96,17 +97,20 @@
                                        Text="speaking" />
                         </StackPanel>
 
-                        <TextBlock x:Name="BubbleTextBlock"
-                                   Grid.Row="1"
-                                   Margin="0,11,0,0"
-                                   MaxHeight="98"
-                                   FontFamily="Malgun Gothic"
-                                   FontSize="15"
-                                   FontWeight="SemiBold"
-                                   LineHeight="23"
-                                   TextWrapping="Wrap"
-                                   TextTrimming="CharacterEllipsis"
-                                   Foreground="#241B2B" />
+                        <ScrollViewer Grid.Row="1"
+                                      Margin="0,11,0,0"
+                                      MaxHeight="360"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Auto"
+                                      CanContentScroll="False">
+                            <TextBlock x:Name="BubbleTextBlock"
+                                       FontFamily="Malgun Gothic"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       LineHeight="23"
+                                       TextWrapping="Wrap"
+                                       Foreground="#241B2B" />
+                        </ScrollViewer>
                     </Grid>
                 </Border>
             </Grid>
