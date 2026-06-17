@@ -11,8 +11,7 @@
         Background="Transparent"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
-        ShowActivated="False"
-        IsHitTestVisible="False">
+        ShowActivated="False">
     <Window.Resources>
         <LinearGradientBrush x:Key="BubbleFillBrush" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#FFFFFC" Offset="0" />
