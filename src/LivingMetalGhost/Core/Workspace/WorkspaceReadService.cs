@@ -167,6 +167,38 @@ public sealed class WorkspaceReadService
         return new FileSlice(ToRelative(resolved, fullPath), start, slice);
     }
 
+    /// <summary>diff 등에 쓰기 위한 전체 텍스트 읽기. 루트 밖/바이너리/과대 파일은 null. 없는 파일도 null.</summary>
+    public string? ReadAllText(string root, string relativePath)
+    {
+        var resolved = ResolveRoot(root);
+        if (resolved is null || string.IsNullOrWhiteSpace(relativePath))
+        {
+            return null;
+        }
+
+        var fullPath = Path.GetFullPath(Path.Combine(resolved, relativePath));
+        if (!WorkspaceGuard.IsInsideRoot(resolved, fullPath) ||
+            !File.Exists(fullPath) ||
+            BinaryExtensions.Contains(Path.GetExtension(fullPath)) ||
+            SafeLength(fullPath) > MaxSearchableFileBytes)
+        {
+            return null;
+        }
+
+        try
+        {
+            return File.ReadAllText(fullPath);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
     private static string? ResolveRoot(string root)
     {
         return WorkspaceGuard.TryResolveRoot(root, out var resolved, out _) ? resolved : null;

@@ -141,6 +141,7 @@ public partial class App : Application
         services.AddSingleton<Core.Workspace.WorkspaceContextBuilder>();
         services.AddSingleton<Core.Workspace.DiffService>();
         services.AddSingleton<Core.Workspace.PatchApplyService>();
+        services.AddSingleton<Core.Workspace.PatchReviewService>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
