@@ -76,6 +76,32 @@ public sealed class ConversationService
         return ChatAsync(text, ConversationMode.Story, cancellationToken);
     }
 
+    public void RememberExternalTurn(
+        ConversationMode mode,
+        string userText,
+        string assistantText,
+        string source)
+    {
+        if (string.IsNullOrWhiteSpace(userText) && string.IsNullOrWhiteSpace(assistantText))
+        {
+            return;
+        }
+
+        var normalizedSource = string.IsNullOrWhiteSpace(source)
+            ? "external"
+            : source.Trim();
+        var rememberedAssistantText = string.IsNullOrWhiteSpace(assistantText)
+            ? $"[{normalizedSource} result]{Environment.NewLine}(no text returned)"
+            : $"[{normalizedSource} result]{Environment.NewLine}{assistantText.Trim()}";
+
+        if (!string.IsNullOrWhiteSpace(userText))
+        {
+            AddToHistory(mode, "user", userText.Trim());
+        }
+
+        AddToHistory(mode, "assistant", rememberedAssistantText);
+    }
+
     private async Task<SkillResult> ChatAsync(string text, ConversationMode mode, CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
