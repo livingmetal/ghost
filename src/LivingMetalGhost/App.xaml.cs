@@ -139,6 +139,7 @@ public partial class App : Application
         services.AddSingleton<WorkspaceStore>();
         services.AddSingleton<Core.Workspace.WorkspaceReadService>();
         services.AddSingleton<Core.Workspace.WorkspaceContextBuilder>();
+        services.AddSingleton<Core.Workspace.DiffService>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
