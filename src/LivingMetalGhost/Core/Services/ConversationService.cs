@@ -156,6 +156,51 @@ public sealed class ConversationService
         };
     }
 
+    /// <summary>스토리 모드 idle 비트: 사용자 입력 없이 짧은 존재감만 보여준다. 플롯은 진행하지 않는다.</summary>
+    public async Task<SkillResult> StartStoryIdleAsync(CancellationToken cancellationToken)
+    {
+        var config = _configLoader.Load();
+        var character = CharacterCatalog.Get(config.App.GhostId);
+        var storyState = _storyStateStore.Load();
+        const ConversationMode mode = ConversationMode.Story;
+        var options = LlmOptions.FromSettings(config.Llm);
+        var provider = _providerFactory.Create(options.Provider);
+        var userText =
+            "지금은 사용자의 입력이 없는 조용한 순간이야. 짧은 '존재감' 비트를 보여줘. " +
+            "**행동/지문**을 한두 개와 짧은 혼잣말 한마디 정도로만 표현해. " +
+            "큰 사건이나 플롯을 진행하지 말고, 사용자의 행동·말·감정을 대신 정하지 마. " +
+            "메뉴, 선택지, 시스템 언급은 금지. 장면을 크게 바꾸지 말고 분위기만 가볍게 살려.";
+        var response = await provider.GenerateAsync(new LlmRequest
+        {
+            UserText = userText,
+            UserTitle = config.App.UserTitle,
+            Model = options.Model,
+            Options = options,
+            SystemPrompt = _promptAssembler.BuildSystemPrompt(
+                config,
+                character,
+                mode,
+                storyState,
+                BuildHiddenTraitDirective(character, mode)),
+            History = GetHistorySnapshot(mode)
+        }, cancellationToken);
+        var parsed = ParseMoodTaggedResponse(response.Text);
+        var characterText = PolishCharacterSpeech(StripLegacyStoryTags(parsed.Text));
+        var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
+                            (response.FromFallback ? "curious" : "soft-smile");
+
+        // idle 비트는 연속성을 위해 히스토리에만 남기고 StoryState(장면/요약)는 바꾸지 않는다.
+        AddToHistory(mode, "assistant", characterText);
+
+        return new SkillResult
+        {
+            BubbleText = characterText,
+            Mood = characterMood,
+            Action = "story-idle",
+            UsedLlm = true
+        };
+    }
+
     private IReadOnlyList<string> GetAdvancedUsedContextLabels()
     {
         var labels = new List<string>();

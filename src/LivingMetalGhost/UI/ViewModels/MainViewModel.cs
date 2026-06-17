@@ -410,6 +410,41 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>스토리 모드에서 사용자가 조용할 때 짧은 존재감 비트를 띄운다(Phase 4 idle presence).</summary>
+    public async Task StartStoryIdleAsync()
+    {
+        if (!IsStoryMode || IsAdvancedMode || _isResponding || _isStoryResponding || IsCharacterSpeaking)
+        {
+            return;
+        }
+
+        _isStoryResponding = true;
+        CancelMoodHold();
+        SetCharacterMood(_spriteDirector.ResolveThinkingMood(ConversationMode.Story));
+
+        try
+        {
+            var result = await _conversationService.StartStoryIdleAsync(CancellationToken.None);
+            var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, ConversationMode.Story);
+            SetCharacterMood(assistantMood);
+            await DisplayAssistantResponseAsync(
+                result.BubbleText,
+                isProactive: true,
+                assistantMood,
+                StoryMessages,
+                ConversationMode.Story,
+                animateCharacter: true);
+        }
+        catch
+        {
+            // idle 비트는 보조 연출이므로 실패해도 조용히 넘어간다.
+        }
+        finally
+        {
+            _isStoryResponding = false;
+        }
+    }
+
     [RelayCommand]
     private void OpenSettings()
     {

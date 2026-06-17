@@ -19,6 +19,12 @@ public partial class MainWindow : Window
     private MainViewModel? _subscribedViewModel;
     private readonly DispatcherTimer _proactiveChatTimer;
     private DateTimeOffset? _nextProactiveChatAt;
+    private const int StoryIdleFirstDelaySeconds = 180;
+    private const int StoryIdleRepeatDelaySeconds = 600;
+    private const int StoryIdleMaxBeatsPerHour = 3;
+    private DateTimeOffset? _nextStoryIdleAt;
+    private DateTimeOffset _storyIdleHourStart = DateTimeOffset.Now;
+    private int _storyIdleBeatsThisHour;
     private double _resizeStartScale;
     private double _resizeDragDistance;
     private double _resizeMaximumScale = 2.0;
@@ -439,9 +445,25 @@ public partial class MainWindow : Window
         if (!settings.Enabled)
         {
             _nextProactiveChatAt = null;
+            _nextStoryIdleAt = null;
             return;
         }
 
+        // 고급 모드에서는 먼저 말 걸기/스토리 idle 모두 멈춘다.
+        if (ViewModel.IsAdvancedMode)
+        {
+            return;
+        }
+
+        // 스토리 모드에서는 일상 먼저 말 걸기 대신 짧은 존재감 비트를 별도 주기로 띄운다.
+        if (ViewModel.IsStoryMode)
+        {
+            _nextProactiveChatAt = null;
+            await TickStoryIdleAsync();
+            return;
+        }
+
+        _nextStoryIdleAt = null;
         if (_nextProactiveChatAt is null)
         {
             ScheduleNextProactiveChat(settings.MinMinutes, settings.MaxMinutes);
@@ -455,6 +477,41 @@ public partial class MainWindow : Window
 
         await ViewModel.StartConversationAsync();
         ScheduleNextProactiveChat(settings.MinMinutes, settings.MaxMinutes);
+    }
+
+    private async Task TickStoryIdleAsync()
+    {
+        var now = DateTimeOffset.Now;
+
+        // 시간당 비트 수 제한(기본 3회/시간)을 위해 1시간 창을 굴린다.
+        if (now - _storyIdleHourStart >= TimeSpan.FromHours(1))
+        {
+            _storyIdleHourStart = now;
+            _storyIdleBeatsThisHour = 0;
+        }
+
+        if (_nextStoryIdleAt is null)
+        {
+            // 첫 비트는 진입 후 약 3분 뒤.
+            _nextStoryIdleAt = now.AddSeconds(StoryIdleFirstDelaySeconds);
+            return;
+        }
+
+        if (now < _nextStoryIdleAt.Value)
+        {
+            return;
+        }
+
+        if (_storyIdleBeatsThisHour >= StoryIdleMaxBeatsPerHour)
+        {
+            // 한도 도달: 다음 시간 창까지 미룬다.
+            _nextStoryIdleAt = _storyIdleHourStart.AddHours(1);
+            return;
+        }
+
+        await ViewModel.StartStoryIdleAsync();
+        _storyIdleBeatsThisHour++;
+        _nextStoryIdleAt = DateTimeOffset.Now.AddSeconds(StoryIdleRepeatDelaySeconds);
     }
 
     private void ScheduleNextProactiveChat(int minMinutes, int maxMinutes)
