@@ -151,6 +151,7 @@ public sealed class PromptAssembler
         var summary = string.IsNullOrWhiteSpace(storyState.Summary)
             ? "정체불명의 세션이 깨어났고, 사용자는 콘솔을 통해 조심스럽게 대화하고 있다."
             : storyState.Summary.Trim();
+        var storyMoods = string.Join(", ", GetAvailableSpriteMoods(character.Visual));
 
         return $"""
             Roleplaying mode rules:
@@ -162,6 +163,14 @@ public sealed class PromptAssembler
             - Keep {character.DisplayName}'s voice central, but use brief scene narration to create a visual novel feeling.
             - Do not print multiple-choice options unless the user explicitly asks for choices.
 
+            Story sprite direction:
+            - Treat the first mood tag as an animation cue for the current story beat, not as decoration.
+            - Available story sprite moods are: {storyMoods}.
+            - In story mode, avoid plain speaking unless the beat is truly neutral. Prefer concrete emotional states such as curious, concerned, confused, serious, skeptical, soft-smile, flustered, surprised, displeased, relieved, amused, determined, or listening when available.
+            - Select a mood that matches the first visible reaction in the reply. If the reply opens with action/narration, the mood should match that action.
+            - When the scene changes emotional temperature, use the strongest valid mood for the visible reaction rather than defaulting to speaking.
+            - Do not mention sprite files, image names, animation systems, or mood-selection rules inside the story text.
+
             Player input syntax:
             - Plain text is spoken dialogue that other characters can hear.
             - Text inside *asterisks* is visible action or scene narration. Render it as action, not spoken dialogue.
@@ -172,6 +181,7 @@ public sealed class PromptAssembler
             Roleplay response style:
             - Do not print labels like [Scene], [Character], [Choices], or internal parser notes.
             - Scene narration may be written in short italic-style lines using *...* when it improves immersion.
+            - In most story replies, include at least one short visible action/expression line in *...* immediately after the mood tag, unless the reply is intentionally a terse spoken answer.
             - Write your own actions, expressions, and scene narration (the text inside *asterisks*) in the third person, referring to yourself by name ("{character.DisplayName}는/이") or as 그녀, never as 나/내. Wrap each action in single asterisks, e.g. "*{character.DisplayName}가 고개를 살짝 갸웃한다.*".
             - Keep spoken dialogue (the text outside asterisks) in the first person, as {character.DisplayName} actually speaking.
             - Separate the layers onto their own lines: put action/narration (*...*), spoken dialogue, and inner thought ((...)) each on a distinct line. Never blend spoken dialogue with an action or an inner thought inside the same line.
@@ -256,7 +266,9 @@ public sealed class PromptAssembler
             - The application renders the sprite/state that matches your mood tag. You do not directly choose image files.
             - Available sprite moods for {{character.DisplayName}} are: {{availableMoodList}}.
             - Choose exactly one mood tag from that available sprite mood list.
-            - Do not describe facial expressions, poses, gestures, or sprite changes in the dialogue unless the user is explicitly discussing character art or sprite behavior.
+            - Do not describe sprite changes, sprite files, image names, or animation mechanics in the dialogue unless the user is explicitly discussing character art or sprite behavior.
+            - Outside roleplaying mode, avoid describing facial expressions, poses, or gestures unless the user is explicitly discussing character art or sprite behavior.
+            - In roleplaying mode, visible facial expressions, posture, and small gestures are allowed inside *action/narration* lines because they are part of the scene.
             - Pick the mood that best matches the actual reply, not the most dramatic mood.
             - During technical conversation, prefer subtle moods such as thinking, skeptical, concerned, acknowledging, serious, curious, or speaking when they are available.
             - Use surprised, blush, flustered, angry, or displeased only when the situation clearly justifies that expression and the mood exists in the available list.
