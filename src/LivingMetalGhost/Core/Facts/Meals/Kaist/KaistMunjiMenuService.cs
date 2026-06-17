@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using LivingMetalGhost.Core.Facts;
@@ -54,7 +55,7 @@ public sealed class KaistMunjiMenuService
                 Source: "KAIST",
                 SourceUrl: sourceUrl,
                 ObservedAt: now,
-                ValidUntil: today.ToDateTime(TimeOnly.MinValue).AddDays(1).AddHours(2),
+                ValidUntil: new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue).AddDays(1).AddHours(2), now.Offset),
                 PayloadJson: JsonSerializer.Serialize(document, _jsonOptions),
                 ParserId: _parser.ParserId,
                 SchemaVersion: 1), ct);
