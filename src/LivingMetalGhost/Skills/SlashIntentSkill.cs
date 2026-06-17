@@ -1,6 +1,7 @@
 using System.Globalization;
 using LivingMetalGhost.Core.Facts.Meals.Kaist;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Reminders;
 
 namespace LivingMetalGhost.Skills;
 
@@ -18,10 +19,12 @@ public sealed class SlashIntentSkill : IGhostSkill
     private static readonly string[] TimerWords = ["타이머", "알림", "리마인더", "분 뒤", "시간 뒤", "초 뒤", "timer"];
 
     private readonly KaistMunjiMenuService _kaistMenuService;
+    private readonly ReminderService _reminderService;
 
-    public SlashIntentSkill(KaistMunjiMenuService kaistMenuService)
+    public SlashIntentSkill(KaistMunjiMenuService kaistMenuService, ReminderService reminderService)
     {
         _kaistMenuService = kaistMenuService;
+        _reminderService = reminderService;
     }
 
     public string Name => "SlashIntent";
@@ -92,7 +95,7 @@ public sealed class SlashIntentSkill : IGhostSkill
 
         if (ContainsAny(text, TimerWords))
         {
-            return "기능 의도는 타이머/알림 설정으로 보였어. 아직 로컬 타이머 모듈은 연결 전이야. 이 기능은 나중에 확인 질문과 ReminderStore를 붙여서 실행하는 쪽이 안전해.";
+            return await _reminderService.CreateFromTextAsync(text, ct);
         }
 
         return "실행할 기능을 확정하지 못했어. 지금은 /지금 시간, /오늘 날짜, /문지 점심, /10분 뒤 알림 같은 형태를 기능 의도 모드로 구분할 수 있어.";
@@ -141,7 +144,7 @@ public sealed class SlashIntentSkill : IGhostSkill
 
     private static string BuildHelpText()
     {
-        return "슬래시 기능 의도 모드야. 입력의 첫 유효 문자가 /이고 //가 아니면 일반 대화 대신 기능 실행 의도로 해석해. 지금은 /지금 시간, /오늘 날짜를 바로 처리하고, /문지 점심은 KAIST 문지캠퍼스 식단 조회로 연결해.";
+        return "슬래시 기능 의도 모드야. 입력의 첫 유효 문자가 /이고 //가 아니면 일반 대화 대신 기능 실행 의도로 해석해. 지금은 /지금 시간, /오늘 날짜, /문지 점심, /10분 뒤 물 마시기를 처리할 수 있어.";
     }
 
     private static bool ContainsAny(string text, IEnumerable<string> words)
