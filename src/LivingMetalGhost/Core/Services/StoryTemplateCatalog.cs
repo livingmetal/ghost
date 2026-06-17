@@ -74,12 +74,31 @@ public static class StoryTemplateCatalog
                 file.Summary?.Trim() ?? string.Empty,
                 file.OpeningLine?.Trim() ?? string.Empty,
                 string.IsNullOrWhiteSpace(file.Mood) ? "quiet_tension" : file.Mood.Trim(),
-                file.Tension <= 0 ? 1 : Math.Clamp(file.Tension, 0, 5));
+                file.Tension <= 0 ? 1 : Math.Clamp(file.Tension, 0, 5),
+                BuildFacts(file.Facts));
         }
         catch
         {
             return null;
         }
+    }
+
+    private static IReadOnlyList<StoryMemoryFact> BuildFacts(List<StoryFactFile>? facts)
+    {
+        if (facts is null || facts.Count == 0)
+        {
+            return [];
+        }
+
+        return facts
+            .Where(fact => fact is not null && !string.IsNullOrWhiteSpace(fact.Text))
+            .Select(fact => new StoryMemoryFact
+            {
+                Kind = string.IsNullOrWhiteSpace(fact.Kind) ? "premise" : fact.Kind.Trim(),
+                Text = fact.Text.Trim(),
+                Weight = fact.Weight <= 0 ? 1 : fact.Weight
+            })
+            .ToList();
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -100,5 +119,13 @@ public static class StoryTemplateCatalog
         public string? OpeningLine { get; set; }
         public string? Mood { get; set; }
         public int Tension { get; set; } = 1;
+        public List<StoryFactFile>? Facts { get; set; }
+    }
+
+    private sealed class StoryFactFile
+    {
+        public string? Kind { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public int Weight { get; set; } = 1;
     }
 }

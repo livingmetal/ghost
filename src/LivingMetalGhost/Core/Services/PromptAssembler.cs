@@ -181,6 +181,26 @@ public sealed class PromptAssembler
             Summary: {summary}
             Mood: {storyState.Mood}
             Tension: {storyState.Tension}/5
+            {BuildStoryMemoryBlock(storyState, character)}
+            """;
+    }
+
+    private static string BuildStoryMemoryBlock(StoryState storyState, CharacterProfile character)
+    {
+        if (storyState.Facts.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var lines = storyState.Facts
+            .OrderByDescending(fact => fact.Weight)
+            .Where(fact => !string.IsNullOrWhiteSpace(fact.Text))
+            .Select(fact => $"- ({fact.Kind}) {fact.Text}");
+
+        return $$"""
+
+            What {{character.DisplayName}} carries into this scene (fiction only; let it color tone and word choice, but do not force outcomes or restate it verbatim):
+            {{string.Join(Environment.NewLine, lines)}}
             """;
     }
 

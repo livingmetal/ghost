@@ -89,6 +89,10 @@ public sealed class StoryStateStore
         PreserveStoryboard(resetState, previousState);
         resetState.Enabled = keepEnabled;
         resetState.Summary = StripRuntimeBeats(previousState.Summary);
+
+        // 리셋은 런타임 진행만 비우고, 캐릭터 전제 같은 시드 기억 텍스처는 템플릿에서 되살린다.
+        var template = ResolveActiveTemplate();
+        resetState.Facts = template is null ? [] : CloneFacts(template.Facts);
         Save(resetState);
 
         try
@@ -189,6 +193,14 @@ public sealed class StoryStateStore
         state.OpeningLine = template.OpeningLine;
         state.Mood = template.Mood;
         state.Tension = template.Tension;
+        state.Facts = CloneFacts(template.Facts);
+    }
+
+    private static List<StoryMemoryFact> CloneFacts(IReadOnlyList<StoryMemoryFact> facts)
+    {
+        return facts
+            .Select(fact => new StoryMemoryFact { Kind = fact.Kind, Text = fact.Text, Weight = fact.Weight })
+            .ToList();
     }
 
     private StoryTemplate? ResolveActiveTemplate()

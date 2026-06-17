@@ -14,5 +14,17 @@ public sealed class StoryState
     public string PlayerRole { get; set; } = "주인공";
     public string Mood { get; set; } = "daily";
     public int Tension { get; set; }
+
+    /// <summary>이야기의 기억 텍스처(전제·자기인식·관계·미해결 질문). 톤에 영향을 주되 결과를 강제하지 않는다.</summary>
+    public List<StoryMemoryFact> Facts { get; set; } = [];
+
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
+}
+
+/// <summary>롤플레잉 기억 한 조각. Kind 예: premise, self, relationship, question.</summary>
+public sealed class StoryMemoryFact
+{
+    public string Kind { get; set; } = "premise";
+    public string Text { get; set; } = string.Empty;
+    public int Weight { get; set; } = 1;
 }
