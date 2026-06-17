@@ -7,6 +7,7 @@ using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Facts;
 using LivingMetalGhost.Core.Facts.Meals.Kaist;
 using LivingMetalGhost.Core.Presentation;
+using LivingMetalGhost.Core.Reminders;
 using LivingMetalGhost.Core.Security;
 using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.Providers.Llm;
@@ -33,6 +34,7 @@ public partial class App : Application
         Services = serviceCollection.BuildServiceProvider();
         Services.GetRequiredService<AdvancedSessionLogService>().EnsureWorkspaceFiles();
         Services.GetRequiredService<WorkspaceStore>().EnsureWorkspaceFile();
+        Services.GetRequiredService<ReminderService>().Start();
 
         var mainWindow = new MainWindow();
         MainWindow = mainWindow;
@@ -142,6 +144,8 @@ public partial class App : Application
         services.AddSingleton<FactStore>();
         services.AddSingleton<KaistMenuParser>();
         services.AddSingleton<KaistMunjiMenuService>();
+        services.AddSingleton<ReminderStore>();
+        services.AddSingleton<ReminderService>();
         services.AddSingleton<IntentRouter>();
         services.AddSingleton<SkillRegistry>();
         services.AddSingleton<ILlmProviderFactory, LlmProviderFactory>();
