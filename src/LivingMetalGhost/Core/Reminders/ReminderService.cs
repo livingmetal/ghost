@@ -23,7 +23,7 @@ public sealed class ReminderService
         {
             Interval = TimeSpan.FromSeconds(10)
         };
-        _timer.Tick += async (_, _) => await ProcessDueAsync(CancellationToken.None);
+        _timer.Tick += async (_, _) => await ProcessDueSafelyAsync(CancellationToken.None);
     }
 
     public void Start()
@@ -32,6 +32,9 @@ public sealed class ReminderService
         {
             _timer.Start();
         }
+
+        // If the app was closed when a reminder became due, show it as soon as Ghost starts again.
+        _ = ProcessDueSafelyAsync(CancellationToken.None);
     }
 
     public async Task<string> CreateFromTextAsync(string text, CancellationToken ct)
@@ -56,8 +59,21 @@ public sealed class ReminderService
             DueAt: parsed.Value.DueAt,
             Status: PendingStatus);
         await _store.AddAsync(entry, ct);
+        ShowCreatedConfirmation(entry);
 
         return $"설정했어. {FormatDueTime(entry.DueAt)}에 \"{entry.Message}\" 알림을 띄울게.";
+    }
+
+    private async Task ProcessDueSafelyAsync(CancellationToken ct)
+    {
+        try
+        {
+            await ProcessDueAsync(ct);
+        }
+        catch
+        {
+            // Reminder checks should never crash the app or create dispatcher exception loops.
+        }
     }
 
     private async Task ProcessDueAsync(CancellationToken ct)
@@ -75,7 +91,7 @@ public sealed class ReminderService
             foreach (var entry in dueEntries)
             {
                 await _store.CompleteAsync(entry.Id, ct);
-                ShowReminder(entry);
+                ShowDueReminder(entry);
             }
         }
         finally
@@ -84,13 +100,27 @@ public sealed class ReminderService
         }
     }
 
-    private static void ShowReminder(ReminderEntry entry)
+    private static void ShowCreatedConfirmation(ReminderEntry entry)
+    {
+        ShowMessageBox(
+            $"알림을 설정했어.\n\n시간: {FormatDueTime(entry.DueAt)}\n내용: {entry.Message}",
+            "LivingMetalGhost 알림 설정 완료");
+    }
+
+    private static void ShowDueReminder(ReminderEntry entry)
+    {
+        ShowMessageBox(
+            $"{entry.Message}\n\n예정 시간: {FormatDueTime(entry.DueAt)}",
+            "LivingMetalGhost 알림");
+    }
+
+    private static void ShowMessageBox(string text, string title)
     {
         void Show()
         {
             MessageBox.Show(
-                entry.Message,
-                "LivingMetalGhost 알림",
+                text,
+                title,
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
