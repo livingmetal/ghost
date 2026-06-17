@@ -2,6 +2,7 @@ using System.Globalization;
 using LivingMetalGhost.Core.Facts.Meals.Kaist;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Reminders;
+using LivingMetalGhost.Core.Services;
 
 namespace LivingMetalGhost.Skills;
 
@@ -20,11 +21,16 @@ public sealed class SlashIntentSkill : IGhostSkill
 
     private readonly KaistMunjiMenuService _kaistMenuService;
     private readonly ReminderService _reminderService;
+    private readonly ConversationService _conversationService;
 
-    public SlashIntentSkill(KaistMunjiMenuService kaistMenuService, ReminderService reminderService)
+    public SlashIntentSkill(
+        KaistMunjiMenuService kaistMenuService,
+        ReminderService reminderService,
+        ConversationService conversationService)
     {
         _kaistMenuService = kaistMenuService;
         _reminderService = reminderService;
+        _conversationService = conversationService;
     }
 
     public string Name => "SlashIntent";
@@ -42,6 +48,13 @@ public sealed class SlashIntentSkill : IGhostSkill
         var response = string.IsNullOrWhiteSpace(intentText)
             ? BuildHelpText()
             : await HandleIntentAsync(intentText, ct);
+
+        var rememberedUserText = string.IsNullOrWhiteSpace(intentText) ? "/" : $"/{intentText}";
+        _conversationService.RememberExternalTurn(
+            ConversationMode.Daily,
+            rememberedUserText,
+            response,
+            "local-intent");
 
         return new SkillResult
         {
