@@ -84,8 +84,11 @@ public sealed class StoryStateStore
 
     public StoryState Reset(bool keepEnabled)
     {
-        var resetState = CreateSeededDefault();
+        var previousState = Load();
+        var resetState = CreateDefaultState();
+        PreserveStoryboard(resetState, previousState);
         resetState.Enabled = keepEnabled;
+        resetState.Summary = StripRuntimeBeats(previousState.Summary);
         Save(resetState);
 
         try
@@ -227,5 +230,46 @@ public sealed class StoryStateStore
         state.Summary = "정체불명의 서비스가 깨어났고, 오르키아와 함께 조심스럽게 상황을 확인한다.";
         state.Mood = "quiet_tension";
         state.Tension = Math.Clamp(state.Tension <= 0 ? 1 : state.Tension, 0, 5);
+    }
+
+    private static void PreserveStoryboard(StoryState target, StoryState source)
+    {
+        target.Title = string.IsNullOrWhiteSpace(source.Title) ? target.Title : source.Title.Trim();
+        target.PlayerRole = string.IsNullOrWhiteSpace(source.PlayerRole) ? target.PlayerRole : source.PlayerRole.Trim();
+        target.Scene = string.IsNullOrWhiteSpace(source.Scene) ? target.Scene : source.Scene.Trim();
+        target.OpeningLine = string.IsNullOrWhiteSpace(source.OpeningLine) ? target.OpeningLine : source.OpeningLine.Trim();
+        target.Mood = string.IsNullOrWhiteSpace(source.Mood) ? target.Mood : source.Mood.Trim();
+        target.Tension = Math.Clamp(source.Tension <= 0 ? target.Tension : source.Tension, 0, 5);
+    }
+
+    private static string StripRuntimeBeats(string summary)
+    {
+        if (string.IsNullOrWhiteSpace(summary))
+        {
+            return string.Empty;
+        }
+
+        var keptLines = new List<string>();
+        var skipPossibleCharacterLine = false;
+        foreach (var line in summary.Replace("\r\n", "\n").Split('\n'))
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("- 사용자:", StringComparison.Ordinal))
+            {
+                skipPossibleCharacterLine = true;
+                continue;
+            }
+
+            if (skipPossibleCharacterLine && trimmed.StartsWith("캐릭터:", StringComparison.Ordinal))
+            {
+                skipPossibleCharacterLine = false;
+                continue;
+            }
+
+            skipPossibleCharacterLine = false;
+            keptLines.Add(line);
+        }
+
+        return string.Join(Environment.NewLine, keptLines).Trim();
     }
 }
