@@ -1,0 +1,143 @@
+using System.Globalization;
+using LivingMetalGhost.Core.Models;
+
+namespace LivingMetalGhost.Skills;
+
+/// <summary>
+/// Handles explicit capability-intent requests that start with a single slash.
+/// A leading slash means "try to execute a basic-mode capability"; it is not a fixed command name.
+/// Double slash remains normal text so code comments and paths do not get hijacked.
+/// </summary>
+public sealed class SlashIntentSkill : IGhostSkill
+{
+    private static readonly string[] HelpWords = ["help", "도움말", "도움", "기능", "modules", "모듈"];
+    private static readonly string[] TimeWords = ["시간", "몇시", "몇 시", "지금", "현재", "time"];
+    private static readonly string[] DateWords = ["날짜", "오늘", "요일", "date"];
+    private static readonly string[] KaistMenuWords = ["카이스트", "kaist", "문지", "문지캠퍼스", "식단", "학식", "구내식당", "점심", "중식", "조식", "아침", "석식", "저녁"];
+    private static readonly string[] TimerWords = ["타이머", "알림", "리마인더", "분 뒤", "시간 뒤", "초 뒤", "timer"];
+
+    public string Name => "SlashIntent";
+    public string Description => "A single leading slash enters explicit basic-mode capability intent routing.";
+    public IReadOnlyList<string> Examples => ["/지금 시간", "/오늘 날짜", "/문지 점심", "/10분 뒤 물 마시기"];
+
+    public bool CanHandle(UserRequest request)
+    {
+        return !request.UseAdvancedModel && IsSlashIntent(request.RawText);
+    }
+
+    public Task<SkillResult> HandleAsync(UserRequest request, CancellationToken ct)
+    {
+        var intentText = ExtractIntentText(request.RawText);
+        var response = string.IsNullOrWhiteSpace(intentText)
+            ? BuildHelpText()
+            : HandleIntent(intentText);
+
+        return Task.FromResult(new SkillResult
+        {
+            BubbleText = response,
+            Mood = "speaking",
+            Action = "slash-intent",
+            UsedLlm = false
+        });
+    }
+
+    public static bool IsSlashIntent(string rawText)
+    {
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            return false;
+        }
+
+        var text = rawText.TrimStart();
+        if (!text.StartsWith("/", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // Keep // available for code comments, paths, and ordinary text.
+        return !text.StartsWith("//", StringComparison.Ordinal);
+    }
+
+    private static string ExtractIntentText(string rawText)
+    {
+        return rawText.TrimStart()[1..].Trim();
+    }
+
+    private static string HandleIntent(string text)
+    {
+        if (ContainsAny(text, HelpWords))
+        {
+            return BuildHelpText();
+        }
+
+        var wantsTime = ContainsAny(text, TimeWords);
+        var wantsDate = ContainsAny(text, DateWords);
+        if (wantsTime || wantsDate)
+        {
+            return BuildTimeText(wantsTime, wantsDate);
+        }
+
+        if (ContainsAny(text, KaistMenuWords))
+        {
+            return "기능 의도는 KAIST 문지캠퍼스 식단 조회로 보였어. 아직 식단 파서/수집기 모듈은 연결 전이라, 다음 단계에서 /문지 점심 같은 입력을 실제 식단 조회로 이어 붙이면 돼.";
+        }
+
+        if (ContainsAny(text, TimerWords))
+        {
+            return "기능 의도는 타이머/알림 설정으로 보였어. 아직 로컬 타이머 모듈은 연결 전이야. 이 기능은 나중에 확인 질문과 ReminderStore를 붙여서 실행하는 쪽이 안전해.";
+        }
+
+        return "실행할 기능을 확정하지 못했어. 지금은 /지금 시간, /오늘 날짜, /문지 점심, /10분 뒤 알림 같은 형태를 기능 의도 모드로 구분할 수 있어.";
+    }
+
+    private static string BuildTimeText(bool includeTime, bool includeDate)
+    {
+        var now = GetKoreaNow();
+        var culture = CultureInfo.GetCultureInfo("ko-KR");
+        var parts = new List<string>();
+
+        if (includeDate)
+        {
+            parts.Add($"오늘은 {now.ToString("yyyy년 M월 d일 dddd", culture)}야.");
+        }
+
+        if (includeTime)
+        {
+            parts.Add($"지금은 한국 시간 기준 {now:HH:mm}이야.");
+        }
+
+        if (parts.Count == 0)
+        {
+            parts.Add($"현재 한국 시간은 {now.ToString("yyyy-MM-dd HH:mm", culture)}이야.");
+        }
+
+        return string.Join(" ", parts);
+    }
+
+    private static DateTimeOffset GetKoreaNow()
+    {
+        try
+        {
+            var zone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
+            return TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(9));
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(9));
+        }
+    }
+
+    private static string BuildHelpText()
+    {
+        return "슬래시 기능 의도 모드야. 입력의 첫 유효 문자가 /이고 //가 아니면 일반 대화 대신 기능 실행 의도로 해석해. 지금은 /지금 시간, /오늘 날짜를 바로 처리하고, /문지 점심과 /10분 뒤 알림은 다음 모듈 연결 대상으로 분류해.";
+    }
+
+    private static bool ContainsAny(string text, IEnumerable<string> words)
+    {
+        return words.Any(word => text.Contains(word, StringComparison.OrdinalIgnoreCase));
+    }
+}
