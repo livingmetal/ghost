@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using LivingMetalGhost.Core.Facts;
 using LivingMetalGhost.Core.Facts.Meals;
 
 namespace LivingMetalGhost.Core.Facts.Meals.Kaist;
