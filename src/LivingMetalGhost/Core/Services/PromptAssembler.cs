@@ -21,7 +21,8 @@ public sealed class PromptAssembler
         CharacterProfile character,
         ConversationMode mode,
         StoryState storyState,
-        string hiddenTraitDirective)
+        string hiddenTraitDirective,
+        string repositoryContext = "")
     {
         var legacyPersonality = config.App.PersonalityId switch
         {
@@ -50,7 +51,7 @@ public sealed class PromptAssembler
             ? character.DefaultBackground
             : customProfile.Background.Trim();
         var spriteMoodDirective = BuildSpriteMoodDirective(character);
-        var modeDirective = BuildModeDirective(mode, storyState, character);
+        var modeDirective = BuildModeDirective(mode, storyState, character, repositoryContext);
 
         return $"""
             You are not ChatGPT, a generic chatbot, or a detached API assistant.
@@ -117,11 +118,15 @@ public sealed class PromptAssembler
             """;
     }
 
-    private string BuildModeDirective(ConversationMode mode, StoryState storyState, CharacterProfile character)
+    private string BuildModeDirective(
+        ConversationMode mode,
+        StoryState storyState,
+        CharacterProfile character,
+        string repositoryContext)
     {
         return mode switch
         {
-            ConversationMode.Advanced => BuildAdvancedModeDirective(),
+            ConversationMode.Advanced => BuildAdvancedModeDirective(repositoryContext),
             ConversationMode.Story => BuildRoleplayingModeDirective(storyState, character),
             _ => BuildDailyModeDirective()
         };
@@ -204,12 +209,15 @@ public sealed class PromptAssembler
             """;
     }
 
-    private string BuildAdvancedModeDirective()
+    private string BuildAdvancedModeDirective(string repositoryContext)
     {
         var reusableContext = _advancedSessionLogService.BuildReusablePromptContext();
         var contextBlock = string.IsNullOrWhiteSpace(reusableContext)
             ? "No approved workspace memory is currently included."
             : reusableContext;
+        var repositoryBlock = string.IsNullOrWhiteSpace(repositoryContext)
+            ? "No repository snapshot was attached for this turn."
+            : repositoryContext.Trim();
 
         return $"""
             Advanced mode rules:
@@ -223,6 +231,12 @@ public sealed class PromptAssembler
 
             Advanced workspace context:
             {contextBlock}
+
+            Repository snapshot (read-only, current workspace):
+            - When answering questions about the codebase, rely on this snapshot and cite concrete file paths (e.g. path/to/File.cs:42) from it.
+            - It is a partial snapshot, not the whole repo. If the answer is not covered, say what is missing instead of guessing or inventing file paths.
+
+            {repositoryBlock}
             """;
     }
 

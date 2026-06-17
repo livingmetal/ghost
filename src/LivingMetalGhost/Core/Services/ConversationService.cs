@@ -19,6 +19,8 @@ public sealed class ConversationService
     private readonly StoryStateStore _storyStateStore;
     private readonly RoleplayStateUpdater _roleplayStateUpdater;
     private readonly AdvancedSessionLogService _advancedSessionLogService;
+    private readonly WorkspaceStore _workspaceStore;
+    private readonly Core.Workspace.WorkspaceContextBuilder _workspaceContextBuilder;
     private readonly Dictionary<ConversationMode, List<LlmHistoryMessage>> _histories = new();
     private readonly Lock _historyLock = new();
     private readonly Dictionary<string, HiddenTraitRuntimeState> _hiddenTraitStates = new(StringComparer.OrdinalIgnoreCase);
@@ -29,7 +31,9 @@ public sealed class ConversationService
         PromptAssembler promptAssembler,
         StoryStateStore storyStateStore,
         RoleplayStateUpdater roleplayStateUpdater,
-        AdvancedSessionLogService advancedSessionLogService)
+        AdvancedSessionLogService advancedSessionLogService,
+        WorkspaceStore workspaceStore,
+        Core.Workspace.WorkspaceContextBuilder workspaceContextBuilder)
     {
         _configLoader = configLoader;
         _providerFactory = providerFactory;
@@ -37,6 +41,28 @@ public sealed class ConversationService
         _storyStateStore = storyStateStore;
         _roleplayStateUpdater = roleplayStateUpdater;
         _advancedSessionLogService = advancedSessionLogService;
+        _workspaceStore = workspaceStore;
+        _workspaceContextBuilder = workspaceContextBuilder;
+    }
+
+    private string BuildRepositoryContext(ConversationMode mode, string userText)
+    {
+        if (mode != ConversationMode.Advanced)
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var root = _workspaceStore.Load().RootPath;
+            return string.IsNullOrWhiteSpace(root)
+                ? string.Empty
+                : _workspaceContextBuilder.Build(root, userText);
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     public Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
@@ -60,6 +86,7 @@ public sealed class ConversationService
             : text;
         var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
         var options = LlmOptions.FromSettings(llm);
+        var repositoryContext = BuildRepositoryContext(mode, text);
         var provider = _providerFactory.Create(options.Provider);
         var response = await provider.GenerateAsync(new LlmRequest
         {
@@ -72,7 +99,8 @@ public sealed class ConversationService
                 character,
                 mode,
                 storyState,
-                BuildHiddenTraitDirective(character, mode)),
+                BuildHiddenTraitDirective(character, mode),
+                repositoryContext),
             History = GetHistorySnapshot(mode)
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);

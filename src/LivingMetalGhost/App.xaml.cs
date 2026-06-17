@@ -138,6 +138,7 @@ public partial class App : Application
         services.AddSingleton<ProjectMemoryStore>();
         services.AddSingleton<WorkspaceStore>();
         services.AddSingleton<Core.Workspace.WorkspaceReadService>();
+        services.AddSingleton<Core.Workspace.WorkspaceContextBuilder>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
