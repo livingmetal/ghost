@@ -87,7 +87,7 @@ public sealed class ConversationService
         AddToHistory(mode, "assistant", characterText);
         if (mode == ConversationMode.Story)
         {
-            _roleplayStateUpdater.UpdateAfterTurn(userTextForProvider, characterText, characterMood);
+            _roleplayStateUpdater.UpdateAfterTurn(text, characterText, characterMood);
         }
         else if (mode == ConversationMode.Advanced)
         {
