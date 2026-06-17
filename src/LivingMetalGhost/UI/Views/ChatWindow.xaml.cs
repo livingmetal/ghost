@@ -19,6 +19,7 @@ public partial class ChatWindow : Window
 
     private readonly DispatcherTimer _windowIdleTimer;
     private MainViewModel? _subscribedViewModel;
+    private SpeechBubbleWindow? _speechBubbleWindow;
 
     public bool HasManualPosition { get; private set; }
 
@@ -31,6 +32,7 @@ public partial class ChatWindow : Window
             SubscribeToViewModel(DataContext as MainViewModel);
             ApplyModeVisuals();
             ApplySavedPlacement();
+            EnsureSpeechBubbleWindow();
         };
         PreviewMouseMove += (_, _) => RestartWindowIdleTimer();
         PreviewKeyDown += (_, _) => RestartWindowIdleTimer();
@@ -57,6 +59,7 @@ public partial class ChatWindow : Window
             return;
         }
 
+        EnsureSpeechBubbleWindow();
         Show();
         ApplySavedPlacement();
         Activate();
@@ -68,6 +71,7 @@ public partial class ChatWindow : Window
     public void HideConsole()
     {
         _windowIdleTimer.Stop();
+        _speechBubbleWindow?.HideBubble(immediate: true);
         Hide();
         SetDailySleepState();
     }
@@ -77,6 +81,10 @@ public partial class ChatWindow : Window
         SubscribeToViewModel(e.NewValue as MainViewModel);
         ApplyModeVisuals();
         ApplySavedPlacement();
+        if (_speechBubbleWindow is not null)
+        {
+            _speechBubbleWindow.DataContext = e.NewValue;
+        }
     }
 
     private void SubscribeToViewModel(MainViewModel? viewModel)
@@ -101,6 +109,10 @@ public partial class ChatWindow : Window
             or nameof(MainViewModel.ActiveProviderLabel))
         {
             ApplyModeVisuals();
+            if (_subscribedViewModel is { IsAdvancedMode: true } or { IsStoryMode: true })
+            {
+                _speechBubbleWindow?.HideBubble(immediate: true);
+            }
         }
 
         if (e.PropertyName is nameof(MainViewModel.BubbleText) or nameof(MainViewModel.IsCharacterSpeaking))
@@ -143,6 +155,24 @@ public partial class ChatWindow : Window
         else
         {
             InputPanel.BorderBrush = new SolidColorBrush(targetColor);
+        }
+    }
+
+    private void EnsureSpeechBubbleWindow()
+    {
+        if (_speechBubbleWindow is null)
+        {
+            _speechBubbleWindow = new SpeechBubbleWindow
+            {
+                DataContext = DataContext,
+                Topmost = Topmost
+            };
+        }
+
+        _speechBubbleWindow.Topmost = Topmost;
+        if (Owner is Window owner && !_speechBubbleWindow.IsVisible)
+        {
+            _speechBubbleWindow.Owner = owner;
         }
     }
 
