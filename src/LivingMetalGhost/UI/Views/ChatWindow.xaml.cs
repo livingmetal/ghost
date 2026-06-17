@@ -1,4 +1,3 @@
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,16 +12,13 @@ namespace LivingMetalGhost.UI.Views;
 
 public partial class ChatWindow : Window
 {
-    private const int BubbleHoldMilliseconds = 5200;
     private const int WindowIdleHideMilliseconds = 45000;
     private static readonly Color NormalBorder = Color.FromRgb(0xEE, 0xE3, 0xD8);
     private static readonly Color RoleplayBorder = Color.FromRgb(0x9B, 0x6A, 0xD6);
     private static readonly Color AdvancedBorder = Color.FromRgb(0x7B, 0x4F, 0xC8);
 
-    private readonly DispatcherTimer _bubbleDismissTimer;
     private readonly DispatcherTimer _windowIdleTimer;
     private MainViewModel? _subscribedViewModel;
-    private ChatMessage? _trackedAssistantMessage;
 
     public bool HasManualPosition { get; private set; }
 
@@ -35,17 +31,10 @@ public partial class ChatWindow : Window
             SubscribeToViewModel(DataContext as MainViewModel);
             ApplyModeVisuals();
             ApplySavedPlacement();
-            HideBubble(immediate: true);
         };
         PreviewMouseMove += (_, _) => RestartWindowIdleTimer();
         PreviewKeyDown += (_, _) => RestartWindowIdleTimer();
         Deactivated += (_, _) => RestartWindowIdleTimer();
-
-        _bubbleDismissTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(BubbleHoldMilliseconds)
-        };
-        _bubbleDismissTimer.Tick += (_, _) => HideBubble();
 
         _windowIdleTimer = new DispatcherTimer
         {
@@ -79,7 +68,6 @@ public partial class ChatWindow : Window
     public void HideConsole()
     {
         _windowIdleTimer.Stop();
-        HideBubble(immediate: true);
         Hide();
         SetDailySleepState();
     }
@@ -96,23 +84,12 @@ public partial class ChatWindow : Window
         if (_subscribedViewModel is not null)
         {
             _subscribedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
-            _subscribedViewModel.Messages.CollectionChanged -= Messages_OnCollectionChanged;
-            foreach (var message in _subscribedViewModel.Messages)
-            {
-                message.PropertyChanged -= Message_OnPropertyChanged;
-            }
         }
 
-        _trackedAssistantMessage = null;
         _subscribedViewModel = viewModel;
         if (_subscribedViewModel is not null)
         {
             _subscribedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
-            _subscribedViewModel.Messages.CollectionChanged += Messages_OnCollectionChanged;
-            foreach (var message in _subscribedViewModel.Messages)
-            {
-                message.PropertyChanged += Message_OnPropertyChanged;
-            }
         }
     }
 
@@ -126,93 +103,10 @@ public partial class ChatWindow : Window
             ApplyModeVisuals();
         }
 
-        if (e.PropertyName is nameof(MainViewModel.BubbleText))
+        if (e.PropertyName is nameof(MainViewModel.BubbleText) or nameof(MainViewModel.IsCharacterSpeaking))
         {
-            if (_trackedAssistantMessage is null && _subscribedViewModel is not null)
-            {
-                SetBubbleText(_subscribedViewModel.BubbleText);
-            }
-
-            ShowBubble(allowEmpty: false);
             RestartWindowIdleTimer();
-            if (_subscribedViewModel is not { IsCharacterSpeaking: true })
-            {
-                ScheduleBubbleDismiss();
-            }
         }
-
-        if (e.PropertyName is nameof(MainViewModel.IsCharacterSpeaking))
-        {
-            if (_subscribedViewModel is { IsCharacterSpeaking: true })
-            {
-                ShowBubble(allowEmpty: true);
-                RestartWindowIdleTimer();
-            }
-            else
-            {
-                ScheduleBubbleDismiss();
-                RestartWindowIdleTimer();
-            }
-        }
-    }
-
-    private void Messages_OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.NewItems is not null)
-        {
-            foreach (var item in e.NewItems.OfType<ChatMessage>())
-            {
-                item.PropertyChanged += Message_OnPropertyChanged;
-                if (!item.IsUser)
-                {
-                    TrackAssistantMessage(item);
-                }
-            }
-        }
-
-        if (e.OldItems is not null)
-        {
-            foreach (var item in e.OldItems.OfType<ChatMessage>())
-            {
-                item.PropertyChanged -= Message_OnPropertyChanged;
-                if (ReferenceEquals(_trackedAssistantMessage, item))
-                {
-                    _trackedAssistantMessage = null;
-                }
-            }
-        }
-    }
-
-    private void Message_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (sender is not ChatMessage message || !ReferenceEquals(message, _trackedAssistantMessage))
-        {
-            return;
-        }
-
-        if (e.PropertyName is nameof(ChatMessage.Text) or nameof(ChatMessage.DisplayText) or nameof(ChatMessage.IsTyping))
-        {
-            SetBubbleText(message.DisplayText);
-            ShowBubble(allowEmpty: message.IsTyping);
-            RestartWindowIdleTimer();
-            if (!message.IsTyping && _subscribedViewModel is not { IsCharacterSpeaking: true })
-            {
-                ScheduleBubbleDismiss();
-            }
-        }
-    }
-
-    private void TrackAssistantMessage(ChatMessage message)
-    {
-        _trackedAssistantMessage = message;
-        SetBubbleText(message.DisplayText);
-        ShowBubble(allowEmpty: true);
-        RestartWindowIdleTimer();
-    }
-
-    private void SetBubbleText(string? text)
-    {
-        BubbleTextBlock.Text = text ?? string.Empty;
     }
 
     private void ApplyModeVisuals()
@@ -242,62 +136,14 @@ public partial class ChatWindow : Window
         });
 
         var animation = new ColorAnimation(targetColor, TimeSpan.FromMilliseconds(200));
-        BorderAccent.BeginAnimation(SolidColorBrush.ColorProperty, animation);
-    }
-
-    private void ShowBubble(bool allowEmpty = false)
-    {
-        if (!allowEmpty && string.IsNullOrWhiteSpace(BubbleTextBlock.Text))
+        if (InputPanel.BorderBrush is SolidColorBrush brush)
         {
-            return;
+            brush.BeginAnimation(SolidColorBrush.ColorProperty, animation);
         }
-
-        _bubbleDismissTimer.Stop();
-        BubbleHost.Visibility = Visibility.Visible;
-        BubbleHost.BeginAnimation(OpacityProperty, new DoubleAnimation
+        else
         {
-            To = 1,
-            Duration = TimeSpan.FromMilliseconds(180),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        });
-    }
-
-    private void ScheduleBubbleDismiss()
-    {
-        if (BubbleHost.Visibility != Visibility.Visible)
-        {
-            return;
+            InputPanel.BorderBrush = new SolidColorBrush(targetColor);
         }
-
-        _bubbleDismissTimer.Stop();
-        _bubbleDismissTimer.Start();
-    }
-
-    private void HideBubble(bool immediate = false)
-    {
-        _bubbleDismissTimer.Stop();
-        if (immediate)
-        {
-            BubbleHost.BeginAnimation(OpacityProperty, null);
-            BubbleHost.Opacity = 0;
-            BubbleHost.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        var animation = new DoubleAnimation
-        {
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(220),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        animation.Completed += (_, _) =>
-        {
-            if (BubbleHost.Opacity <= 0.01)
-            {
-                BubbleHost.Visibility = Visibility.Collapsed;
-            }
-        };
-        BubbleHost.BeginAnimation(OpacityProperty, animation);
     }
 
     private void RestartWindowIdleTimer()
@@ -328,23 +174,6 @@ public partial class ChatWindow : Window
         }
 
         HideConsole();
-    }
-
-    private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.ClickCount == 2)
-        {
-            ToggleAdvancedMode();
-            e.Handled = true;
-            return;
-        }
-
-        if (e.ButtonState == MouseButtonState.Pressed)
-        {
-            DragMove();
-            RememberManualPlacement();
-            RestartWindowIdleTimer();
-        }
     }
 
     private void InputPanel_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -407,11 +236,6 @@ public partial class ChatWindow : Window
     private void ToggleAdvancedMode()
     {
         _subscribedViewModel?.ToggleAdvancedMode();
-    }
-
-    private void CloseButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        HideConsole();
     }
 
     private void PromptTextBox_OnPreviewKeyDown(object sender, KeyEventArgs e)
