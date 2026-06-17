@@ -4,6 +4,8 @@ using System.Windows;
 using System.Windows.Threading;
 using LivingMetalGhost.Agents;
 using LivingMetalGhost.Core.Config;
+using LivingMetalGhost.Core.Facts;
+using LivingMetalGhost.Core.Facts.Meals.Kaist;
 using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Security;
 using LivingMetalGhost.Core.Services;
@@ -137,6 +139,9 @@ public partial class App : Application
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
         services.AddSingleton<SpriteDirector>();
+        services.AddSingleton<FactStore>();
+        services.AddSingleton<KaistMenuParser>();
+        services.AddSingleton<KaistMunjiMenuService>();
         services.AddSingleton<IntentRouter>();
         services.AddSingleton<SkillRegistry>();
         services.AddSingleton<ILlmProviderFactory, LlmProviderFactory>();
