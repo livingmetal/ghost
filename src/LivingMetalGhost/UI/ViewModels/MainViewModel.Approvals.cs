@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using LivingMetalGhost.Agents;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Services;
+using LivingMetalGhost.Core.Workspace;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LivingMetalGhost.UI.ViewModels;
@@ -10,6 +11,91 @@ public partial class MainViewModel
 {
     public ObservableCollection<PendingApprovalRequest> PendingApprovals { get; } = [];
 
+    // 승인 대기 중인 패치 제안을 Agent Dock 카드 id 로 보관한다(승인 전까지 적용하지 않는다).
+    private readonly Dictionary<string, PatchReviewItem> _pendingPatchReviews = new();
+
+    /// <summary>고급 응답에서 ghost-edit 제안을 찾아 승인 카드로 띄운다. 실제 적용은 승인 후에만 일어난다.</summary>
+    public void CapturePatchProposals(string responseText)
+    {
+        var workspaceStore = global::LivingMetalGhost.App.Services.GetRequiredService<WorkspaceStore>();
+        var root = workspaceStore.Load().RootPath;
+        if (string.IsNullOrWhiteSpace(root))
+        {
+            return;
+        }
+
+        var reviewService = global::LivingMetalGhost.App.Services.GetRequiredService<PatchReviewService>();
+        foreach (var item in reviewService.Review(root, responseText))
+        {
+            var label = item.IsNewFile ? "새 파일" : $"+{item.Diff.AddedCount}/-{item.Diff.RemovedCount}";
+            var job = new AgentJob
+            {
+                AgentType = "patch",
+                DisplayName = "패치 검토",
+                Title = item.Proposal.RelativePath,
+                Summary = $"{label} · 승인하면 이 파일에 적용합니다.\n\n{BuildDiffPreview(item.Diff)}",
+                Status = AgentJobStatus.WaitingApproval,
+                Progress = 0.0,
+                RequiresApproval = true,
+                ChangedFiles = new[] { item.Proposal.RelativePath }
+            };
+
+            _pendingPatchReviews[job.Id] = item;
+            ActiveAgentJobs.Add(job);
+        }
+
+        TrimAgentJobs();
+    }
+
+    private static string BuildDiffPreview(FileDiff diff)
+    {
+        const int maxPreviewLines = 16;
+        var shown = diff.Lines.Take(maxPreviewLines).Select(line => line.Kind switch
+        {
+            DiffLineKind.Added => "+ " + line.Text,
+            DiffLineKind.Removed => "- " + line.Text,
+            _ => "  " + line.Text
+        });
+
+        var preview = string.Join(Environment.NewLine, shown);
+        return diff.Lines.Count > maxPreviewLines
+            ? preview + Environment.NewLine + $"... (+{diff.Lines.Count - maxPreviewLines}줄 더)"
+            : preview;
+    }
+
+    private async Task ApplyPatchJobAsync(AgentJob job)
+    {
+        if (!_pendingPatchReviews.TryGetValue(job.Id, out var item))
+        {
+            job.Status = AgentJobStatus.Failed;
+            job.Summary = "대응되는 패치 제안을 찾지 못했습니다.";
+            return;
+        }
+
+        job.Status = AgentJobStatus.Applying;
+        job.Progress = 0.5;
+
+        var workspaceStore = global::LivingMetalGhost.App.Services.GetRequiredService<WorkspaceStore>();
+        var reviewService = global::LivingMetalGhost.App.Services.GetRequiredService<PatchReviewService>();
+        var result = await Task.Run(() =>
+            reviewService.Apply(workspaceStore.Load().RootPath, item.Proposal, approved: true));
+
+        job.Status = result.Success ? AgentJobStatus.Completed : AgentJobStatus.Failed;
+        job.Progress = 1.0;
+        job.Summary = result.Message;
+        _pendingPatchReviews.Remove(job.Id);
+
+        var evidence = result.Success
+            ? $"패치를 적용했어.\n\n파일: {result.RelativePath}\n{result.Message}"
+            : $"패치 적용이 실패했어.\n\n파일: {result.RelativePath}\n{result.Message}";
+        Messages.Add(new ChatMessage
+        {
+            SpeakerName = CharacterDisplayName.ToUpperInvariant(),
+            Text = evidence
+        });
+        BubbleText = evidence;
+    }
+
     partial void OnBubbleTextChanged(string value)
     {
         TryCreateGitFetchApprovalFromBubble(value);
@@ -17,6 +103,12 @@ public partial class MainViewModel
 
     public async Task ApproveAgentJobAsync(AgentJob job, CancellationToken cancellationToken)
     {
+        if (IsPatchJob(job))
+        {
+            await ApplyPatchJobAsync(job);
+            return;
+        }
+
         if (!IsApprovalJob(job))
         {
             return;
@@ -44,6 +136,14 @@ public partial class MainViewModel
 
     public async Task AlwaysApproveAgentJobAsync(AgentJob job, CancellationToken cancellationToken)
     {
+        if (IsPatchJob(job))
+        {
+            // 파일 쓰기는 절대 상시 승인하지 않는다. 이번 한 번만 적용한다.
+            job.Summary = "파일 적용은 매번 확인이 필요합니다. 이번만 적용합니다.";
+            await ApplyPatchJobAsync(job);
+            return;
+        }
+
         if (!IsApprovalJob(job))
         {
             return;
@@ -73,6 +173,15 @@ public partial class MainViewModel
 
     public void RejectAgentJob(AgentJob job)
     {
+        if (IsPatchJob(job))
+        {
+            _pendingPatchReviews.Remove(job.Id);
+            job.Status = AgentJobStatus.Cancelled;
+            job.Progress = 1.0;
+            job.Summary = "패치를 적용하지 않고 버렸습니다.";
+            return;
+        }
+
         if (!IsApprovalJob(job))
         {
             return;
@@ -145,6 +254,12 @@ public partial class MainViewModel
         return PendingApprovals.FirstOrDefault(approval =>
             approval.Status == PendingApprovalStatus.Pending &&
             string.Equals(approval.Command, command, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsPatchJob(AgentJob job)
+    {
+        return string.Equals(job.AgentType, "patch", StringComparison.OrdinalIgnoreCase) &&
+               job.Status is AgentJobStatus.WaitingApproval;
     }
 
     private static bool IsApprovalJob(AgentJob job)

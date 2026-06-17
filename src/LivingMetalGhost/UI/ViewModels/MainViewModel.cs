@@ -287,6 +287,11 @@ public partial class MainViewModel : ObservableObject
             CaptureAgentJobs(request, result);
             await DisplayAssistantResponseAsync(result.BubbleText, isProactive: false, assistantMood);
             await WriteLogAsync(request.RawText, result.BubbleText, isProactive: false, assistantMood);
+            if (IsAdvancedMode)
+            {
+                CapturePatchProposals(result.BubbleText);
+            }
+
             DispatchAppCommand(result.Action);
         }
         catch (Exception ex)
