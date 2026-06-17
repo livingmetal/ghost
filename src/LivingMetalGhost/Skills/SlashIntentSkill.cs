@@ -1,4 +1,5 @@
 using System.Globalization;
+using LivingMetalGhost.Core.Facts.Meals.Kaist;
 using LivingMetalGhost.Core.Models;
 
 namespace LivingMetalGhost.Skills;
@@ -16,6 +17,13 @@ public sealed class SlashIntentSkill : IGhostSkill
     private static readonly string[] KaistMenuWords = ["카이스트", "kaist", "문지", "문지캠퍼스", "식단", "학식", "구내식당", "점심", "중식", "조식", "아침", "석식", "저녁"];
     private static readonly string[] TimerWords = ["타이머", "알림", "리마인더", "분 뒤", "시간 뒤", "초 뒤", "timer"];
 
+    private readonly KaistMunjiMenuService _kaistMenuService;
+
+    public SlashIntentSkill(KaistMunjiMenuService kaistMenuService)
+    {
+        _kaistMenuService = kaistMenuService;
+    }
+
     public string Name => "SlashIntent";
     public string Description => "A single leading slash enters explicit basic-mode capability intent routing.";
     public IReadOnlyList<string> Examples => ["/지금 시간", "/오늘 날짜", "/문지 점심", "/10분 뒤 물 마시기"];
@@ -25,20 +33,20 @@ public sealed class SlashIntentSkill : IGhostSkill
         return !request.UseAdvancedModel && IsSlashIntent(request.RawText);
     }
 
-    public Task<SkillResult> HandleAsync(UserRequest request, CancellationToken ct)
+    public async Task<SkillResult> HandleAsync(UserRequest request, CancellationToken ct)
     {
         var intentText = ExtractIntentText(request.RawText);
         var response = string.IsNullOrWhiteSpace(intentText)
             ? BuildHelpText()
-            : HandleIntent(intentText);
+            : await HandleIntentAsync(intentText, ct);
 
-        return Task.FromResult(new SkillResult
+        return new SkillResult
         {
             BubbleText = response,
             Mood = "speaking",
             Action = "slash-intent",
             UsedLlm = false
-        });
+        };
     }
 
     public static bool IsSlashIntent(string rawText)
@@ -63,7 +71,7 @@ public sealed class SlashIntentSkill : IGhostSkill
         return rawText.TrimStart()[1..].Trim();
     }
 
-    private static string HandleIntent(string text)
+    private async Task<string> HandleIntentAsync(string text, CancellationToken ct)
     {
         if (ContainsAny(text, HelpWords))
         {
@@ -79,7 +87,7 @@ public sealed class SlashIntentSkill : IGhostSkill
 
         if (ContainsAny(text, KaistMenuWords))
         {
-            return "기능 의도는 KAIST 문지캠퍼스 식단 조회로 보였어. 아직 식단 파서/수집기 모듈은 연결 전이라, 다음 단계에서 /문지 점심 같은 입력을 실제 식단 조회로 이어 붙이면 돼.";
+            return await _kaistMenuService.GetTodayMenuTextAsync(text, ct);
         }
 
         if (ContainsAny(text, TimerWords))
@@ -133,7 +141,7 @@ public sealed class SlashIntentSkill : IGhostSkill
 
     private static string BuildHelpText()
     {
-        return "슬래시 기능 의도 모드야. 입력의 첫 유효 문자가 /이고 //가 아니면 일반 대화 대신 기능 실행 의도로 해석해. 지금은 /지금 시간, /오늘 날짜를 바로 처리하고, /문지 점심과 /10분 뒤 알림은 다음 모듈 연결 대상으로 분류해.";
+        return "슬래시 기능 의도 모드야. 입력의 첫 유효 문자가 /이고 //가 아니면 일반 대화 대신 기능 실행 의도로 해석해. 지금은 /지금 시간, /오늘 날짜를 바로 처리하고, /문지 점심은 KAIST 문지캠퍼스 식단 조회로 연결해.";
     }
 
     private static bool ContainsAny(string text, IEnumerable<string> words)
