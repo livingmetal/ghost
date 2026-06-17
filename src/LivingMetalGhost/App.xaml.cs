@@ -155,6 +155,7 @@ public partial class App : Application
         services.AddSingleton<CodexCliExecutor>();
 
         services.AddSingleton<ChatSkill>();
+        services.AddSingleton<SlashIntentSkill>();
         services.AddSingleton<TranslateSkill>();
         services.AddSingleton<AppCommandSkill>();
         services.AddSingleton<GitCommandSkill>();
