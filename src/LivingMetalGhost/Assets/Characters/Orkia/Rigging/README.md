@@ -31,8 +31,24 @@ full-body master pose
 |---|---|
 | `POSE_PLAN.md` | 표준 포즈, 단계, 구현 우선순위 |
 | `rig-manifest.draft.json` | 전신 포즈 좌표, anchor, slot, 상태 매핑 draft |
+| `RUNTIME_DESIGN.md` | WPF 런타임 렌더러, fallback, animation 구조 |
+| `ASSET_PIPELINE.md` | PNG 파츠 제작, export, 검수 절차 |
+| `IMPLEMENTATION_PLAN.md` | 코드 구현 단계와 완료 기준 |
 | `body-templates/*.svg` | 전신 포즈 실루엣 가이드 |
 | `outfits/developer_hoodie/outfit.draft.json` | 포즈별 의상 오버레이 구조 예시 |
+
+## Read order
+
+처음 작업자는 다음 순서로 읽는다.
+
+```text
+README.md
+  -> POSE_PLAN.md
+  -> ASSET_PIPELINE.md
+  -> RUNTIME_DESIGN.md
+  -> IMPLEMENTATION_PLAN.md
+  -> rig-manifest.draft.json
+```
 
 ## Standard pose set
 
@@ -94,6 +110,34 @@ concerned
 3. PNG export는 항상 전체 캔버스 기준으로 한다.
 4. 파일은 `parts/`, `outfits/`, `accessories/` 아래에 넣는다.
 5. `rig-manifest.draft.json` 또는 각 outfit/accessory draft에 slot과 경로를 추가한다.
+6. `RUNTIME_DESIGN.md`의 fallback 규칙에 맞춰 앱에 연결한다.
+
+## Development path
+
+리깅 개발은 다음 흐름으로 진행한다.
+
+```text
+1. Data only
+   docs, pose templates, rig manifest draft
+
+2. Manifest loader
+   JSON load, validation, missing-rig fallback
+
+3. Asset resolver
+   state -> pose -> slot image paths
+
+4. Static rig renderer
+   WPF Canvas + Image slot z-order
+
+5. Minimal animation
+   breathing, blink, mouth flap, tiny head sway
+
+6. Expression rig
+   thinking, concerned, soft-smile face parts
+
+7. Outfit/accessory slots
+   body_base swap first, detailed clothes split later
+```
 
 ## Avoid
 
@@ -101,4 +145,5 @@ concerned
 - 포즈마다 캔버스 크기나 바닥선을 바꾸는 것.
 - 승인된 `CharacterBases/` 이미지를 직접 수정하는 것.
 - 의상 PNG를 실제 보이는 부분만 잘라서 export하는 것.
+- 처음부터 mesh deform, hair physics, cloth simulation을 구현하는 것.
 - 팔짱, 망토, 큰 모자 같은 실루엣 변경 의상을 첫 단계에 넣는 것.
