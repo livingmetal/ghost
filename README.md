@@ -48,6 +48,14 @@ The project is commonly built for:
 - `win-x64`
 - `win-arm64`
 
+Build scripts resolve `dotnet` from `PATH` first. If `dotnet` is installed in a non-standard location, set `LIVINGMETAL_DOTNET` to the full path of the dotnet executable instead of editing scripts.
+
+Example:
+
+```powershell
+$env:LIVINGMETAL_DOTNET = "D:\tools\dotnet\dotnet.exe"
+```
+
 ## Run
 
 ```powershell
@@ -74,6 +82,8 @@ Optional publish verification:
 .\scripts\verify.ps1 -PublishRuntimeIdentifier win-arm64
 ```
 
+The verification script restores and builds the WPF project. Optional publish verification delegates to `publish.ps1` for the selected runtime. Do not claim completion without recording the exact verification command and result.
+
 ## Publish
 
 Default publish:
@@ -93,6 +103,8 @@ x64 publish:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\publish.ps1 -RuntimeIdentifier win-x64
 ```
+
+`publish-all.ps1` publishes both ARM64 and x64 executables.
 
 ## Data Path
 
