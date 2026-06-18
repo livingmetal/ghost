@@ -1,0 +1,62 @@
+{
+  "identity_tokens": [
+    "same character as approved Orkia reference",
+    "purple eyes",
+    "long pointed elf ears",
+    "dark purple long hair tied high",
+    "white shirt",
+    "black tie",
+    "black pleated skirt near the knees",
+    "black stockings",
+    "black lace-up boots",
+    "black developer hoodie with blue stripes and small diamond accent"
+  ],
+  "style_tokens": [
+    "preserve approved silhouette",
+    "preserve facial proportions",
+    "full-body master-pose based character design",
+    "modern operations-room outfit adapted from a fantasy elf origin"
+  ],
+  "negative_tokens": [
+    "do not change eye color",
+    "do not shorten elf ears",
+    "do not change hair color",
+    "do not remove tie",
+    "do not shorten skirt excessively",
+    "do not remove stockings or boots",
+    "do not replace the developer hoodie",
+    "do not add armor",
+    "do not add cape",
+    "do not add large jewels",
+    "do not add maid decorations",
+    "do not add fantasy battle gear",
+    "do not distort face shape"
+  ],
+  "reference_images": [
+    "References/orkia-fullbody-alpha-refined-v1.png",
+    "CharacterBases/approved-neutral.png",
+    "CharacterBases/approved-soft-smile.png",
+    "CharacterBases/approved-thinking.png",
+    "CharacterBases/approved-strict.png"
+  ],
+  "view_prompt_overrides": {
+    "full-body": "full-body composition, entire silhouette visible",
+    "three-quarter": "three-quarter framing, cropped from the same full-body character basis",
+    "upper-body": "upper-body framing, same character basis without redesign"
+  },
+  "pose_prompt_overrides": {
+    "neutral_stand": "neutral standing pose",
+    "thinking_tilt": "slight head tilt, reflective pose",
+    "explain_hand": "one-hand explanation gesture"
+  },
+  "mood_prompt_overrides": {
+    "soft-smile": "gentle soft smile",
+    "thinking": "reflective thinking expression",
+    "strict": "firm serious expression",
+    "surprised": "controlled surprised reaction",
+    "concerned": "concerned but composed expression",
+    "curious": "curious explanatory expression",
+    "skeptical": "doubtful review expression",
+    "determined": "focused determined expression"
+  }
+}
