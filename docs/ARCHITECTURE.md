@@ -274,18 +274,14 @@ step.
 
 ## Known Repository Debt
 
-### Legacy Duplicate Tree
+### Legacy Duplicate Tree Cleanup
 
-`src/LivingMetalGhost/Ghost` contains a tracked historical copy of source,
-assets, scripts, and documentation. The active project excludes `Ghost/**` from
-compile, page, resource, and content items.
+The historical `src/LivingMetalGhost/Ghost` source snapshot was inventoried and
+removed after the architecture checkpoint. Exact duplicate runtime files and
+superseded code were deleted. Character source-art files with no active
+equivalent were preserved under `authoring/Characters`.
 
-Treat this tree as legacy data:
-
-- do not edit it during normal feature work;
-- do not use it as an implementation reference without comparing active files;
-- do not delete it until references and unique assets are inventoried;
-- remove the project exclusion only as part of an intentional cleanup.
+The main project no longer needs special `Ghost/**` exclusion rules.
 
 ### Mixed Runtime and Asset-Authoring Files
 
@@ -293,6 +289,11 @@ Character directories contain runtime manifests and sprites alongside reference
 images, work files, scripts, and future rigging documents. A later cleanup
 should define separate runtime, source-art, and design locations without changing
 asset paths in the same step.
+
+Newly recovered legacy source art is already separated under `authoring/`; the
+remaining `_work`, `_original`, `References`, and `Rigging` content inside
+runtime character directories still requires a separate path and copy-rule
+audit.
 
 ### Large Coordination Classes
 

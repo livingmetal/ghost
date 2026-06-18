@@ -33,8 +33,8 @@ changes must be separated from intended refactoring.
 
 - `AGENT.md`, `AGENTS.md`, `README.md`, and `plans/*` previously mixed current
   rules, handoff notes, implementation details, and future roadmaps.
-- `src/LivingMetalGhost/Ghost` contains 251 tracked legacy duplicate files and is
-  excluded from the active project by explicit MSBuild rules.
+- `src/LivingMetalGhost/Ghost` contained 251 tracked legacy duplicate files and
+  was excluded from the active project by explicit MSBuild rules.
 - `MainViewModel` coordinates UI state, conversations, Story flow, sprite state,
   logging, approvals, agent jobs, patch proposals, and app commands.
 - `ConversationService` owns common chat, Story chat, Advanced context, history,
@@ -208,7 +208,8 @@ Perform only after baseline confirmation and inventory.
 
 ### Delete Candidates
 
-- `src/LivingMetalGhost/Ghost` after unique-file comparison and reference audit;
+- [x] `src/LivingMetalGhost/Ghost` after unique-file comparison and reference
+  audit;
 - tracked `__pycache__/*.pyc`;
 - obsolete duplicate READMEs after their unique content is merged;
 - generated work intermediates proven reproducible and unused.
@@ -230,6 +231,15 @@ Perform only after baseline confirmation and inventory.
   this refactor.
 
 Do not combine deletion, asset-path changes, and renderer changes in one step.
+
+Legacy-tree cleanup completed:
+
+- compared all 251 tracked files by Git blob hash;
+- identified 187 byte-identical duplicates;
+- preserved unique Orkia body/face/hair/head/reference source art and ssyong
+  normalization tools under `authoring/Characters`;
+- removed superseded legacy code and duplicate runtime assets;
+- removed obsolete `Ghost/**` project exclusion rules.
 
 System folder slice completed before repository cleanup:
 

@@ -14,14 +14,6 @@
     <Using Remove="System.Windows.Forms" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Ghost\**\*" />
-    <Page Remove="Ghost\**\*" />
-    <None Remove="Ghost\**\*" />
-    <Content Remove="Ghost\**\*" />
-    <EmbeddedResource Remove="Ghost\**\*" />
-  </ItemGroup>
-
   <Target Name="GenerateApplicationIconFromSsyongIdle" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <SsyongIdlePng>$(MSBuildProjectDirectory)\Assets\Characters\ssyong\sleep.png</SsyongIdlePng>

@@ -57,10 +57,9 @@ the canonical documents above.
 - Character runtime assets: `src/LivingMetalGhost/Assets/Characters`
 - Future plans: `plans`
 
-`src/LivingMetalGhost/Ghost` is a tracked legacy duplicate tree excluded by the
-main project file. Do not edit it as if it were active source. Do not delete or
-move it without a dedicated inventory, reference check, and approved cleanup
-step.
+Legacy source-art files that are not shipped at runtime are stored under
+`authoring/Characters`. Do not reference that directory from runtime manifests
+or include it in publish output without a dedicated asset-pipeline change.
 
 ## Change Discipline
 
