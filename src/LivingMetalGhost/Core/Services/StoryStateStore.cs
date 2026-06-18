@@ -209,7 +209,7 @@ public sealed class StoryStateStore
         }
 
         builder.Append(
-            "\n\n입력 규칙:\n그냥 쓰면 대사로 처리됩니다.\n*이렇게 쓰면 행동이나 상황 설명입니다.*\n(이렇게 쓰면 속마음입니다.)");
+            "\n\n입력 규칙:\n그냥 쓰면 대사로 처리됩니다.\n**이렇게 쓰면 행동이나 상황 설명입니다.**\n*이렇게 쓰면 일반 이탤릭 강조입니다.*\n(이렇게 쓰면 속마음입니다.)");
         return builder.ToString().Trim();
     }
 
