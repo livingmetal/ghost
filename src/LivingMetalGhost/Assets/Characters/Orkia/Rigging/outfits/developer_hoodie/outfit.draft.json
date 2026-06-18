@@ -4,7 +4,7 @@
   "display_name": "Developer Hoodie",
   "character_id": "orkia",
   "status": "draft",
-  "fit_target": "../..//rig-manifest.draft.json",
+  "fit_target": "../../rig-manifest.draft.json",
   "notes": [
     "This draft describes how outfit sprites should be organized against Orkia's standard pose templates.",
     "Do not draw final outfit art into the body template SVGs.",
