@@ -5,7 +5,7 @@ LivingMetalGhost is a Windows desktop LLM character assistant inspired by modern
 It is intended to be:
 
 - a lightweight desktop character for daily conversation,
-- a visual-novel/ORPG-style partner in roleplay mode,
+- a visual-novel partner in roleplay mode,
 - and a practical workbench for advanced agent-assisted tasks.
 
 The project targets a WPF single-file deployment model and keeps LLM providers, character assets, prompts, tools, and future agent integrations replaceable.
@@ -16,11 +16,11 @@ Ghost is organized around three user-facing modes:
 
 1. **Daily mode**
    - Normal character-flavored assistant conversation.
-   - No local command execution.
+   - agent base local command execution.
    - No Git, build, or file operations.
 
 2. **Roleplay mode**
-   - Fictional visual-novel/ORPG-style interaction.
+   - Fictional visual-novel style interaction.
    - User input syntax:
 
      ```text
@@ -38,16 +38,6 @@ Ghost is organized around three user-facing modes:
    - Future Codex/Claude Code style agent integration belongs here.
    - Local commands and workspace-changing actions must be approval-gated.
 
-## Requirements
-
-- Windows 10/11
-- .NET 10 SDK
-- WPF-capable Windows environment
-
-The project is commonly built for:
-
-- `win-x64`
-- `win-arm64`
 
 Build scripts resolve `dotnet` from `PATH` first. If `dotnet` is installed in a non-standard location, set `LIVINGMETAL_DOTNET` to the full path of the dotnet executable instead of editing scripts.
 
@@ -120,10 +110,8 @@ Runtime user data is stored under:
 Current and planned provider directions include:
 
 - Mock
-- OpenAI-Compatible endpoints
 - Gemini
 - OpenAI
-- Ollama
 - Future advanced-mode Codex/Claude Code style integrations
 
 Provider-specific behavior should remain isolated. Character prompts, mode prompts, and tool-routing prompts should not be tangled together.
