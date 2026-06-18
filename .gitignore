@@ -15,3 +15,5 @@ DesignSamples/
 *.pdb
 *.cache
 *.tmp
+__pycache__/
+*.pyc

@@ -4,14 +4,18 @@ Poisson seamless cloning transfers idle's eye detail while matching blink's
 skin tone / lighting at the boundary -> looks redrawn, no visible seam.
 Alpha is locked to blink so the silhouette stays pixel-identical.
 """
-import os
+from pathlib import Path
 import numpy as np
 import cv2
 from PIL import Image, ImageDraw, ImageFilter
 
-D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-blink = Image.open(os.path.join(D, "yakumo-blink.png")).convert("RGBA")
-idle = Image.open(os.path.join(D, "yakumo-idle.png")).convert("RGBA")
+WORK = Path(__file__).resolve().parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+RUNTIME_DIR = (
+    REPOSITORY_ROOT / "src" / "LivingMetalGhost" / "Assets" / "Characters" / "Yakumo"
+)
+blink = Image.open(RUNTIME_DIR / "yakumo-blink.png").convert("RGBA")
+idle = Image.open(RUNTIME_DIR / "yakumo-idle.png").convert("RGBA")
 
 # eye regions in shared coords (idle ~ blink position, head tilt -> left eye lower)
 EYES = [
@@ -31,7 +35,7 @@ for e in EYES:
 
 res_rgb = cv2.cvtColor(dst, cv2.COLOR_BGR2RGB)
 res = np.dstack([res_rgb, np.array(blink)[:, :, 3]])   # lock alpha to blink
-Image.fromarray(res).save(os.path.join(D, "_work", "out_idle2.png"))
+Image.fromarray(res).save(WORK / "out_idle2.png")
 
 
 def prev(arr, fn, box=None, sc=6):
@@ -40,7 +44,7 @@ def prev(arr, fn, box=None, sc=6):
     bg = bg.convert("RGB")
     if box:
         bg = bg.crop(box).resize(((box[2]-box[0])*sc, (box[3]-box[1])*sc))
-    bg.save(os.path.join(D, "_work", fn))
+    bg.save(WORK / fn)
 
 
 prev(res, "p2_full.png")

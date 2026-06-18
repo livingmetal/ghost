@@ -13,9 +13,9 @@ from working_realign import (make_transparent, main_blob_mask, body_mask,
                              register, CANVAS_W, CANVAS_H, TARGET_BODY_W,
                              GROUND_Y, CENTER_X)
 
-SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ORIG = os.path.join(SRC, "_original")
-WORK = os.path.join(SRC, "_work")
+WORK = os.path.dirname(os.path.abspath(__file__))
+AUTHORING_ROOT = os.path.dirname(WORK)
+ORIG = os.path.join(AUTHORING_ROOT, "Originals")
 
 
 def placed(im, final_scale, ox, oy):

@@ -4,13 +4,17 @@ Build yakumo-idle from yakumo-blink (eyes-open variant sharing blink's silhouett
   result = base with the OPEN eyes transplanted from the original yakumo-idle,
            aligned per-eye, then alpha locked to base -> identical silhouette.
 """
-import os, sys
+from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-blink = Image.open(os.path.join(D, "yakumo-blink.png")).convert("RGBA")
-idle = Image.open(os.path.join(D, "yakumo-idle.png")).convert("RGBA")
+WORK = Path(__file__).resolve().parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+RUNTIME_DIR = (
+    REPOSITORY_ROOT / "src" / "LivingMetalGhost" / "Assets" / "Characters" / "Yakumo"
+)
+blink = Image.open(RUNTIME_DIR / "yakumo-blink.png").convert("RGBA")
+idle = Image.open(RUNTIME_DIR / "yakumo-idle.png").convert("RGBA")
 
 # per-eye: (blink_center_x, blink_center_y, idle_center_x, idle_center_y, rx, ry)
 # offset applied = blink_center - idle_center
@@ -36,7 +40,7 @@ for e in EYES:
 # lock alpha to blink so silhouette is pixel-identical
 arr = np.array(res); arr[:, :, 3] = np.array(blink)[:, :, 3]
 res = Image.fromarray(arr)
-res.save(os.path.join(D, "_work", "out_idle.png"))
+res.save(WORK / "out_idle.png")
 
 # previews on light + zoom
 def prev(im, fn, box=None, sc=4):
@@ -44,7 +48,7 @@ def prev(im, fn, box=None, sc=4):
     bg = bg.convert("RGB")
     if box:
         bg = bg.crop(box).resize(((box[2]-box[0])*sc, (box[3]-box[1])*sc))
-    bg.save(os.path.join(D, "_work", fn))
+    bg.save(WORK / fn)
 
 prev(res, "prev_idle_full.png")
 prev(res, "prev_idle_eyes.png", (430, 240, 630, 310))

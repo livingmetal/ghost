@@ -283,17 +283,15 @@ equivalent were preserved under `authoring/Characters`.
 
 The main project no longer needs special `Ghost/**` exclusion rules.
 
-### Mixed Runtime and Asset-Authoring Files
+### Runtime and Authoring Asset Separation
 
-Character directories contain runtime manifests and sprites alongside reference
-images, work files, scripts, and future rigging documents. A later cleanup
-should define separate runtime, source-art, and design locations without changing
-asset paths in the same step.
+`src/LivingMetalGhost/Assets/Characters` contains shipped manifests, runtime
+metadata, and sprite files. Source art, references, intermediate files, offline
+tools, and future rigging drafts are stored under `authoring/Characters`.
 
-Newly recovered legacy source art is already separated under `authoring/`; the
-remaining `_work`, `_original`, `References`, and `Rigging` content inside
-runtime character directories still requires a separate path and copy-rule
-audit.
+MSBuild exclusion guards prevent `_work`, `_original`, `References`, `Rigging`,
+and Python cache directories from entering build or publish output if they are
+accidentally added below runtime assets.
 
 ### Large Coordination Classes
 

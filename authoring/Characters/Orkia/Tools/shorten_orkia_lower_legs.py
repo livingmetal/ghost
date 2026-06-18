@@ -3,16 +3,7 @@ from pathlib import Path
 from PIL import Image
 
 
-ROOT = Path(__file__).resolve().parents[1]
-REFERENCES = (
-    ROOT
-    / "src"
-    / "LivingMetalGhost"
-    / "Assets"
-    / "Characters"
-    / "Orkia"
-    / "References"
-)
+REFERENCES = Path(__file__).resolve().parents[1] / "References"
 SOURCE = REFERENCES / "orkia-fullbody-user-ratio-alpha-v1.png"
 OUTPUT = REFERENCES / "orkia-fullbody-shorter-legs-alpha-v2.png"
 

@@ -44,9 +44,15 @@ runtime build or publish output.
 - obsolete scaffold models and configuration;
 - historical project files and documentation.
 
-## Follow-up
+## Runtime Asset Cleanup
 
-The active runtime character tree still contains `_work`, `_original`,
-`References`, and `Rigging` material. Move those only after verifying project
-copy rules, runtime manifest references, and reproducibility of generated
-assets.
+The active runtime character tree was audited after the legacy snapshot
+removal. Runtime manifests did not reference `_work`, `_original`, `References`,
+or `Rigging` directories.
+
+Those directories were moved to `authoring/Characters`. Orkia offline scripts
+were moved with their inputs and updated to separate authoring inputs from
+runtime sprite outputs. Two tracked Python bytecode cache files were deleted.
+
+The project file retains explicit exclusion guards for authoring directory
+names in case they are accidentally reintroduced under runtime assets.

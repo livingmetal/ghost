@@ -210,15 +210,15 @@ Perform only after baseline confirmation and inventory.
 
 - [x] `src/LivingMetalGhost/Ghost` after unique-file comparison and reference
   audit;
-- tracked `__pycache__/*.pyc`;
+- [x] tracked `__pycache__/*.pyc`;
 - obsolete duplicate READMEs after their unique content is merged;
 - generated work intermediates proven reproducible and unused.
 
 ### Move Candidates
 
-- character `_work` files and reference art out of runtime asset paths;
-- Orkia rigging design documents to an authoring/design area;
-- asset-processing scripts to a dedicated tools or authoring directory;
+- [x] character `_work` files and reference art out of runtime asset paths;
+- [x] Orkia rigging design documents to an authoring/design area;
+- [x] asset-processing scripts to a dedicated tools or authoring directory;
 - stable architecture decisions from completed plans into `docs/`.
 
 ### Rename Candidates

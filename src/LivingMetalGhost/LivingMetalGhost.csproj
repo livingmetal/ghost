@@ -42,7 +42,7 @@
     <Resource Remove="Assets\Characters\**\*.png" />
     <None Remove="Assets\Characters\**\*.*" />
     <Content Include="Assets\Characters\**\*.*"
-             Exclude="Assets\Characters\**\_backup*\**\*.*;Assets\Characters\**\References\**\*.*">
+             Exclude="Assets\Characters\**\_backup*\**\*.*;Assets\Characters\**\_original\**\*.*;Assets\Characters\**\_work\**\*.*;Assets\Characters\**\References\**\*.*;Assets\Characters\**\Rigging\**\*.*;Assets\Characters\**\__pycache__\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -50,7 +50,7 @@
   <Target Name="CopyCharacterAssets" AfterTargets="Build;Publish">
     <ItemGroup>
       <CharacterAssetFiles Include="Assets\Characters\**\*.*"
-                           Exclude="Assets\Characters\**\_backup*\**\*.*;Assets\Characters\**\References\**\*.*" />
+                           Exclude="Assets\Characters\**\_backup*\**\*.*;Assets\Characters\**\_original\**\*.*;Assets\Characters\**\_work\**\*.*;Assets\Characters\**\References\**\*.*;Assets\Characters\**\Rigging\**\*.*;Assets\Characters\**\__pycache__\**\*.*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(CharacterAssetFiles)"

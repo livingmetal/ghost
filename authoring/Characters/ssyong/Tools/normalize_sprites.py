@@ -152,12 +152,25 @@ def main() -> int:
     parser.add_argument("--canvas", type=parse_canvas, default=DEFAULT_CANVAS)
     parser.add_argument("--anchor-y-offset", type=int, default=DEFAULT_ANCHOR_Y_OFFSET)
     parser.add_argument("--out", default="normalized")
+    parser.add_argument(
+        "--base-dir",
+        type=Path,
+        default=(
+            Path(__file__).resolve().parents[4]
+            / "src"
+            / "LivingMetalGhost"
+            / "Assets"
+            / "Characters"
+            / "ssyong"
+        ),
+        help="runtime ssyong asset directory",
+    )
     parser.add_argument("--apply", action="store_true", help="overwrite original PNGs after creating a backup")
     parser.add_argument("--repair-empty", action="store_true", help="copy fallback sprites into empty referenced files")
     parser.add_argument("--all-png", action="store_true", help="process every PNG in the folder, not only manifest references")
     args = parser.parse_args()
 
-    base_dir = Path(__file__).resolve().parent
+    base_dir = args.base_dir.resolve()
     manifest_path = base_dir / "manifest.json"
 
     if args.all_png:

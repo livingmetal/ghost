@@ -3,16 +3,19 @@ from pathlib import Path
 from PIL import Image
 
 
-ROOT = Path(__file__).resolve().parents[1]
-ORKIA = ROOT / "src" / "LivingMetalGhost" / "Assets" / "Characters" / "Orkia"
-BASE = ORKIA / "References" / "orkia-fullbody-shorter-legs-alpha-v2.png"
+AUTHORING_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+RUNTIME_ORKIA = (
+    REPOSITORY_ROOT / "src" / "LivingMetalGhost" / "Assets" / "Characters" / "Orkia"
+)
+BASE = AUTHORING_ROOT / "References" / "orkia-fullbody-shorter-legs-alpha-v2.png"
 SOURCE = (
-    ORKIA
-    / "CharacterBases"
-    / "_backup_fullbody_crop_20260613"
+    AUTHORING_ROOT
+    / "SourceBases"
+    / "fullbody-crop-20260613"
     / "approved-arms-crossed.png"
 )
-OUTPUT = ORKIA / "CharacterBases" / "approved-arms-crossed.png"
+OUTPUT = RUNTIME_ORKIA / "CharacterBases" / "approved-arms-crossed.png"
 
 
 def alpha_bbox(image: Image.Image) -> tuple[int, int, int, int]:
@@ -25,9 +28,9 @@ def alpha_bbox(image: Image.Image) -> tuple[int, int, int, int]:
 base = Image.open(BASE).convert("RGBA")
 source = Image.open(SOURCE).convert("RGBA")
 neutral = Image.open(
-    ORKIA
-    / "CharacterBases"
-    / "_backup_fullbody_crop_20260613"
+    AUTHORING_ROOT
+    / "SourceBases"
+    / "fullbody-crop-20260613"
     / "approved-neutral.png"
 ).convert("RGBA")
 

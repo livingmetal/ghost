@@ -11,8 +11,9 @@ import numpy as np
 from collections import deque
 from PIL import Image
 
-SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../ssyong
-OUT = os.path.join(SRC, "_work", "out")
+WORK = os.path.dirname(os.path.abspath(__file__))
+SRC = os.path.join(os.path.dirname(WORK), "Originals")
+OUT = os.path.join(WORK, "out")
 os.makedirs(OUT, exist_ok=True)
 
 CANVAS_W, CANVAS_H = 1024, 640

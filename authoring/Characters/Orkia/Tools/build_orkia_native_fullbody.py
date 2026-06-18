@@ -3,11 +3,14 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageFilter
 
 
-ROOT = Path(__file__).resolve().parents[1]
-ORKIA = ROOT / "src" / "LivingMetalGhost" / "Assets" / "Characters" / "Orkia"
-CHARACTER_BASES = ORKIA / "CharacterBases"
-SOURCE_BASES = CHARACTER_BASES / "_backup_fullbody_crop_20260613"
-FULL_BODY_BASE = ORKIA / "References" / "orkia-fullbody-shorter-legs-alpha-v2.png"
+AUTHORING_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
+RUNTIME_ORKIA = (
+    REPOSITORY_ROOT / "src" / "LivingMetalGhost" / "Assets" / "Characters" / "Orkia"
+)
+CHARACTER_BASES = RUNTIME_ORKIA / "CharacterBases"
+SOURCE_BASES = AUTHORING_ROOT / "SourceBases" / "fullbody-crop-20260613"
+FULL_BODY_BASE = AUTHORING_ROOT / "References" / "orkia-fullbody-shorter-legs-alpha-v2.png"
 NEUTRAL_SOURCE = SOURCE_BASES / "approved-neutral.png"
 MISSING_POSE_FALLBACKS = {
     "approved-apologetic.png": "approved-thinking-blush.png",

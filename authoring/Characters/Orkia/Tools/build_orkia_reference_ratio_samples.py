@@ -3,11 +3,10 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 
-ROOT = Path(__file__).resolve().parents[1]
-ORKIA = ROOT / "src" / "LivingMetalGhost" / "Assets" / "Characters" / "Orkia"
-BASE = ORKIA / "References" / "orkia-fullbody-user-ratio-alpha-v1.png"
-SOURCE = ORKIA / "CharacterBases" / "_backup_fullbody_crop_20260613"
-OUTPUT = ORKIA / "References" / "reference-ratio-samples"
+AUTHORING_ROOT = Path(__file__).resolve().parents[1]
+BASE = AUTHORING_ROOT / "References" / "orkia-fullbody-user-ratio-alpha-v1.png"
+SOURCE = AUTHORING_ROOT / "SourceBases" / "fullbody-crop-20260613"
+OUTPUT = AUTHORING_ROOT / "References" / "reference-ratio-samples"
 
 
 def alpha_bbox(image: Image.Image) -> tuple[int, int, int, int]:

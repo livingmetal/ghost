@@ -28,19 +28,11 @@ class Paths:
 
 
 def load_paths() -> Paths:
-    root = Path(r"C:\workspace\livingmetal\temporory\ghost")
+    root = Path(__file__).resolve().parents[4]
+    authoring_root = Path(__file__).resolve().parents[1]
     base_dir = root / "src" / "LivingMetalGhost" / "Assets" / "Characters" / "Orkia" / "CharacterBases"
-    reference_path = (
-        root
-        / "src"
-        / "LivingMetalGhost"
-        / "Assets"
-        / "Characters"
-        / "Orkia"
-        / "References"
-        / "orkia-fullbody-neutral-reference-v1.png"
-    )
-    backup_dir = base_dir / "_backup_fullbody_crop_20260613"
+    reference_path = authoring_root / "References" / "orkia-fullbody-neutral-reference-v1.png"
+    backup_dir = authoring_root / "SourceBases" / "fullbody-crop-20260613"
     return Paths(root, base_dir, reference_path, backup_dir)
 
 

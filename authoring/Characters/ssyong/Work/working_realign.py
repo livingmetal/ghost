@@ -11,9 +11,9 @@ import numpy as np
 from collections import deque
 from PIL import Image
 
-SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ORIG = os.path.join(SRC, "_original")
-OUT = os.path.join(SRC, "_work", "out")
+WORK = os.path.dirname(os.path.abspath(__file__))
+ORIG = os.path.join(os.path.dirname(WORK), "Originals")
+OUT = os.path.join(WORK, "out")
 
 CANVAS_W, CANVAS_H = 1024, 640
 TARGET_BODY_W = 720
