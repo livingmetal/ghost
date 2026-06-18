@@ -11,7 +11,6 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $root "src\LivingMetalGhost\LivingMetalGhost.csproj"
 $publishScript = Join-Path $root "publish.ps1"
-$fallbackDotnet = "C:\Users\livin\Documents\Codex\dotnet\dotnet.exe"
 
 function Resolve-DotNet {
     $dotnetCommand = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -20,11 +19,16 @@ function Resolve-DotNet {
         return $dotnetCommand.Source
     }
 
-    if (Test-Path $fallbackDotnet) {
-        return $fallbackDotnet
+    if (-not [string]::IsNullOrWhiteSpace($env:LIVINGMETAL_DOTNET)) {
+        $configuredDotnet = [Environment]::ExpandEnvironmentVariables($env:LIVINGMETAL_DOTNET)
+        if (Test-Path -LiteralPath $configuredDotnet) {
+            return (Resolve-Path -LiteralPath $configuredDotnet).Path
+        }
+
+        throw "LIVINGMETAL_DOTNET is set but the dotnet executable was not found: $configuredDotnet"
     }
 
-    throw "dotnet SDK was not found in PATH or fallback location. Install .NET 10 SDK or update scripts/verify.ps1."
+    throw "dotnet SDK was not found in PATH. Install the .NET 10 SDK or set LIVINGMETAL_DOTNET to the dotnet executable path."
 }
 
 function Invoke-Step {
