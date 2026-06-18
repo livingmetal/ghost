@@ -10,6 +10,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $root "src\LivingMetalGhost\LivingMetalGhost.csproj"
+$testProject = Join-Path $root "tests\LivingMetalGhost.Tests\LivingMetalGhost.Tests.csproj"
 $publishScript = Join-Path $root "publish.ps1"
 
 function Resolve-DotNet {
@@ -50,9 +51,11 @@ if (-not (Test-Path $project)) {
     throw "Project file not found: $project"
 }
 
+$hasTestProject = Test-Path $testProject
 $dotnet = Resolve-DotNet
 Write-Host "Using dotnet: $dotnet"
 Write-Host "Project: $project"
+Write-Host "Test project: $(if ($hasTestProject) { $testProject } else { 'none' })"
 Write-Host "Configuration: $Configuration"
 
 Invoke-Step "dotnet restore" {
@@ -62,10 +65,28 @@ Invoke-Step "dotnet restore" {
     }
 }
 
+if ($hasTestProject) {
+    Invoke-Step "dotnet restore tests" {
+        & $dotnet restore $testProject
+        if ($LASTEXITCODE -ne 0) {
+            throw "dotnet restore tests failed."
+        }
+    }
+}
+
 Invoke-Step "dotnet build" {
     & $dotnet build $project -c $Configuration --no-restore
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet build failed."
+    }
+}
+
+if ($hasTestProject) {
+    Invoke-Step "dotnet test" {
+        & $dotnet test $testProject -c $Configuration --no-restore
+        if ($LASTEXITCODE -ne 0) {
+            throw "dotnet test failed."
+        }
     }
 }
 
@@ -85,6 +106,7 @@ if ($PublishRuntimeIdentifier -ne "none") {
 Write-Host ""
 Write-Host "Verification complete."
 # Windows PowerShell 5.1 cannot parse double quotes nested inside $(...) inside a
-# double-quoted string, so build the optional publish note as a separate variable.
+# double-quoted string, so build the optional notes as separate variables.
+$testNote = if ($hasTestProject) { ", tests passed" } else { "" }
 $publishNote = if ($PublishRuntimeIdentifier -ne "none") { ", publish passed for $PublishRuntimeIdentifier" } else { "" }
-Write-Host "Evidence summary: restore passed, build passed$publishNote."
+Write-Host "Evidence summary: restore passed, build passed$testNote$publishNote."
