@@ -1,0 +1,59 @@
+{
+  "$schema": "https://livingmetal.local/schemas/ghost-outfit-draft.schema.json",
+  "id": "developer_hoodie",
+  "display_name": "Developer Hoodie",
+  "character_id": "orkia",
+  "status": "draft",
+  "fit_target": "../..//rig-manifest.draft.json",
+  "notes": [
+    "This draft describes how outfit sprites should be organized against Orkia's standard pose templates.",
+    "Do not draw final outfit art into the body template SVGs.",
+    "Each pose can provide only the layers it needs. Missing layers fall back to the default body or approved full-state PNG."
+  ],
+  "slots": [
+    "inner_top",
+    "outer_top",
+    "sleeve_left",
+    "sleeve_right",
+    "neck_item"
+  ],
+  "poses": {
+    "neutral_stand": {
+      "guide": "../../body-templates/neutral_stand.svg",
+      "layers": {
+        "inner_top": "neutral_stand/inner_top.png",
+        "outer_top": "neutral_stand/outer_hoodie.png",
+        "sleeve_left": "neutral_stand/sleeve_left.png",
+        "sleeve_right": "neutral_stand/sleeve_right.png",
+        "neck_item": "neutral_stand/tie.png"
+      }
+    },
+    "thinking_tilt": {
+      "guide": "../../body-templates/thinking_tilt.svg",
+      "layers": {
+        "inner_top": "thinking_tilt/inner_top.png",
+        "outer_top": "thinking_tilt/outer_hoodie.png",
+        "sleeve_left": "thinking_tilt/sleeve_left.png",
+        "sleeve_right": "thinking_tilt/sleeve_right.png",
+        "neck_item": "thinking_tilt/tie.png"
+      }
+    },
+    "explain_hand": {
+      "guide": "../../body-templates/explain_hand.svg",
+      "layers": {
+        "inner_top": "explain_hand/inner_top.png",
+        "outer_top": "explain_hand/outer_hoodie.png",
+        "sleeve_left": "explain_hand/sleeve_left.png",
+        "sleeve_right": "explain_hand/sleeve_right.png",
+        "neck_item": "explain_hand/tie.png"
+      }
+    }
+  },
+  "artist_checklist": [
+    "Use the matching SVG pose template as a locked reference layer.",
+    "Export every layer at 300x598 with transparent background so coordinates stay stable.",
+    "Keep sleeve layers separate from torso clothing when possible.",
+    "Avoid changing the silhouette outside the guide unless the outfit intentionally needs a larger outline.",
+    "When silhouette changes are intentional, document the new bounds in this file."
+  ]
+}
