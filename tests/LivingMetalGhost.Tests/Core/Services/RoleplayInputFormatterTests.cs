@@ -6,11 +6,13 @@ namespace LivingMetalGhost.Tests.Core.Services;
 public sealed class RoleplayInputFormatterTests
 {
     [Fact]
-    public void FormatForPrompt_ReturnsTrimmedPlainText_WhenNoRoleplaySyntaxExists()
+    public void FormatForPrompt_TreatsPlainTextAsSpokenDialogue()
     {
         var formatted = RoleplayInputFormatter.FormatForPrompt("  안녕하세요.  ");
 
-        Assert.Equal("안녕하세요.", formatted);
+        Assert.Contains("Player input interpreted by roleplay syntax:", formatted);
+        Assert.Contains("Spoken dialogue:", formatted);
+        Assert.Contains("- \"안녕하세요.\"", formatted);
     }
 
     [Fact]
@@ -47,10 +49,11 @@ public sealed class RoleplayInputFormatterTests
     }
 
     [Fact]
-    public void FormatForPrompt_DoesNotTreatDoubleAsteriskAsSingleActionSyntax()
+    public void FormatForPrompt_ParsesSingleAsteriskActionSyntax()
     {
-        var formatted = RoleplayInputFormatter.FormatForPrompt("**문을 연다**");
+        var formatted = RoleplayInputFormatter.FormatForPrompt("*문을 연다*");
 
+        Assert.DoesNotContain("Spoken dialogue:", formatted);
         Assert.Contains("Visible action / narration:", formatted);
         Assert.Contains("- 문을 연다", formatted);
     }
