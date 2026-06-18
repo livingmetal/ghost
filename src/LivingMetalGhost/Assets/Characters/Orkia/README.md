@@ -26,10 +26,32 @@
 ```text
 Orkia/
   manifest.json                 # 현재 앱에서 사용하는 캐릭터 매니페스트
+  image-prompt.json             # 외부 생성 지시서용 고정/가변 프롬프트 프로필
   story-default.json            # 롤플레잉 시작 템플릿
   CharacterBases/               # 승인된 전체 상태 PNG fallback 자산
   Rigging/                      # 실험용 puppet rig 설계와 파츠 작업 공간
 ```
+
+## Prompt source of truth
+
+오르키아 프롬프트 메타데이터는 생성 API를 직접 호출하지 않는다. 앱과 외부 작업자가 동일한 기준으로 프롬프트를 만들 수 있도록 `image-prompt.json`에 고정 속성, 참조 자산, 금지 drift, 프레이밍/포즈/mood 문구만 둔다.
+
+우선순위는 다음과 같다.
+
+1. `manifest.json`의 `default_appearance`
+2. `image-prompt.json`의 `identity_tokens`
+3. `References/`의 기준 이미지
+4. `CharacterBases/approved-*.png`의 승인 상태 이미지
+5. `Rigging/POSE_PLAN.md`와 `rig-manifest.draft.json`의 포즈/anchor 정보
+
+프롬프트는 반드시 두 층으로 나눈다.
+
+```text
+locked identity: 눈색, 귀, 머리 실루엣, 얼굴 비율, 핵심 복장
+variable scene: 포즈, 표정, 프레이밍, 조명, 배경, 촬영 거리
+```
+
+갑주, 망토, 대형 보석, 메이드풍 장식, 판타지 전투복은 기본 외형 drift로 취급한다. 그런 요소가 필요하면 기본 오르키아가 아니라 별도 의상 variant로 명시한다.
 
 ## Rigging folder
 
