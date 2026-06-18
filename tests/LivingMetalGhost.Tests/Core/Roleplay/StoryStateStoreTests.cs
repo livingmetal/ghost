@@ -2,7 +2,7 @@ using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Services;
 using Xunit;
 
-namespace LivingMetalGhost.Tests.Core.Services;
+namespace LivingMetalGhost.Tests.Core.Roleplay;
 
 public sealed class StoryStateStoreTests
 {

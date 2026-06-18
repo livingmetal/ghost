@@ -35,7 +35,7 @@ Excluded:
 
 ## Workflow
 
-1. Read `AGENT.md` first.
+1. Read `AGENTS.md` first.
 2. Pick or create a plan under `plans/`.
 3. Convert the request into small checkable tasks.
 4. Make the smallest safe code or documentation change.
@@ -90,7 +90,7 @@ Remaining risk:
 ## Tasks
 
 - [x] Add this workflow plan.
-- [ ] Keep `AGENT.md` aligned with this plan.
+- [ ] Keep this plan compatible with the canonical rules in `AGENTS.md`.
 - [ ] Use `scripts/verify.ps1` for local verification.
 - [ ] Add feature-specific plans before larger work.
 - [ ] Add UI/manual smoke-test notes for sprite and mode behavior.

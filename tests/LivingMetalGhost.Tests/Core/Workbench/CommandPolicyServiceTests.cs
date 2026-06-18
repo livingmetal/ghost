@@ -4,7 +4,7 @@ using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Services;
 using Xunit;
 
-namespace LivingMetalGhost.Tests.Agents;
+namespace LivingMetalGhost.Tests.Core.Workbench;
 
 public sealed class CommandPolicyServiceTests : IDisposable
 {

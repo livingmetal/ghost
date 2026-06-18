@@ -45,7 +45,7 @@ Do not patch the first guess. Follow this order:
 5. Verify before and after the fix with the same reproduction.
 6. Report which hypotheses you rejected and why.
 
-Relevant first files when something breaks after a pull (from `AGENT.md`):
+Relevant first files when something breaks after a pull (from `AGENTS.md`):
 `MainViewModel.cs`, `ConversationService.cs`, `PromptAssembler.cs`,
 `StoryStateStore.cs`.
 

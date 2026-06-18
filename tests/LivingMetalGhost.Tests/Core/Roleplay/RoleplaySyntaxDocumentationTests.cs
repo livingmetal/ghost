@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace LivingMetalGhost.Tests.Core.Services;
+namespace LivingMetalGhost.Tests.Core.Roleplay;
 
 public sealed class RoleplaySyntaxDocumentationTests
 {
@@ -8,7 +8,14 @@ public sealed class RoleplaySyntaxDocumentationTests
     public void PromptAssemblerAndDocs_DescribeTheSameRoleplayActionDelimiter()
     {
         var root = FindRepositoryRoot();
-        var promptAssembler = File.ReadAllText(Path.Combine(root, "src", "LivingMetalGhost", "Core", "Services", "PromptAssembler.cs"));
+        var promptAssembler = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "LivingMetalGhost",
+            "Core",
+            "Conversation",
+            "Services",
+            "PromptAssembler.cs"));
         var readme = File.ReadAllText(Path.Combine(root, "README.md"));
         var syntaxGuide = File.ReadAllText(Path.Combine(root, "plans", "roleplay-input-syntax.md"));
 

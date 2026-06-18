@@ -1,7 +1,7 @@
 using LivingMetalGhost.Agents;
 using Xunit;
 
-namespace LivingMetalGhost.Tests.Agents;
+namespace LivingMetalGhost.Tests.Core.Workbench;
 
 public sealed class WorkspaceGuardTests : IDisposable
 {

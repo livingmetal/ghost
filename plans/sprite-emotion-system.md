@@ -55,9 +55,9 @@ Visible chat output must remove these tags before rendering.
 
 Search likely areas first:
 
-- `src/LivingMetalGhost/UI/ViewModels/MainViewModel.cs`
-- `src/LivingMetalGhost/Core/Services/ConversationService.cs`
-- `src/LivingMetalGhost/Core/Services/PromptAssembler.cs`
+- `src/LivingMetalGhost/UI/DesktopShell/ViewModels/MainViewModel.cs`
+- `src/LivingMetalGhost/Core/Conversation/Services/ConversationService.cs`
+- `src/LivingMetalGhost/Core/Conversation/Services/PromptAssembler.cs`
 - Character or sprite model files under `src/LivingMetalGhost`
 - Asset paths under `src/LivingMetalGhost/Assets/Characters`
 

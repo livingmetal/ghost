@@ -57,7 +57,7 @@ Do locally:
 - skip binaries and build outputs,
 - calculate file size and modified time,
 - detect project markers,
-- load `README.md`, `AGENT.md`, `AGENTS.md`, and `plans/*.md`.
+- load canonical `AGENTS.md`, current `docs/*.md`, and only relevant plans.
 
 Give the LLM only a compact index and selected snippets.
 

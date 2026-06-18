@@ -45,7 +45,7 @@ IDE replacement
 | Capability | Codex / Claude Code class behavior | Ghost target |
 | --- | --- | --- |
 | Repository awareness | Reads project files, structure, instructions | Workspace index + file map + AGENT/README awareness |
-| Persistent project instructions | AGENTS.md / CLAUDE.md style context | `AGENT.md`, `AGENTS.md`, `plans/*.md`, optional `agents/*.agent.md` |
+| Persistent project instructions | AGENTS.md / CLAUDE.md style context | canonical `AGENTS.md`, current `docs/*.md`, selected relevant plans |
 | Agent loop | Plan, use tools, inspect results, continue | `AgentOrchestrator` controls loop with explicit states |
 | Tool execution | Shell, file, Git, tests, web/MCP | Tools behind deterministic risk policy |
 | Permission model | Ask/auto/deny modes | Approval cards, no silent state-changing actions |
@@ -143,7 +143,7 @@ Responsibilities:
 - select repository root,
 - read allowed files,
 - ignore build outputs and binary files,
-- load `README.md`, `AGENT.md`, `AGENTS.md`, and `plans/*.md`,
+- load canonical `AGENTS.md`, current `docs/*.md`, and only relevant plans,
 - search files by name/content,
 - generate patch previews,
 - apply approved changes.

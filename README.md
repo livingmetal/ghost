@@ -1,57 +1,41 @@
 # LivingMetalGhost
 
-LivingMetalGhost is a Windows desktop LLM character assistant inspired by modern Ukagaka/Nanika-style companions.
+LivingMetalGhost is a Windows desktop LLM character assistant inspired by
+Ukagaka/Nanika-style companions.
 
-It is intended to be:
+The product has three distinct modes:
 
-- a lightweight desktop character for daily conversation,
-- a visual-novel/ORPG-style partner in roleplay mode,
-- and a practical workbench for advanced agent-assisted tasks.
+- **Daily**: lightweight, character-flavored conversation.
+- **Story**: a fictional visual-novel/ORPG-style partner experience.
+- **Advanced**: a practical workbench for agent-assisted tasks.
 
-The project targets a WPF single-file deployment model and keeps LLM providers, character assets, prompts, tools, and future agent integrations replaceable.
+The current priority is architectural cleanup that preserves behavior. Automatic
+character generation, image-generation APIs, and a new sprite-parts composition
+engine are not part of the current scope.
 
-## Current Direction
+## Story Input
 
-Ghost is organized around three user-facing modes:
+Story mode uses a small text grammar:
 
-1. **Daily mode**
-   - Normal character-flavored assistant conversation.
-   - No local command execution.
-   - No Git, build, or file operations.
+```text
+plain text     -> spoken dialogue
+**text**       -> visible action / narration
+(text)         -> private inner thought
+```
 
-2. **Roleplay mode**
-   - Fictional visual-novel/ORPG-style interaction.
-   - User input syntax:
-
-     ```text
-     plain text     -> spoken dialogue
-     **text**       -> visible action / narration
-     (text)         -> inner thought
-     ```
-
-   - Single-asterisk text such as `*A*B*` is treated as spoken dialogue, not action syntax.
-   - The character must not read inner thoughts directly.
-   - User-facing Korean wording should prefer `롤플레잉 모드`.
-
-3. **Advanced mode**
-   - Practical workbench mode.
-   - Future Codex/Claude Code style agent integration belongs here.
-   - Local commands and workspace-changing actions must be approval-gated.
+Single-asterisk text is not action syntax. See
+[`docs/ROLEPLAY.md`](./docs/ROLEPLAY.md) for the complete Story-mode rules.
 
 ## Requirements
 
-- Windows 10/11
+- Windows 10 or 11
 - .NET 10 SDK
-- WPF-capable Windows environment
+- A WPF-capable Windows environment
 
-The project is commonly built for:
+The application is commonly published for `win-x64` and `win-arm64`.
 
-- `win-x64`
-- `win-arm64`
-
-Build scripts resolve `dotnet` from `PATH` first. If `dotnet` is installed in a non-standard location, set `LIVINGMETAL_DOTNET` to the full path of the dotnet executable instead of editing scripts.
-
-Example:
+If `dotnet` is not available through `PATH`, set `LIVINGMETAL_DOTNET` to the
+full executable path.
 
 ```powershell
 $env:LIVINGMETAL_DOTNET = "D:\tools\dotnet\dotnet.exe"
@@ -65,119 +49,62 @@ dotnet run --project .\src\LivingMetalGhost\LivingMetalGhost.csproj
 
 ## Verify
 
-Preferred verification command:
+Run the repository verification script:
 
 ```powershell
 .\scripts\verify.ps1
 ```
 
-Release build verification:
+If the local PowerShell execution policy blocks direct script execution:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1
+```
+
+Release verification:
 
 ```powershell
 .\scripts\verify.ps1 -Configuration Release
 ```
 
-Optional publish verification:
-
-```powershell
-.\scripts\verify.ps1 -PublishRuntimeIdentifier win-arm64
-```
-
-The verification script restores and builds the WPF project. Optional publish verification delegates to `publish.ps1` for the selected runtime. Do not claim completion without recording the exact verification command and result.
+The script restores and builds the application and runs the test project when
+present.
 
 ## Publish
 
-Default publish:
-
 ```powershell
-.\publish.ps1
+.\publish.ps1 -RuntimeIdentifier win-x64
+.\publish.ps1 -RuntimeIdentifier win-arm64
 ```
 
-ARM64 publish:
+`publish-all.ps1` publishes both runtime identifiers.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\publish.ps1 -RuntimeIdentifier win-arm64
-```
+## Runtime Data
 
-x64 publish:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\publish.ps1 -RuntimeIdentifier win-x64
-```
-
-`publish-all.ps1` publishes both ARM64 and x64 executables.
-
-## Data Path
-
-Runtime user data is stored under:
+User configuration, logs, Story state, memories, reminders, and workspace data
+are stored under:
 
 ```text
 %APPDATA%\LivingMetalGhost
 ```
 
-## Providers
+## Repository Guide
 
-Current and planned provider directions include:
+- [`AGENTS.md`](./AGENTS.md): canonical development and AI-agent instructions.
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md): current architecture and
+  recommended module boundaries.
+- [`docs/ROLEPLAY.md`](./docs/ROLEPLAY.md): Story mode syntax and state rules.
+- [`docs/SPRITE_ARCHITECTURE.md`](./docs/SPRITE_ARCHITECTURE.md): current
+  character presentation model and future rigging boundary.
+- [`plans/README.md`](./plans/README.md): future proposals and roadmaps.
 
-- Mock
-- OpenAI-Compatible endpoints
-- Gemini
-- OpenAI
-- Ollama
-- Future advanced-mode Codex/Claude Code style integrations
+## Safety
 
-Provider-specific behavior should remain isolated. Character prompts, mode prompts, and tool-routing prompts should not be tangled together.
+- Daily and Story modes must not execute local commands.
+- Workspace-changing actions belong only in Advanced mode and require approval.
+- Do not commit API keys or secrets.
+- Do not auto-start external coding agents, auto-apply patches, or auto-approve
+  workspace changes.
 
-## Agent Orchestration Direction
-
-Long term, the main Ghost character should become the user-facing orchestrator: it classifies the user's request, decides whether to answer directly or summon helper agents, routes complex work to specialized agents, asks for approval before risky actions, and returns one coherent result.
-
-See [`plans/agent-orchestration.md`](./plans/agent-orchestration.md) for the planned orchestrator skeleton.
-
-For the roadmap toward Codex/Claude-Code-class Advanced mode capability, see [`plans/coding-agent-parity-roadmap.md`](./plans/coding-agent-parity-roadmap.md).
-
-## Character and Sprite Direction
-
-Ghost is sprite-friendly by design.
-
-Current direction:
-
-- Character assets should be modularly addable.
-- Mood/emotion tags must not appear in chat bubbles.
-- Sprite changes should be possible during speaking.
-- Rapid sprite flicker should be avoided.
-- Final expression should remain briefly after speech ends.
-
-See [`plans/sprite-emotion-system.md`](./plans/sprite-emotion-system.md) for the planned sprite/mood workflow.
-
-## Agent and AI Contributor Guide
-
-Coding agents may not all automatically read `AGENTS.md`, so human users should explicitly point agents to it when starting a new session.
-
-Important files:
-
-- [`AGENTS.md`](./AGENTS.md): conventional entry point for coding agents.
-- [`AGENT.md`](./AGENT.md): canonical repository handoff and project direction.
-- [`plans/agent-orchestration.md`](./plans/agent-orchestration.md): long-term main-character orchestrator and sub-agent architecture.
-- [`plans/advanced-mode-orchestration-research.md`](./plans/advanced-mode-orchestration-research.md): research note for Advanced-mode orchestration design.
-- [`plans/coding-agent-parity-roadmap.md`](./plans/coding-agent-parity-roadmap.md): roadmap toward Codex/Claude-Code-class coding agent app capability.
-- [`plans/agent-workflow.md`](./plans/agent-workflow.md): plan-first and evidence-first workflow.
-- [`scripts/verify.ps1`](./scripts/verify.ps1): standard verification script.
-- [`.ghost-work/README.md`](./.ghost-work/README.md): evidence note guidance.
-
-Workflow rule:
-
-> Plan first, change small, verify before claiming completion.
-
-Do not report a task as complete without verification evidence. If verification cannot be run, say so explicitly.
-
-## Safety Notes
-
-- API keys should be stored securely, not committed.
-- Sensitive actions are intentionally out of scope for daily and roleplay modes.
-- Do not add unrestricted command execution.
-- Do not auto-start external coding agents.
-- Do not auto-apply patches.
-- Do not auto-approve workspace-changing commands.
-
-The boundary between daily conversation, fictional roleplay, and practical advanced work is central to the app. Keep it sharp.
+The separation between casual conversation, fictional roleplay, and practical
+work is a core product invariant.

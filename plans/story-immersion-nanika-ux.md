@@ -363,7 +363,7 @@ Tasks:
 - Update Story mode prompt to prefer short action + dialogue.
 - Enforce `**...**` action syntax.
 - Avoid menus, background scenes, status panels, sound cues, and camera language.
-- Add examples to `AGENT.md` or prompt docs.
+- Add stable examples to `docs/ROLEPLAY.md` or prompt documentation.
 
 Acceptance:
 
