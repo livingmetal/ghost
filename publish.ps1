@@ -13,21 +13,27 @@ $outputName = if ($RuntimeIdentifier -eq "win-x64") {
     "LivingMetalGhost-$RuntimeIdentifier.exe"
 }
 $output = Join-Path $dist $outputName
-$fallbackDotnet = "C:\Users\livin\Documents\Codex\dotnet\dotnet.exe"
-$dotnetCommand = Get-Command dotnet -ErrorAction SilentlyContinue
-$dotnet = $null
 
-if ($dotnetCommand) {
-    $dotnet = $dotnetCommand.Source
+function Resolve-DotNet {
+    $dotnetCommand = Get-Command dotnet -ErrorAction SilentlyContinue
+    if ($dotnetCommand) {
+        return $dotnetCommand.Source
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:LIVINGMETAL_DOTNET)) {
+        $configuredDotnet = [Environment]::ExpandEnvironmentVariables($env:LIVINGMETAL_DOTNET)
+        if (Test-Path -LiteralPath $configuredDotnet) {
+            return (Resolve-Path -LiteralPath $configuredDotnet).Path
+        }
+
+        throw "LIVINGMETAL_DOTNET is set but the dotnet executable was not found: $configuredDotnet"
+    }
+
+    throw "dotnet SDK was not found in PATH. Install the .NET 10 SDK or set LIVINGMETAL_DOTNET to the dotnet executable path."
 }
 
-if (-not $dotnet -and (Test-Path $fallbackDotnet)) {
-    $dotnet = $fallbackDotnet
-}
-
-if (-not $dotnet) {
-    throw "dotnet SDK was not found in PATH or fallback location."
-}
+$dotnet = Resolve-DotNet
+Write-Host "Using dotnet: $dotnet"
 
 $iconScript = Join-Path $PSScriptRoot "tools\make-icon.ps1"
 $iconSource = Join-Path $PSScriptRoot "src\LivingMetalGhost\Assets\Characters\ssyong\sleep.png"
@@ -35,12 +41,11 @@ $iconOutput = Join-Path $PSScriptRoot "src\LivingMetalGhost\Assets\App\LivingMet
 
 if ((Test-Path -LiteralPath $iconScript) -and (Test-Path -LiteralPath $iconSource)) {
     powershell -NoProfile -ExecutionPolicy Bypass -File $iconScript -SourcePng $iconSource -OutputIco $iconOutput
+    if ($LASTEXITCODE -ne 0) {
+        throw "Icon generation failed."
+    }
 } else {
     Write-Warning "Ssyong icon generation skipped. Missing script or source sprite."
-}
-
-if ($LASTEXITCODE -ne 0) {
-    throw "Icon generation failed."
 }
 
 if (Test-Path $stage) {
