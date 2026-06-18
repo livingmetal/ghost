@@ -24,11 +24,12 @@ Ghost is organized around three user-facing modes:
    - User input syntax:
 
      ```text
-     plain text    -> spoken dialogue
-     *text*        -> visible action / narration
-     (text)        -> inner thought
+     plain text     -> spoken dialogue
+     **text**       -> visible action / narration
+     (text)         -> inner thought
      ```
 
+   - Single-asterisk text such as `*A*B*` is treated as spoken dialogue, not action syntax.
    - The character must not read inner thoughts directly.
    - User-facing Korean wording should prefer `롤플레잉 모드`.
 
