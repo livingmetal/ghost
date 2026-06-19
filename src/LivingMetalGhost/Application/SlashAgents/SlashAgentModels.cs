@@ -11,12 +11,19 @@ public static class SlashCapabilities
     public const string Unknown = "unknown";
 }
 
+public static class WeatherForecastDays
+{
+    public const string Current = "current";
+    public const string Tomorrow = "tomorrow";
+}
+
 public sealed record SlashIntentPlan(
     string Capability,
     string OriginalText,
     string Location = "",
     string MealSlot = "",
-    bool UsedLlm = false);
+    bool UsedLlm = false,
+    string WeatherDay = WeatherForecastDays.Current);
 
 public sealed record SlashCapabilityResult(
     string Capability,

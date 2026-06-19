@@ -28,6 +28,24 @@ public sealed class SlashIntentPlannerTests
         Assert.False(plan.UsedLlm);
     }
 
+    [Theory]
+    [InlineData("서울 날씨", WeatherForecastDays.Current, "서울")]
+    [InlineData("내일 서울 날씨", WeatherForecastDays.Tomorrow, "서울")]
+    [InlineData("Busan weather tomorrow", WeatherForecastDays.Tomorrow, "Busan")]
+    public void TryBuildDirectWeatherPlan_ExtractsForecastDay(
+        string text,
+        string expectedDay,
+        string expectedLocation)
+    {
+        var parsed = SlashIntentPlanner.TryBuildDirectWeatherPlan(
+            text,
+            out var plan);
+
+        Assert.True(parsed);
+        Assert.Equal(expectedDay, plan.WeatherDay);
+        Assert.Equal(expectedLocation, plan.Location);
+    }
+
     [Fact]
     public async Task PlanAsync_UsesLlmSelectedCapabilityAndArguments()
     {
@@ -69,7 +87,7 @@ public sealed class SlashIntentPlannerTests
     {
         var parsed = SlashIntentPlanner.TryParsePlan(
             "```json\n" +
-            "{\"capability\":\"weather\",\"location\":\"서울\",\"meal_slot\":\"all\"}\n" +
+            "{\"capability\":\"weather\",\"location\":\"서울\",\"meal_slot\":\"all\",\"weather_day\":\"tomorrow\"}\n" +
             "```",
             "서울 날씨",
             out var plan);
@@ -77,6 +95,7 @@ public sealed class SlashIntentPlannerTests
         Assert.True(parsed);
         Assert.Equal(SlashCapabilities.Weather, plan.Capability);
         Assert.Equal("서울", plan.Location);
+        Assert.Equal(WeatherForecastDays.Tomorrow, plan.WeatherDay);
     }
 
     [Theory]

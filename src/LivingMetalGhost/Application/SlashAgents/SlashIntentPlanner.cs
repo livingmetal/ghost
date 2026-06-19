@@ -74,7 +74,8 @@ public sealed class SlashIntentPlanner
         plan = new SlashIntentPlan(
             SlashCapabilities.Weather,
             normalized,
-            ExtractWeatherLocation(normalized));
+            ExtractWeatherLocation(normalized),
+            WeatherDay: InferWeatherDay(normalized));
         return true;
     }
 
@@ -98,12 +99,15 @@ public sealed class SlashIntentPlanner
                 GetString(root, "capability"));
             var location = GetString(root, "location");
             var mealSlot = NormalizeMealSlot(GetString(root, "meal_slot"));
+            var weatherDay = NormalizeWeatherDay(
+                GetString(root, "weather_day"));
 
             plan = new SlashIntentPlan(
                 capability,
                 originalText,
                 location,
-                mealSlot);
+                mealSlot,
+                WeatherDay: weatherDay);
             return capability != SlashCapabilities.Unknown;
         }
         catch (JsonException)
@@ -186,12 +190,13 @@ public sealed class SlashIntentPlanner
             - unknown: none of the allowed capabilities
 
             Return one JSON object only:
-            {"capability":"time|date|meal|weather|reminder|help|unknown","location":"","meal_slot":"breakfast|lunch|dinner|all"}
+            {"capability":"time|date|meal|weather|reminder|help|unknown","location":"","meal_slot":"breakfast|lunch|dinner|all","weather_day":"current|tomorrow"}
 
             Rules:
             - Never invent another capability.
             - Preserve a weather location from the user's text.
             - If weather has no location, use "대전".
+            - Use weather_day tomorrow only for an explicit 내일/tomorrow request. Otherwise use current.
             - Use meal_slot lunch for 점심, breakfast for 아침/조식, dinner for 저녁/석식, otherwise all.
             - Do not answer the request. Only return JSON.
             """;
@@ -240,6 +245,13 @@ public sealed class SlashIntentPlanner
             _ => "all"
         };
 
+    private static string NormalizeWeatherDay(string weatherDay) =>
+        weatherDay.Trim().ToLowerInvariant() switch
+        {
+            WeatherForecastDays.Tomorrow => WeatherForecastDays.Tomorrow,
+            _ => WeatherForecastDays.Current
+        };
+
     private static string InferMealSlot(string text)
     {
         if (ContainsAny(text, "아침", "조식"))
@@ -264,6 +276,8 @@ public sealed class SlashIntentPlanner
     {
         var location = text
             .Replace("오늘", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("내일", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("tomorrow", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("현재", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("지역", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("날씨", string.Empty, StringComparison.OrdinalIgnoreCase)
@@ -278,6 +292,11 @@ public sealed class SlashIntentPlanner
         location = TrimTrailingLocationParticle(location);
         return string.IsNullOrWhiteSpace(location) ? "대전" : location;
     }
+
+    private static string InferWeatherDay(string text) =>
+        ContainsAny(text, "내일", "tomorrow")
+            ? WeatherForecastDays.Tomorrow
+            : WeatherForecastDays.Current;
 
     private static string TrimTrailingLocationParticle(string location)
     {

@@ -66,6 +66,48 @@ public sealed class WeatherService
         }
     }
 
+    public async Task<string> GetTomorrowWeatherTextAsync(
+        string location,
+        CancellationToken cancellationToken)
+    {
+        var normalizedLocation = string.IsNullOrWhiteSpace(location)
+            ? "대전"
+            : location.Trim();
+
+        try
+        {
+            var place = await GeocodeAsync(
+                normalizedLocation,
+                cancellationToken);
+            if (place is null)
+            {
+                return $"{normalizedLocation} 위치를 찾지 못했어.";
+            }
+
+            var forecast = await FetchTomorrowWeatherAsync(
+                place,
+                cancellationToken);
+            if (forecast is null)
+            {
+                return $"{place.DisplayName}의 내일 날씨 예보를 불러오지 못했어.";
+            }
+
+            var weather = DescribeWeatherCode(forecast.WeatherCode);
+            return
+                $"Open-Meteo 기준 {place.DisplayName} 내일({forecast.Date}) 날씨는 {weather}, " +
+                $"최저 {forecast.MinimumTemperature:0.#}°C, 최고 {forecast.MaximumTemperature:0.#}°C, " +
+                $"최대 강수 확률 {forecast.PrecipitationProbability:0.#}%야.";
+        }
+        catch (Exception ex) when (
+            ex is HttpRequestException or
+            TaskCanceledException or
+            JsonException or
+            InvalidOperationException)
+        {
+            return $"{normalizedLocation} 내일 날씨를 불러오지 못했어. 원인: {ex.Message}";
+        }
+    }
+
     public static string DescribeWeatherCode(int code) => code switch
     {
         0 => "맑음",
@@ -175,6 +217,67 @@ public sealed class WeatherService
             GetDouble(current, "wind_speed_10m"));
     }
 
+    private async Task<DailyWeather?> FetchTomorrowWeatherAsync(
+        GeocodedPlace place,
+        CancellationToken cancellationToken)
+    {
+        var latitude = place.Latitude.ToString(
+            CultureInfo.InvariantCulture);
+        var longitude = place.Longitude.ToString(
+            CultureInfo.InvariantCulture);
+        var url =
+            "https://api.open-meteo.com/v1/forecast" +
+            $"?latitude={latitude}&longitude={longitude}" +
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+            "&forecast_days=2&timezone=auto";
+        using var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using var stream =
+            await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(
+            stream,
+            cancellationToken: cancellationToken);
+
+        if (!document.RootElement.TryGetProperty("daily", out var daily) ||
+            !TryGetArrayValue(daily, "time", 1, out var date) ||
+            !TryGetArrayValue(daily, "weather_code", 1, out var weatherCode) ||
+            !TryGetArrayValue(daily, "temperature_2m_max", 1, out var maximum) ||
+            !TryGetArrayValue(daily, "temperature_2m_min", 1, out var minimum) ||
+            !TryGetArrayValue(
+                daily,
+                "precipitation_probability_max",
+                1,
+                out var precipitationProbability))
+        {
+            return null;
+        }
+
+        return new DailyWeather(
+            date.GetString() ?? string.Empty,
+            weatherCode.GetInt32(),
+            maximum.GetDouble(),
+            minimum.GetDouble(),
+            precipitationProbability.GetDouble());
+    }
+
+    private static bool TryGetArrayValue(
+        JsonElement element,
+        string propertyName,
+        int index,
+        out JsonElement value)
+    {
+        value = default;
+        if (!element.TryGetProperty(propertyName, out var property) ||
+            property.ValueKind != JsonValueKind.Array ||
+            property.GetArrayLength() <= index)
+        {
+            return false;
+        }
+
+        value = property[index];
+        return value.ValueKind is JsonValueKind.String or JsonValueKind.Number;
+    }
+
     private static string GetString(JsonElement element, string propertyName)
     {
         return element.TryGetProperty(propertyName, out var property) &&
@@ -204,6 +307,13 @@ public sealed class WeatherService
         double Precipitation,
         int WeatherCode,
         double WindSpeed);
+
+    private sealed record DailyWeather(
+        string Date,
+        int WeatherCode,
+        double MaximumTemperature,
+        double MinimumTemperature,
+        double PrecipitationProbability);
 
     private static readonly IReadOnlyDictionary<string, string> KoreanLocationAliases =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

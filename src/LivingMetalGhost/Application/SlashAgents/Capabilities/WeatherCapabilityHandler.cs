@@ -20,9 +20,13 @@ public sealed class WeatherCapabilityHandler : ISlashCapabilityHandler
         var location = string.IsNullOrWhiteSpace(plan.Location)
             ? "대전"
             : plan.Location;
-        var facts = await _weatherService.GetCurrentWeatherTextAsync(
-            location,
-            cancellationToken);
+        var facts = plan.WeatherDay == WeatherForecastDays.Tomorrow
+            ? await _weatherService.GetTomorrowWeatherTextAsync(
+                location,
+                cancellationToken)
+            : await _weatherService.GetCurrentWeatherTextAsync(
+                location,
+                cancellationToken);
         return new SlashCapabilityResult(Capability, facts);
     }
 }
