@@ -133,17 +133,45 @@
                                         Padding="11"
                                         CornerRadius="12,12,3,12"
                                         Background="#E8E2D8">
-                                    <TextBlock TextWrapping="Wrap"
-                                               Foreground="#27313C"
-                                               Text="{Binding UserText}" />
+                                    <TextBox Padding="0"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             IsReadOnly="True"
+                                             IsReadOnlyCaretVisible="False"
+                                             TextWrapping="Wrap"
+                                             AcceptsReturn="True"
+                                             Foreground="#27313C"
+                                             Text="{Binding UserText, Mode=OneWay}"
+                                             ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
+                                        <TextBox.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
+                                                <MenuItem Command="ApplicationCommands.SelectAll" Header="전체 선택" />
+                                            </ContextMenu>
+                                        </TextBox.ContextMenu>
+                                    </TextBox>
                                 </Border>
                                 <Border Margin="40,8,0,0"
                                         Padding="11"
                                         CornerRadius="12,12,12,3"
                                         Background="#DDEFEA">
-                                    <TextBlock TextWrapping="Wrap"
-                                               Foreground="#18352F"
-                                               Text="{Binding AssistantText}" />
+                                    <TextBox Padding="0"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             IsReadOnly="True"
+                                             IsReadOnlyCaretVisible="False"
+                                             TextWrapping="Wrap"
+                                             AcceptsReturn="True"
+                                             Foreground="#18352F"
+                                             Text="{Binding AssistantText, Mode=OneWay}"
+                                             ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
+                                        <TextBox.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
+                                                <MenuItem Command="ApplicationCommands.SelectAll" Header="전체 선택" />
+                                            </ContextMenu>
+                                        </TextBox.ContextMenu>
+                                    </TextBox>
                                 </Border>
                             </StackPanel>
                         </Border>

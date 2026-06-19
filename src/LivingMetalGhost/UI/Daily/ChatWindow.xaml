@@ -40,10 +40,24 @@
                 BorderThickness="1"
                 CornerRadius="16,16,4,16"
                 Visibility="{Binding IsUserMessagePending, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <TextBlock Text="{Binding PendingUserMessageText}"
-                       TextWrapping="Wrap"
-                       Foreground="#34213F"
-                       FontSize="13" />
+            <TextBox Padding="0"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     IsReadOnly="True"
+                     IsReadOnlyCaretVisible="False"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     Foreground="#34213F"
+                     FontSize="13"
+                     Text="{Binding PendingUserMessageText, Mode=OneWay}"
+                     ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
+                <TextBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
+                        <MenuItem Command="ApplicationCommands.SelectAll" Header="전체 선택" />
+                    </ContextMenu>
+                </TextBox.ContextMenu>
+            </TextBox>
         </Border>
 
         <Border x:Name="InputPanel"

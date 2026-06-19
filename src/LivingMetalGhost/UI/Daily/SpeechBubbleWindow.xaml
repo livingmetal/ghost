@@ -82,13 +82,28 @@
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto"
                               CanContentScroll="False">
-                    <TextBlock x:Name="BubbleTextBlock"
-                               FontFamily="Malgun Gothic"
-                               FontSize="15"
-                               FontWeight="SemiBold"
-                               LineHeight="23"
-                               TextWrapping="Wrap"
-                               Foreground="#241B2B" />
+                    <TextBox x:Name="BubbleTextBlock"
+                             Padding="0"
+                             FontFamily="Malgun Gothic"
+                             FontSize="15"
+                             FontWeight="SemiBold"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             Foreground="#241B2B"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             IsReadOnly="True"
+                             IsReadOnlyCaretVisible="False"
+                             HorizontalScrollBarVisibility="Disabled"
+                             VerticalScrollBarVisibility="Disabled"
+                             ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
+                                <MenuItem Command="ApplicationCommands.SelectAll" Header="전체 선택" />
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
                 </ScrollViewer>
             </Grid>
         </Border>
