@@ -156,6 +156,7 @@ public partial class App : Application
         services.AddSingleton<ConversationHistoryStore>();
         services.AddSingleton<ExternalConversationTurnRecorder>();
         services.AddSingleton<HiddenTraitScheduler>();
+        services.AddSingleton<ConversationRequestFactory>();
         services.AddSingleton<ConversationResponseProcessor>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<IRoleplayConversation>(

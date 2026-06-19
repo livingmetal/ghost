@@ -162,7 +162,8 @@ Additional logical seams completed:
 - DesktopShell service and window support grouping;
 - manifest-aware character mood resolver shared by prompts and responses;
 - external tool-result conversation history recorder;
-- shared conversation response processing pipeline.
+- shared conversation response processing pipeline;
+- shared LLM conversation request factory.
 
 ## Phase 5 - Character Presentation Boundary
 

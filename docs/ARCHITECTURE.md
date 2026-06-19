@@ -145,6 +145,10 @@ cleanup, including stock-phrase removal and whitespace normalization.
 cleanup, speech sanitization, and manifest-aware mood resolution. All LLM
 conversation entry points use the same response pipeline.
 
+`ConversationRequestFactory` composes system prompts, hidden-trait directives,
+mode-specific history, model options, and repository context into `LlmRequest`.
+Provider selection and execution remain in `ConversationService`.
+
 `Core/Conversation/Personality/HiddenTraitScheduler.cs` owns hidden-trait
 activation state. It follows the same Companion/Roleplay channel split as
 conversation history.

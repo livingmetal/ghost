@@ -11,36 +11,33 @@ public sealed class ConversationService : IRoleplayConversation
 {
     private readonly AppConfigLoader _configLoader;
     private readonly ILlmProviderFactory _providerFactory;
-    private readonly PromptAssembler _promptAssembler;
+    private readonly ConversationRequestFactory _requestFactory;
     private readonly StoryStateStore _storyStateStore;
     private readonly RoleplayStateUpdater _roleplayStateUpdater;
     private readonly RoleplayMemoryDigestService _roleplayMemoryDigestService;
     private readonly ConversationHistoryStore _historyStore;
-    private readonly HiddenTraitScheduler _hiddenTraitScheduler;
     private readonly AdvancedConversationSupport _advancedConversationSupport;
     private readonly ConversationResponseProcessor _responseProcessor;
     private readonly ExternalConversationTurnRecorder _externalTurnRecorder;
     public ConversationService(
         AppConfigLoader configLoader,
         ILlmProviderFactory providerFactory,
-        PromptAssembler promptAssembler,
+        ConversationRequestFactory requestFactory,
         StoryStateStore storyStateStore,
         RoleplayStateUpdater roleplayStateUpdater,
         RoleplayMemoryDigestService roleplayMemoryDigestService,
         ConversationHistoryStore historyStore,
-        HiddenTraitScheduler hiddenTraitScheduler,
         AdvancedConversationSupport advancedConversationSupport,
         ConversationResponseProcessor responseProcessor,
         ExternalConversationTurnRecorder externalTurnRecorder)
     {
         _configLoader = configLoader;
         _providerFactory = providerFactory;
-        _promptAssembler = promptAssembler;
+        _requestFactory = requestFactory;
         _storyStateStore = storyStateStore;
         _roleplayStateUpdater = roleplayStateUpdater;
         _roleplayMemoryDigestService = roleplayMemoryDigestService;
         _historyStore = historyStore;
-        _hiddenTraitScheduler = hiddenTraitScheduler;
         _advancedConversationSupport = advancedConversationSupport;
         _responseProcessor = responseProcessor;
         _externalTurnRecorder = externalTurnRecorder;
@@ -93,21 +90,16 @@ public sealed class ConversationService : IRoleplayConversation
             ? _advancedConversationSupport.BuildRepositoryContext(text)
             : string.Empty;
         var provider = _providerFactory.Create(options.Provider);
-        var response = await provider.GenerateAsync(new LlmRequest
-        {
-            UserText = userTextForProvider,
-            UserTitle = config.App.UserTitle,
-            Model = options.Model,
-            Options = options,
-            SystemPrompt = _promptAssembler.BuildSystemPrompt(
+        var response = await provider.GenerateAsync(
+            _requestFactory.Create(
                 config,
                 character,
                 mode,
                 storyState,
-                _hiddenTraitScheduler.BuildDirective(character, mode),
+                userTextForProvider,
+                options,
                 repositoryContext),
-            History = _historyStore.GetSnapshot(mode)
-        }, cancellationToken);
+            cancellationToken);
         var processed = _responseProcessor.Process(
             response.Text,
             mode,
@@ -155,20 +147,15 @@ public sealed class ConversationService : IRoleplayConversation
         var userText = "지금 상황에 어울리는 짧은 말 한마디로 먼저 대화를 시작해. " +
                        "질문, 가벼운 안부, 작업 집중 확인, 휴식 제안 중 하나를 자연스럽게 선택해. " +
                        "설명이나 따옴표 없이 실제로 사용자에게 말할 문장만 출력해.";
-        var response = await provider.GenerateAsync(new LlmRequest
-        {
-            UserText = userText,
-            UserTitle = config.App.UserTitle,
-            Model = options.Model,
-            Options = options,
-            SystemPrompt = _promptAssembler.BuildSystemPrompt(
+        var response = await provider.GenerateAsync(
+            _requestFactory.Create(
                 config,
                 character,
                 mode,
                 storyState,
-                _hiddenTraitScheduler.BuildDirective(character, mode)),
-            History = _historyStore.GetSnapshot(mode)
-        }, cancellationToken);
+                userText,
+                options),
+            cancellationToken);
         var processed = _responseProcessor.Process(
             response.Text,
             mode,
@@ -199,20 +186,15 @@ public sealed class ConversationService : IRoleplayConversation
             "**행동/지문**을 한두 개와 짧은 혼잣말 한마디 정도로만 표현해. " +
             "큰 사건이나 플롯을 진행하지 말고, 사용자의 행동·말·감정을 대신 정하지 마. " +
             "메뉴, 선택지, 시스템 언급은 금지. 장면을 크게 바꾸지 말고 분위기만 가볍게 살려.";
-        var response = await provider.GenerateAsync(new LlmRequest
-        {
-            UserText = userText,
-            UserTitle = config.App.UserTitle,
-            Model = options.Model,
-            Options = options,
-            SystemPrompt = _promptAssembler.BuildSystemPrompt(
+        var response = await provider.GenerateAsync(
+            _requestFactory.Create(
                 config,
                 character,
                 mode,
                 storyState,
-                _hiddenTraitScheduler.BuildDirective(character, mode)),
-            History = _historyStore.GetSnapshot(mode)
-        }, cancellationToken);
+                userText,
+                options),
+            cancellationToken);
         var processed = _responseProcessor.Process(
             response.Text,
             mode,
