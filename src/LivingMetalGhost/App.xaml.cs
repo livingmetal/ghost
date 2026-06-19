@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Threading;
 using LivingMetalGhost.Agents;
 using LivingMetalGhost.Core.Config;
+using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Facts;
 using LivingMetalGhost.Core.Facts.Meals.Kaist;
 using LivingMetalGhost.Core.Presentation;
@@ -143,6 +144,7 @@ public partial class App : Application
         services.AddSingleton<Core.Workspace.PatchApplyService>();
         services.AddSingleton<Core.Workspace.PatchReviewService>();
         services.AddSingleton<PromptAssembler>();
+        services.AddSingleton<ConversationHistoryStore>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
         services.AddSingleton<SpriteDirector>();

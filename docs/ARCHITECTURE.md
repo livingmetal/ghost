@@ -121,6 +121,10 @@ Daily and Story responses may use LLM-selected semantic moods. Advanced
 responses do not request or accept LLM mood selection; their visual behavior is
 reserved for deterministic application rules.
 
+`Core/Conversation/History/ConversationHistoryStore.cs` owns bounded in-memory
+history, channel resolution, snapshots, and role counts. `ConversationService`
+uses this store instead of owning history collections directly.
+
 Current debt: Daily, Story, and Advanced workflows share one large service.
 Repository context, Story memory digestion, response cleanup, and history
 management are coupled to provider invocation.

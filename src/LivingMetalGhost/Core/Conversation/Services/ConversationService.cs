@@ -9,8 +9,6 @@ namespace LivingMetalGhost.Core.Services;
 
 public sealed class ConversationService
 {
-    private const int MaximumHistoryMessages = 20;
-    private const int MaximumHistoryCharacters = 24000;
     private static readonly Regex MoodTagRegex = new(
         @"^\s*\[mood:\s*(?<mood>[a-z0-9_-]+)\s*\]\s*",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -19,11 +17,11 @@ public sealed class ConversationService
     private readonly PromptAssembler _promptAssembler;
     private readonly StoryStateStore _storyStateStore;
     private readonly RoleplayStateUpdater _roleplayStateUpdater;
+    private readonly ConversationHistoryStore _historyStore;
     private readonly AdvancedSessionLogService _advancedSessionLogService;
     private readonly WorkspaceStore _workspaceStore;
     private readonly Core.Workspace.WorkspaceContextBuilder _workspaceContextBuilder;
-    private readonly Dictionary<ConversationHistoryChannel, List<LlmHistoryMessage>> _histories = new();
-    private readonly Lock _historyLock = new();
+    private readonly Lock _hiddenTraitLock = new();
     private readonly Dictionary<string, HiddenTraitRuntimeState> _hiddenTraitStates = new(StringComparer.OrdinalIgnoreCase);
 
     public ConversationService(
@@ -32,6 +30,7 @@ public sealed class ConversationService
         PromptAssembler promptAssembler,
         StoryStateStore storyStateStore,
         RoleplayStateUpdater roleplayStateUpdater,
+        ConversationHistoryStore historyStore,
         AdvancedSessionLogService advancedSessionLogService,
         WorkspaceStore workspaceStore,
         Core.Workspace.WorkspaceContextBuilder workspaceContextBuilder)
@@ -41,6 +40,7 @@ public sealed class ConversationService
         _promptAssembler = promptAssembler;
         _storyStateStore = storyStateStore;
         _roleplayStateUpdater = roleplayStateUpdater;
+        _historyStore = historyStore;
         _advancedSessionLogService = advancedSessionLogService;
         _workspaceStore = workspaceStore;
         _workspaceContextBuilder = workspaceContextBuilder;
@@ -97,10 +97,10 @@ public sealed class ConversationService
 
         if (!string.IsNullOrWhiteSpace(userText))
         {
-            AddToHistory(mode, "user", userText.Trim());
+            _historyStore.Add(mode, "user", userText.Trim());
         }
 
-        AddToHistory(mode, "assistant", rememberedAssistantText);
+        _historyStore.Add(mode, "assistant", rememberedAssistantText);
     }
 
     private async Task<SkillResult> ChatAsync(string text, ConversationMode mode, CancellationToken cancellationToken)
@@ -128,7 +128,7 @@ public sealed class ConversationService
                 storyState,
                 BuildHiddenTraitDirective(character, mode),
                 repositoryContext),
-            History = GetHistorySnapshot(mode)
+            History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
         var storyCleanText = mode == ConversationMode.Story
@@ -141,8 +141,8 @@ public sealed class ConversationService
             character.Visual,
             response.FromFallback ? "thinking" : "speaking");
 
-        AddToHistory(mode, "user", userTextForProvider);
-        AddToHistory(mode, "assistant", characterText);
+        _historyStore.Add(mode, "user", userTextForProvider);
+        _historyStore.Add(mode, "assistant", characterText);
         if (mode == ConversationMode.Story)
         {
             _roleplayStateUpdater.UpdateAfterTurn(text, characterText, characterMood);
@@ -197,7 +197,7 @@ public sealed class ConversationService
                 mode,
                 storyState,
                 BuildHiddenTraitDirective(character, mode)),
-            History = GetHistorySnapshot(mode)
+            History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
         var characterText = PolishCharacterSpeech(parsed.Text);
@@ -207,7 +207,7 @@ public sealed class ConversationService
             character.Visual,
             response.FromFallback ? "happy" : "speaking");
 
-        AddToHistory(mode, "assistant", characterText);
+        _historyStore.Add(mode, "assistant", characterText);
 
         return new SkillResult
         {
@@ -326,7 +326,7 @@ public sealed class ConversationService
                 mode,
                 storyState,
                 BuildHiddenTraitDirective(character, mode)),
-            History = GetHistorySnapshot(mode)
+            History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
         var characterText = PolishCharacterSpeech(StripLegacyStoryTags(parsed.Text));
@@ -337,7 +337,7 @@ public sealed class ConversationService
             response.FromFallback ? "curious" : "soft-smile");
 
         // idle 비트는 연속성을 위해 히스토리에만 남기고 StoryState(장면/요약)는 바꾸지 않는다.
-        AddToHistory(mode, "assistant", characterText);
+        _historyStore.Add(mode, "assistant", characterText);
 
         return new SkillResult
         {
@@ -393,10 +393,7 @@ public sealed class ConversationService
 
     private int GetAssistantReplyCount(ConversationMode mode)
     {
-        lock (_historyLock)
-        {
-            return GetHistory(mode).Count(message => string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase));
-        }
+        return _historyStore.CountByRole(mode, "assistant");
     }
 
     private IReadOnlyList<HiddenCharacterTrait> GetActiveHiddenTraits(
@@ -406,7 +403,7 @@ public sealed class ConversationService
     {
         var activeTraits = new List<HiddenCharacterTrait>();
 
-        lock (_historyLock)
+        lock (_hiddenTraitLock)
         {
             foreach (var trait in character.HiddenTraits)
             {
@@ -582,51 +579,6 @@ public sealed class ConversationService
 
         polished = Regex.Replace(polished, @"\n{3,}", Environment.NewLine + Environment.NewLine);
         return polished.Trim();
-    }
-
-    private List<LlmHistoryMessage> GetHistory(ConversationMode mode)
-    {
-        var channel = ConversationModePolicy.GetHistoryChannel(mode);
-        if (!_histories.TryGetValue(channel, out var history))
-        {
-            history = [];
-            _histories[channel] = history;
-        }
-
-        return history;
-    }
-
-    private IReadOnlyList<LlmHistoryMessage> GetHistorySnapshot(ConversationMode mode)
-    {
-        lock (_historyLock)
-        {
-            return GetHistory(mode)
-                .Select(message => new LlmHistoryMessage
-                {
-                    Role = message.Role,
-                    Content = message.Content
-                })
-                .ToArray();
-        }
-    }
-
-    private void AddToHistory(ConversationMode mode, string role, string content)
-    {
-        lock (_historyLock)
-        {
-            var history = GetHistory(mode);
-            history.Add(new LlmHistoryMessage
-            {
-                Role = role,
-                Content = content
-            });
-
-            while (history.Count > MaximumHistoryMessages ||
-                   history.Sum(message => message.Content.Length) > MaximumHistoryCharacters)
-            {
-                history.RemoveAt(0);
-            }
-        }
     }
 
     private sealed class HiddenTraitRuntimeState
