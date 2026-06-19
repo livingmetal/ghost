@@ -269,6 +269,12 @@ Roleplay persistence and conversation services.
 typing animation for Daily, Roleplay, and Advanced presentations. View models
 retain only speaking-state and mood coordination around that presenter.
 
+Character selection, scale persistence, speaking-state coordination, and
+post-speech mood timing are physically isolated in
+`UI/CharacterPresentation/ViewModels/MainViewModel.CharacterPresentation.cs`.
+This is a compatibility seam only; no renderer, rigging, or sprite asset behavior
+is changed.
+
 `Application/Conversation/CompanionConversationController.cs` owns skill routing
 and proactive Companion conversation entry points. `ConversationTurnLogWriter`
 owns provider-aware log metadata and persistence for all conversation modes.
