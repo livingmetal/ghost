@@ -142,6 +142,15 @@ Initial folder slice completed:
 - moved LLM provider implementations into `Infrastructure/Llm`;
 - retained production namespaces and runtime behavior for compatibility.
 
+Additional logical seams completed:
+
+- shared Companion versus isolated Roleplay history policy;
+- bounded `ConversationHistoryStore`;
+- response parser and character speech sanitizer;
+- hidden-trait scheduler aligned to conversation channels;
+- Roleplay memory digestion service;
+- deterministic neutral expression policy and application mode coordinator.
+
 ## Phase 5 - Character Presentation Boundary
 
 Introduce interfaces around catalog and renderer selection while preserving the

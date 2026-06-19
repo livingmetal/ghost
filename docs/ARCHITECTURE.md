@@ -155,6 +155,10 @@ Primary files:
 This area owns player-input parsing, Story templates, scene state, fictional
 memory, opening text, and post-turn updates.
 
+`RoleplayMemoryDigestService` owns the six-turn best-effort LLM memory digest
+and replacement of compact Story facts. General conversation orchestration only
+triggers it after a completed Roleplay turn.
+
 Current debt: Story prompt rules still live inside the general
 `PromptAssembler`, while Story display flow remains in `MainViewModel`.
 
