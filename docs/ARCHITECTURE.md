@@ -60,7 +60,10 @@ Primary files:
 - `UI/Workbench/ProjectMemory*`
 - `UI/Settings/*`
 - `UI/DesktopShell/ViewModels/MainViewModel.cs`
+- `UI/DesktopShell/ViewModels/MainViewModel.DesktopServices.cs`
 - `UI/DesktopShell/ViewModels/MainViewModel.ChatPlacement.cs`
+- `UI/Daily/ViewModels/MainViewModel.CompanionConversation.cs`
+- `UI/CharacterPresentation/ViewModels/MainViewModel.CharacterPresentation.cs`
 - `UI/Roleplay/ViewModels/MainViewModel.Roleplay.cs`
 - `UI/Workbench/ViewModels/MainViewModel.*.cs`
 - `UI/Settings/ViewModels/*`
@@ -68,15 +71,17 @@ Primary files:
 The desktop shell owns window placement, visibility, tray behavior, proactive
 timers, and mode-specific companion windows.
 
-Current debt: `MainWindow` and `MainViewModel` both coordinate mode behavior.
-`MainViewModel` also owns conversation display, character mood, logging,
-approval cards, patch proposals, and app commands.
+`MainViewModel` is now split into presentation-specific partials. Application
+services own mode rules, session orchestration, runtime setting interpretation,
+conversation entry points, and log metadata.
+
+Current debt: `MainWindow` still coordinates window visibility and proactive
+timers. Workbench approval cards and patch proposals remain in UI partials.
 
 The first physical UI refactor grouped windows by product experience while
 retaining their existing XAML class identities and namespaces. View-model
-partials were placed with their owning experience, while the common
-`MainViewModel` remains the coordination point. Behavioral decomposition remains
-a separate step.
+partials and application services now hold the extracted behavior, while the
+common `MainViewModel` remains the observable composition point.
 
 ### Character and Sprite Presentation
 
@@ -103,12 +108,14 @@ Primary files:
 - `Core/Conversation/Services/ConversationService.cs`
 - `Core/Conversation/Services/PromptAssembler.cs`
 - `Core/Conversation/Services/ConversationLogService.cs`
+- `Core/Conversation/Requests/ConversationRequestFactory.cs`
+- `Core/Conversation/Responses/ConversationResponseProcessor.cs`
 - `Core/Conversation/Models/*`
 - `Infrastructure/Llm/*`
 
-`ConversationService` selects a provider, builds prompts, manages in-memory
-history, parses response mood tags, updates mode-specific persistence, and logs
-Advanced turns.
+`ConversationService` is a compatibility facade that selects a provider,
+executes requests, records completed history, and triggers mode-specific
+post-turn work.
 
 Conversation history is split into two channels:
 
@@ -153,9 +160,10 @@ Provider selection and execution remain in `ConversationService`.
 activation state. It follows the same Companion/Roleplay channel split as
 conversation history.
 
-Current debt: Daily, Story, and Advanced workflows share one large service.
-Repository context, Story memory digestion, response cleanup, and history
-management are coupled to provider invocation.
+Current debt: Daily, Story, and Advanced provider execution still shares one
+facade. Provider selection and mode-specific post-turn triggers remain there,
+but request assembly, response cleanup, history storage, repository context,
+Story memory digestion, and Advanced logging have explicit boundaries.
 
 ### Roleplay and Visual-Novel Mode
 
@@ -186,8 +194,9 @@ player-agency rules, input syntax, visual-novel response style, scene state, and
 compact memory injection. General `PromptAssembler` selects this policy without
 containing Roleplay-specific prompt text.
 
-Current debt: Story message animation and WPF presentation remain in
-`MainViewModel`.
+Current debt: Story WPF presentation remains in the Roleplay view-model partial
+and `StoryWindow`. Shared message pacing is handled by
+`AssistantMessagePresenter`.
 
 ### Agent, Tool, and Command Execution
 
@@ -402,21 +411,29 @@ MSBuild exclusion guards prevent `_work`, `_original`, `References`, `Rigging`,
 and Python cache directories from entering build or publish output if they are
 accidentally added below runtime assets.
 
-### Large Coordination Classes
+### Remaining Coordination Debt
 
-`MainViewModel`, `MainWindow`, `ConversationService`, `PromptAssembler`, and
-`CharacterHost` are the main concentration points. Split them by extracting
-testable behavior before moving files or changing namespaces.
+`MainWindow` and `CharacterHost` are the remaining large coordination points.
+`MainWindow` owns desktop window/timer behavior. `CharacterHost` still combines
+asset loading, render strategy selection, animation scheduling, and WPF
+drawing.
+
+Workbench approval handling still resolves services from
+`App.Services`. Replace that service location only in a dedicated,
+approval-focused change with command-policy regression tests.
 
 ## Safe Refactoring Sequence
 
-1. Consolidate canonical documentation.
-2. Add characterization tests around mode boundaries and current stores.
-3. Extract mode coordination from `MainViewModel`.
-4. Extract Story conversation flow from general conversation orchestration.
-5. Introduce a character visual-state/renderer boundary.
-6. Consolidate Advanced approval and workbench services.
-7. Inventory and remove the legacy duplicate tree.
-8. Move namespaces and directories only after behavior is covered.
+1. [Completed] Consolidate canonical documentation.
+2. [Completed] Add characterization tests around mode boundaries and stores.
+3. [Completed] Extract mode and session coordination from `MainViewModel`.
+4. [Completed] Separate request, response, history, Roleplay, and Advanced
+   conversation responsibilities behind explicit services.
+5. [Deferred] Split `CharacterHost` into renderer strategies. Do not implement
+   rigging or sprite composition as part of this refactor.
+6. [Deferred] Remove service location from Advanced approval/workbench flows.
+7. [Completed] Inventory and remove the legacy duplicate tree.
+8. [Completed] Group source files by responsibility while retaining compatible
+   namespaces and runtime behavior.
 
 Every step must leave the WPF project buildable.

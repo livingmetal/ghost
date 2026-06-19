@@ -11,23 +11,45 @@ composition engine.
 
 ## Baseline
 
-Expected baseline tag:
+The originally requested tag was:
 
 ```text
 refactor-baseline-20260619
 ```
 
-The tag was not present in the local tag list during the documentation refactor.
-Before deleting legacy files or performing broad moves:
+That tag was not present locally. The refactor instead established these
+recorded checkpoints:
 
-1. check whether the tag exists on the remote;
-2. fetch tags if appropriate;
-3. otherwise create an agreed local baseline tag from the intended commit;
-4. record the baseline commit SHA in the change report.
+- `refactor-architecture-checkpoint-20260619` at `9d9177b`;
+- `refactor-legacy-cleanup-checkpoint-20260619` at `caa65d3`;
+- `refactor-asset-boundary-checkpoint-20260619` at `039f2bd`.
 
 Initial Release build diagnosis succeeded with zero warnings and zero errors.
 The build regenerates `Assets/App/LivingMetalGhost.ico`, so generated icon
 changes must be separated from intended refactoring.
+
+## Completion Status
+
+Status: substantially completed.
+
+- Canonical documentation and directory boundaries are established.
+- Daily and Advanced share Companion history; Roleplay history is isolated.
+- Mode, Roleplay session, Companion request, response processing, logging,
+  runtime settings, and character mood responsibilities have explicit seams.
+- `MainViewModel` is grouped into small responsibility-specific partials.
+- `ConversationService` remains a compatibility facade for provider execution
+  and mode-specific post-turn triggers.
+- The legacy duplicate tree was removed and authoring material was separated
+  from runtime assets.
+- Release verification currently passes with 118 tests, zero build warnings,
+  and zero build errors.
+
+The remaining work is intentionally deferred because it changes high-risk WPF
+rendering or approval execution paths:
+
+- split `CharacterHost` into renderer strategies;
+- remove service location from Advanced approval handling;
+- perform manual interactive smoke testing of all desktop windows.
 
 ## Current Problems
 
@@ -35,16 +57,17 @@ changes must be separated from intended refactoring.
   rules, handoff notes, implementation details, and future roadmaps.
 - `src/LivingMetalGhost/Ghost` contained 251 tracked legacy duplicate files and
   was excluded from the active project by explicit MSBuild rules.
-- `MainViewModel` coordinates UI state, conversations, Story flow, sprite state,
-  logging, approvals, agent jobs, patch proposals, and app commands.
-- `ConversationService` owns common chat, Story chat, Advanced context, history,
-  response cleanup, Story memory digestion, and Advanced logging.
+- `MainViewModel` previously coordinated UI state, conversations, Story flow,
+  sprite state, logging, approvals, agent jobs, patch proposals, and commands.
+- `ConversationService` previously owned request assembly, common chat, Story
+  chat, Advanced context, history, response cleanup, Story memory digestion,
+  and Advanced logging.
 - `CharacterHost` combines WPF hosting, asset loading, image caching, renderer
   selection, animation timers, and manifest-layer composition.
 - Runtime character assets, source-art work files, references, generated
-  intermediates, and future rigging designs share the same tree.
-- Some tracked generated files, including Python bytecode under character work
-  directories, have no runtime purpose.
+  intermediates, and future rigging designs previously shared the same tree.
+- Tracked generated files, including Python bytecode under character work
+  directories, previously had no runtime purpose.
 
 ## Phase 1 - Canonical Documentation
 
@@ -94,6 +117,10 @@ Initial folder slice completed:
 - moved matching tests into `tests/.../Core/Roleplay`;
 - retained existing namespaces and behavior for compatibility.
 
+Status: completed. The suite now covers mode precedence, history isolation,
+Roleplay syntax/state, character asset contracts, prompt policies, request and
+response pipelines, command policy, workspace guards, and UI message pacing.
+
 ## Phase 3 - Mode Coordination Seam
 
 Extract mode transition and session-coordination behavior from `MainViewModel`.
@@ -115,6 +142,10 @@ Risk:
 - window visibility currently depends on `MainWindow` observing view-model
   properties;
 - startup explicitly disables Story mode while preserving Story state.
+
+Status: completed. `ConversationModeCoordinator`,
+`RoleplaySessionController`, and presentation-specific view-model partials own
+the extracted rules and flows.
 
 ## Phase 4 - Conversation and Roleplay Separation
 
@@ -165,6 +196,9 @@ Additional logical seams completed:
 - shared conversation response processing pipeline;
 - shared LLM conversation request factory.
 
+Status: substantially completed. `ConversationService` is retained as a facade
+for provider execution and post-turn dispatch rather than removed or renamed.
+
 ## Phase 5 - Character Presentation Boundary
 
 Introduce interfaces around catalog and renderer selection while preserving the
@@ -198,6 +232,10 @@ Initial folder slice completed:
 - retained production namespaces and XAML class identity for compatibility;
 - did not add a rigging engine or image-generation integration.
 
+Status: boundary and policy completed. Renderer-strategy extraction from
+`CharacterHost` is deferred. No rigging, sprite composition, asset generation,
+or image-generation integration was implemented.
+
 ## Phase 6 - Workbench and Approval Boundary
 
 Consolidate workspace, patch, command policy, approvals, and agent execution
@@ -224,6 +262,10 @@ Initial folder slice completed:
   `Core/Workbench/{Services,Models}`;
 - moved matching tests into `tests/.../Core/Workbench`;
 - retained production namespaces and behavior for compatibility.
+
+Status: folder boundary completed. Approval service-location removal is deferred
+because it affects workspace-changing execution and requires a dedicated
+regression pass.
 
 ## Phase 7 - Repository Hygiene
 
@@ -263,6 +305,11 @@ Legacy-tree cleanup completed:
   normalization tools under `authoring/Characters`;
 - removed superseded legacy code and duplicate runtime assets;
 - removed obsolete `Ghost/**` project exclusion rules.
+
+Final audit found no additional code or document deletion candidate that was
+both proven unused and safe to remove. `AGENT.md` remains an intentional
+compatibility pointer. Character references, offline tools, and rigging drafts
+remain under `authoring/Characters` and are excluded from runtime output.
 
 System folder slice completed before repository cleanup:
 
