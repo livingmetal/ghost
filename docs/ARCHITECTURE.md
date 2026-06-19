@@ -275,6 +275,12 @@ post-speech mood timing are physically isolated in
 This is a compatibility seam only; no renderer, rigging, or sprite asset behavior
 is changed.
 
+Desktop conversation commands are physically grouped by presentation:
+`UI/Daily/ViewModels/MainViewModel.CompanionConversation.cs` owns shared
+Daily/Advanced send and proactive flows, while
+`UI/Roleplay/ViewModels/MainViewModel.Roleplay.cs` owns Story activation, send,
+idle, reset, and state summary flows.
+
 `Application/Conversation/CompanionConversationController.cs` owns skill routing
 and proactive Companion conversation entry points. `ConversationTurnLogWriter`
 owns provider-aware log metadata and persistence for all conversation modes.

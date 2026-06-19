@@ -1,10 +1,143 @@
 using System.Text;
+using CommunityToolkit.Mvvm.Input;
 using LivingMetalGhost.AppCore.ModeCoordination;
+using LivingMetalGhost.Core.Models;
 
 namespace LivingMetalGhost.UI.ViewModels;
 
 public partial class MainViewModel
 {
+    public void SetStoryMode(bool enabled)
+    {
+        var wasEnabled = IsStoryMode;
+        var state = _roleplaySessionController.SetEnabled(enabled);
+        IsStoryMode = enabled;
+
+        if (enabled && !wasEnabled)
+        {
+            ShowRoleplayOpening(state);
+        }
+    }
+
+    public void ToggleStoryMode()
+    {
+        SetStoryMode(!IsStoryMode);
+    }
+
+    private void ShowRoleplayOpening(StoryState state)
+    {
+        var openingText = _roleplaySessionController.BuildOpeningText(state);
+        StoryMessages.Add(new ChatMessage
+        {
+            Text = openingText,
+            SpeakerName = "STORY",
+            IsProactive = true,
+            IsRoleplay = true
+        });
+    }
+
+    partial void OnIsStoryModeChanged(bool value)
+    {
+        RefreshModePresentation();
+    }
+
+    [RelayCommand]
+    private async Task StorySendAsync()
+    {
+        if (_isStoryResponding)
+        {
+            return;
+        }
+
+        var rawText = StoryInputText.Trim();
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            return;
+        }
+
+        _isStoryResponding = true;
+        StoryMessages.Add(new ChatMessage
+        {
+            Text = rawText,
+            SpeakerName = "YOU",
+            IsUser = true,
+            IsRoleplay = true
+        });
+        StoryInputText = string.Empty;
+
+        try
+        {
+            var result = await _roleplaySessionController.SendAsync(
+                rawText,
+                CancellationToken.None);
+            await DisplayAssistantResponseAsync(
+                result.BubbleText,
+                false,
+                result.Mood,
+                StoryMessages,
+                ConversationMode.Story,
+                false);
+            await WriteLogAsync(
+                rawText,
+                result.BubbleText,
+                false,
+                result.Mood,
+                ConversationMode.Story);
+        }
+        catch (Exception ex)
+        {
+            StoryMessages.Add(new ChatMessage
+            {
+                Text = $"롤플레잉 응답을 처리하지 못했어요: {ex.Message}",
+                SpeakerName = "SYSTEM",
+                IsRoleplay = true
+            });
+        }
+        finally
+        {
+            _isStoryResponding = false;
+        }
+    }
+
+    /// <summary>스토리 모드에서 사용자가 조용할 때 짧은 존재감 비트를 띄운다(Phase 4 idle presence).</summary>
+    public async Task StartStoryIdleAsync()
+    {
+        if (!ConversationModeCoordinator.IsRoleplayActive(IsStoryMode, IsAdvancedMode) ||
+            _isResponding ||
+            _isStoryResponding ||
+            IsCharacterSpeaking)
+        {
+            return;
+        }
+
+        _isStoryResponding = true;
+        CancelMoodHold();
+        SetCharacterMood(_spriteDirector.ResolveThinkingMood(ConversationMode.Story));
+
+        try
+        {
+            var result = await _roleplaySessionController.StartIdleAsync(
+                CancellationToken.None);
+            var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, ConversationMode.Story);
+            SetCharacterMood(assistantMood);
+            await DisplayAssistantResponseAsync(
+                result.BubbleText,
+                isProactive: true,
+                assistantMood,
+                StoryMessages,
+                ConversationMode.Story,
+                animateCharacter: true);
+        }
+        catch
+        {
+            // Idle presence is optional and should fail silently.
+        }
+        finally
+        {
+            _isStoryResponding = false;
+        }
+    }
+
     public string GetRoleplayStateSummary()
     {
         var snapshot = _roleplaySessionController.GetSnapshot();
