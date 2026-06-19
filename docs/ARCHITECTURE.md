@@ -269,6 +269,10 @@ Roleplay persistence and conversation services.
 typing animation for Daily, Roleplay, and Advanced presentations. View models
 retain only speaking-state and mood coordination around that presenter.
 
+`Application/Conversation/CompanionConversationController.cs` owns skill routing
+and proactive Companion conversation entry points. `ConversationTurnLogWriter`
+owns provider-aware log metadata and persistence for all conversation modes.
+
 ### Core/Conversation
 
 Owns conversation requests, history, response normalization, and provider-facing

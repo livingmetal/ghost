@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LivingMetalGhost.AppCore.Conversation;
 using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.AppCore.Roleplay;
 using LivingMetalGhost.Core.Config;
@@ -17,10 +18,10 @@ namespace LivingMetalGhost.UI.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly AppConfigLoader _configLoader;
-    private readonly IntentRouter _intentRouter;
     private readonly SettingsViewModel _settingsViewModel;
-    private readonly ConversationService _conversationService;
     private readonly ConversationLogService _conversationLogService;
+    private readonly CompanionConversationController _companionConversationController;
+    private readonly ConversationTurnLogWriter _conversationTurnLogWriter;
     private readonly SpriteDirector _spriteDirector;
     private readonly RoleplaySessionController _roleplaySessionController;
     private readonly AssistantMessagePresenter _assistantMessagePresenter;
@@ -82,19 +83,19 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel(
         AppConfigLoader configLoader,
-        IntentRouter intentRouter,
         SettingsViewModel settingsViewModel,
-        ConversationService conversationService,
         ConversationLogService conversationLogService,
+        CompanionConversationController companionConversationController,
+        ConversationTurnLogWriter conversationTurnLogWriter,
         SpriteDirector spriteDirector,
         RoleplaySessionController roleplaySessionController,
         AssistantMessagePresenter assistantMessagePresenter)
     {
         _configLoader = configLoader;
-        _intentRouter = intentRouter;
         _settingsViewModel = settingsViewModel;
-        _conversationService = conversationService;
         _conversationLogService = conversationLogService;
+        _companionConversationController = companionConversationController;
+        _conversationTurnLogWriter = conversationTurnLogWriter;
         _spriteDirector = spriteDirector;
         _roleplaySessionController = roleplaySessionController;
         _assistantMessagePresenter = assistantMessagePresenter;
@@ -154,16 +155,7 @@ public partial class MainViewModel : ObservableObject
 
     private string BuildProviderLabel(ConversationMode mode)
     {
-        var config = _configLoader.Load();
-        var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
-        var modeLabel = mode switch
-        {
-            ConversationMode.Advanced => "ADVANCED",
-            ConversationMode.Story => "STORY",
-            _ => "DAILY"
-        };
-        var model = string.IsNullOrWhiteSpace(llm.Model) ? "(default)" : llm.Model;
-        return $"{modeLabel}: {llm.Provider} / {model}";
+        return _conversationTurnLogWriter.GetProviderLabel(mode);
     }
 
     public (bool Enabled, int MinMinutes, int MaxMinutes) GetProactiveChatSettings()
@@ -277,12 +269,15 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var skill = _intentRouter.Route(request);
-            var result = await skill.HandleAsync(request, CancellationToken.None);
+            var turn = await _companionConversationController.SendAsync(
+                request.RawText,
+                request.UseAdvancedModel,
+                CancellationToken.None);
+            var result = turn.Result;
             BubbleText = result.BubbleText;
             var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, CurrentMode);
             SetCharacterMood(assistantMood);
-            CaptureAgentJobs(request, result);
+            CaptureAgentJobs(turn.Request, result);
             await DisplayAssistantResponseAsync(result.BubbleText, isProactive: false, assistantMood);
             await WriteLogAsync(request.RawText, result.BubbleText, isProactive: false, assistantMood);
             if (IsAdvancedMode)
@@ -396,7 +391,8 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var result = await _conversationService.StartConversationAsync(CancellationToken.None);
+            var result = await _companionConversationController.StartAsync(
+                CancellationToken.None);
             BubbleText = result.BubbleText;
             var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, CurrentMode);
             SetCharacterMood(assistantMood);
@@ -638,24 +634,17 @@ public partial class MainViewModel : ObservableObject
         string mood = "speaking",
         ConversationMode? modeOverride = null)
     {
-        var config = _configLoader.Load();
         var mode = modeOverride ?? CurrentMode;
-        var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
-
-        await _conversationLogService.AppendAsync(new ConversationLogEntry
-        {
-            Timestamp = DateTimeOffset.Now,
-            UserText = userText,
-            AssistantText = assistantText,
-            Provider = llm.Provider,
-            Model = llm.Model,
-            IsProactive = isProactive,
-            CharacterId = SelectedCharacterId,
-            CharacterName = CharacterDisplayName,
-            ProviderLabel = BuildProviderLabel(mode),
-            Mood = mood,
-            Mode = mode.ToString()
-        }, CancellationToken.None);
+        await _conversationTurnLogWriter.WriteAsync(
+            new ConversationTurnLogContext(
+                userText,
+                assistantText,
+                isProactive,
+                mood,
+                mode,
+                SelectedCharacterId,
+                CharacterDisplayName),
+            CancellationToken.None);
     }
 
     private void RefreshSelectedCharacter()
