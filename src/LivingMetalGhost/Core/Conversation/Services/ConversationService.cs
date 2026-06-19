@@ -10,9 +10,6 @@ namespace LivingMetalGhost.Core.Services;
 
 public sealed class ConversationService
 {
-    private static readonly Regex MoodTagRegex = new(
-        @"^\s*\[mood:\s*(?<mood>[a-z0-9_-]+)\s*\]\s*",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private readonly AppConfigLoader _configLoader;
     private readonly ILlmProviderFactory _providerFactory;
     private readonly PromptAssembler _promptAssembler;
@@ -131,9 +128,9 @@ public sealed class ConversationService
                 repositoryContext),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
-        var parsed = ParseMoodTaggedResponse(response.Text);
+        var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
         var storyCleanText = mode == ConversationMode.Story
-            ? StripLegacyStoryTags(parsed.Text)
+            ? ConversationResponseParser.StripLegacyRoleplayTags(parsed.Text)
             : parsed.Text;
         var characterText = PolishCharacterSpeech(storyCleanText);
         var characterMood = ResolveResponseMood(
@@ -199,7 +196,7 @@ public sealed class ConversationService
                 BuildHiddenTraitDirective(character, mode)),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
-        var parsed = ParseMoodTaggedResponse(response.Text);
+        var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
         var characterText = PolishCharacterSpeech(parsed.Text);
         var characterMood = ResolveResponseMood(
             mode,
@@ -327,8 +324,9 @@ public sealed class ConversationService
                 BuildHiddenTraitDirective(character, mode)),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
-        var parsed = ParseMoodTaggedResponse(response.Text);
-        var characterText = PolishCharacterSpeech(StripLegacyStoryTags(parsed.Text));
+        var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
+        var characterText = PolishCharacterSpeech(
+            ConversationResponseParser.StripLegacyRoleplayTags(parsed.Text));
         var characterMood = ResolveResponseMood(
             mode,
             parsed.Mood,
@@ -433,35 +431,6 @@ public sealed class ConversationService
         }
 
         return activeTraits;
-    }
-
-    private static (string Text, string? Mood) ParseMoodTaggedResponse(string responseText)
-    {
-        if (string.IsNullOrWhiteSpace(responseText))
-        {
-            return (string.Empty, null);
-        }
-
-        var match = MoodTagRegex.Match(responseText);
-        if (!match.Success)
-        {
-            return (responseText.Trim(), null);
-        }
-
-        var mood = match.Groups["mood"].Value.Trim().ToLowerInvariant();
-        var text = responseText[match.Length..].Trim();
-        return (text, mood);
-    }
-
-    private static string StripLegacyStoryTags(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return string.Empty;
-        }
-
-        var cleaned = Regex.Replace(text, @"\[story:\s*[^\]]*\]", string.Empty, RegexOptions.IgnoreCase);
-        return Regex.Replace(cleaned, @"\n{3,}", Environment.NewLine + Environment.NewLine).Trim();
     }
 
     private static string? NormalizeMood(string? mood, CharacterVisualProfile visual)

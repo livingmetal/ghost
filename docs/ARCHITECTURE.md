@@ -125,6 +125,9 @@ reserved for deterministic application rules.
 history, channel resolution, snapshots, and role counts. `ConversationService`
 uses this store instead of owning history collections directly.
 
+`Core/Conversation/Responses/ConversationResponseParser.cs` owns leading mood
+tag parsing and removal of legacy Roleplay metadata tags.
+
 Current debt: Daily, Story, and Advanced workflows share one large service.
 Repository context, Story memory digestion, response cleanup, and history
 management are coupled to provider invocation.
