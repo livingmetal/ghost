@@ -98,6 +98,13 @@ are stored under:
   character presentation model and future rigging boundary.
 - [`plans/README.md`](./plans/README.md): future proposals and roadmaps.
 
+## Providers
+
+- Mock
+- Gemini
+- OpenAI-compatible APIs
+- Local and installed-app providers for Advanced mode
+
 ## Safety
 
 - Daily and Story modes must not execute local commands.
