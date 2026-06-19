@@ -68,15 +68,17 @@ Primary files:
 - `UI/Workbench/ViewModels/MainViewModel.*.cs`
 - `UI/Settings/ViewModels/*`
 
-The desktop shell owns window placement, visibility, tray behavior, proactive
-timers, and mode-specific companion windows.
+The desktop shell owns window visibility, tray behavior, the WPF timer adapter,
+and mode-specific companion windows. Pure window placement calculations live in
+`Application/Desktop/CompanionWindowPlacement.cs`. Proactive Daily/Story
+schedule state lives in `Application/Desktop/ProactivePresenceScheduler.cs`.
 
 `MainViewModel` is now split into presentation-specific partials. Application
 services own mode rules, session orchestration, runtime setting interpretation,
 conversation entry points, and log metadata.
 
-Current debt: `MainWindow` still coordinates window visibility and proactive
-timers. Workbench approval cards and patch proposals remain in UI partials.
+Current debt: `MainWindow` still coordinates companion-window creation and
+visibility. Workbench approval cards and patch proposals remain in UI partials.
 
 The first physical UI refactor grouped windows by product experience while
 retaining their existing XAML class identities and namespaces. View-model

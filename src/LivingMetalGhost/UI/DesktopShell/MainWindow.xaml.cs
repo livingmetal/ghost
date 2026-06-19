@@ -315,15 +315,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        var workArea = SystemParameters.WorkArea;
-        _storyWindow.Left = Math.Clamp(
-            workArea.Left + (workArea.Width - _storyWindow.Width) / 2,
-            workArea.Left,
-            workArea.Right - _storyWindow.Width);
-        _storyWindow.Top = Math.Clamp(
-            workArea.Top + (workArea.Height - _storyWindow.Height) / 2,
-            workArea.Top,
-            workArea.Bottom - _storyWindow.Height);
+        ApplyPosition(
+            _storyWindow,
+            CompanionWindowPlacement.Center(
+                GetWorkArea(),
+                GetSize(_storyWindow)));
     }
 
     private void SyncStoryWindowVisibility()
@@ -366,27 +362,17 @@ public partial class MainWindow : Window
             return;
         }
 
-        var workArea = SystemParameters.WorkArea;
-
-        // Character sprites often include a large transparent canvas. Intentionally overlap the
-        // companion window so the visible speech bubble sits closer to the rendered character.
-        var horizontalOverlap = Math.Clamp(Width * 0.38, 128, 220);
-        var verticalOffset = Math.Clamp(Height * 0.08, 12, 48);
-
-        var preferredLeft = Left - _chatWindow.Width + horizontalOverlap;
-        if (preferredLeft < workArea.Left)
-        {
-            preferredLeft = Left + Width - horizontalOverlap;
-        }
-
-        _chatWindow.Left = Math.Clamp(
-            preferredLeft,
-            workArea.Left,
-            workArea.Right - _chatWindow.Width);
-        _chatWindow.Top = Math.Clamp(
-            Top + verticalOffset,
-            workArea.Top,
-            workArea.Bottom - _chatWindow.Height);
+        var companionSize = GetSize(this);
+        ApplyPosition(
+            _chatWindow,
+            CompanionWindowPlacement.PositionChat(
+                GetWorkArea(),
+                new DesktopBounds(
+                    Left,
+                    Top,
+                    companionSize.Width,
+                    companionSize.Height),
+                GetSize(_chatWindow)));
     }
 
     private void PositionAdvancedWorkbenchWindow()
@@ -396,15 +382,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        var workArea = SystemParameters.WorkArea;
-        _advancedWorkbenchWindow.Left = Math.Clamp(
-            workArea.Left + (workArea.Width - _advancedWorkbenchWindow.Width) / 2,
-            workArea.Left,
-            workArea.Right - _advancedWorkbenchWindow.Width);
-        _advancedWorkbenchWindow.Top = Math.Clamp(
-            workArea.Top + (workArea.Height - _advancedWorkbenchWindow.Height) / 2,
-            workArea.Top,
-            workArea.Bottom - _advancedWorkbenchWindow.Height);
+        ApplyPosition(
+            _advancedWorkbenchWindow,
+            CompanionWindowPlacement.Center(
+                GetWorkArea(),
+                GetSize(_advancedWorkbenchWindow)));
     }
 
     private void PositionCompanionWindows()
@@ -442,9 +424,12 @@ public partial class MainWindow : Window
 
     private void ResetPosition()
     {
-        var workArea = SystemParameters.WorkArea;
-        Left = workArea.Right - Width - 24;
-        Top = workArea.Bottom - Height - 24;
+        ApplyPosition(
+            this,
+            CompanionWindowPlacement.BottomRight(
+                GetWorkArea(),
+                GetSize(this),
+                margin: 24));
         PositionCompanionWindows();
     }
 
@@ -593,10 +578,42 @@ public partial class MainWindow : Window
 
     private void KeepOnScreen()
     {
-        var workArea = SystemParameters.WorkArea;
-        Left = Math.Clamp(Left, workArea.Left, Math.Max(workArea.Left, workArea.Right - ActualWidth));
-        Top = Math.Clamp(Top, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - ActualHeight));
+        ApplyPosition(
+            this,
+            CompanionWindowPlacement.Clamp(
+                GetWorkArea(),
+                new DesktopPosition(Left, Top),
+                new DesktopSize(ActualWidth, ActualHeight)));
         PositionCompanionWindows();
+    }
+
+    private static DesktopBounds GetWorkArea()
+    {
+        var workArea = SystemParameters.WorkArea;
+        return new DesktopBounds(
+            workArea.Left,
+            workArea.Top,
+            workArea.Width,
+            workArea.Height);
+    }
+
+    private static DesktopSize GetSize(Window window)
+    {
+        var width = double.IsNaN(window.Width) || window.Width <= 0
+            ? window.ActualWidth
+            : window.Width;
+        var height = double.IsNaN(window.Height) || window.Height <= 0
+            ? window.ActualHeight
+            : window.Height;
+        return new DesktopSize(width, height);
+    }
+
+    private static void ApplyPosition(
+        Window window,
+        DesktopPosition position)
+    {
+        window.Left = position.Left;
+        window.Top = position.Top;
     }
 
     private void OpenSettings()
