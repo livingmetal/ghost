@@ -3,12 +3,14 @@ using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 using LivingMetalGhost.Agents;
+using LivingMetalGhost.AppCore.Roleplay;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Facts;
 using LivingMetalGhost.Core.Facts.Meals.Kaist;
 using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Reminders;
+using LivingMetalGhost.Core.Roleplay;
 using LivingMetalGhost.Core.Security;
 using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.Core.Workbench;
@@ -151,6 +153,9 @@ public partial class App : Application
         services.AddSingleton<ConversationHistoryStore>();
         services.AddSingleton<HiddenTraitScheduler>();
         services.AddSingleton<ConversationService>();
+        services.AddSingleton<IRoleplayConversation>(
+            serviceProvider => serviceProvider.GetRequiredService<ConversationService>());
+        services.AddSingleton<RoleplaySessionController>();
         services.AddSingleton<ConversationLogService>();
         services.AddSingleton<SpriteDirector>();
         services.AddSingleton<FactStore>();

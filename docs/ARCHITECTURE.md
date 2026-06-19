@@ -159,12 +159,17 @@ memory, opening text, and post-turn updates.
 and replacement of compact Story facts. General conversation orchestration only
 triggers it after a completed Roleplay turn.
 
+`Application/Roleplay/RoleplaySessionController.cs` owns Roleplay activation,
+reset, state snapshots, opening text, conversation turns, and idle turns.
+`MainViewModel` no longer accesses `StoryStateStore` directly.
+
 `Core/Roleplay/Prompts/RoleplayPromptPolicy.cs` owns fictional isolation,
 player-agency rules, input syntax, visual-novel response style, scene state, and
 compact memory injection. General `PromptAssembler` selects this policy without
 containing Roleplay-specific prompt text.
 
-Current debt: Story display flow remains in `MainViewModel`.
+Current debt: Story message animation and WPF presentation remain in
+`MainViewModel`.
 
 ### Agent, Tool, and Command Execution
 
@@ -255,6 +260,10 @@ shell:
   suspended until Advanced closes;
 - Daily chat and speech-bubble overlays are suppressed during Story or
   Advanced presentation.
+
+`RoleplaySessionController` now owns the Roleplay session lifecycle used by the
+desktop shell. The UI consumes session operations without directly coordinating
+Roleplay persistence and conversation services.
 
 ### Core/Conversation
 

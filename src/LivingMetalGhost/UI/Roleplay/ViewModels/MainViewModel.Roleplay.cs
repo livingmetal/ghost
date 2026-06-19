@@ -7,8 +7,9 @@ public partial class MainViewModel
 {
     public string GetRoleplayStateSummary()
     {
-        var state = _storyStateStore.Load();
-        var memoryEntries = _storyStateStore.CountMemoryEntries();
+        var snapshot = _roleplaySessionController.GetSnapshot();
+        var state = snapshot.State;
+        var memoryEntries = snapshot.MemoryEntries;
         var scene = string.IsNullOrWhiteSpace(state.Scene)
             ? "아직 고정된 장면 없음"
             : state.Scene.Trim();
@@ -33,7 +34,7 @@ public partial class MainViewModel
         builder.AppendLine(summary);
         builder.AppendLine();
         builder.AppendLine("저장 위치");
-        builder.AppendLine(_storyStateStore.StoryRoot);
+        builder.AppendLine(snapshot.StoryRoot);
         return builder.ToString();
     }
 
@@ -42,7 +43,7 @@ public partial class MainViewModel
         var keepEnabled = ConversationModeCoordinator.IsRoleplayActive(
             IsStoryMode,
             IsAdvancedMode);
-        var state = _storyStateStore.Reset(keepEnabled);
+        var state = _roleplaySessionController.Reset(keepEnabled);
         IsStoryMode = state.Enabled;
         StoryMessages.Clear();
         if (IsStoryMode)

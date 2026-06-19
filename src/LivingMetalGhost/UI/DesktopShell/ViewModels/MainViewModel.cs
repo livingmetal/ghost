@@ -6,6 +6,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LivingMetalGhost.AppCore.ModeCoordination;
+using LivingMetalGhost.AppCore.Roleplay;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Presentation;
@@ -23,7 +24,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ConversationService _conversationService;
     private readonly ConversationLogService _conversationLogService;
     private readonly SpriteDirector _spriteDirector;
-    private readonly StoryStateStore _storyStateStore;
+    private readonly RoleplaySessionController _roleplaySessionController;
     private bool _isResponding;
     private bool _isStoryResponding;
     private CancellationTokenSource? _moodHoldCts;
@@ -87,7 +88,7 @@ public partial class MainViewModel : ObservableObject
         ConversationService conversationService,
         ConversationLogService conversationLogService,
         SpriteDirector spriteDirector,
-        StoryStateStore storyStateStore)
+        RoleplaySessionController roleplaySessionController)
     {
         _configLoader = configLoader;
         _intentRouter = intentRouter;
@@ -95,8 +96,8 @@ public partial class MainViewModel : ObservableObject
         _conversationService = conversationService;
         _conversationLogService = conversationLogService;
         _spriteDirector = spriteDirector;
-        _storyStateStore = storyStateStore;
-        IsStoryMode = _storyStateStore.Load().Enabled;
+        _roleplaySessionController = roleplaySessionController;
+        IsStoryMode = _roleplaySessionController.IsEnabled;
         RefreshSelectedCharacter();
         _ = RefreshLocalLmAvailabilityAsync();
     }
@@ -211,7 +212,7 @@ public partial class MainViewModel : ObservableObject
     public void SetStoryMode(bool enabled)
     {
         var wasEnabled = IsStoryMode;
-        var state = _storyStateStore.SetEnabled(enabled);
+        var state = _roleplaySessionController.SetEnabled(enabled);
         IsStoryMode = enabled;
 
         if (enabled && !wasEnabled)
@@ -227,7 +228,7 @@ public partial class MainViewModel : ObservableObject
 
     private void ShowRoleplayOpening(StoryState state)
     {
-        var openingText = StoryStateStore.BuildOpeningText(state);
+        var openingText = _roleplaySessionController.BuildOpeningText(state);
         StoryMessages.Add(new ChatMessage
         {
             Text = openingText,
@@ -333,7 +334,9 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var result = await _conversationService.RoleplayAsync(rawText, CancellationToken.None);
+            var result = await _roleplaySessionController.SendAsync(
+                rawText,
+                CancellationToken.None);
             await DisplayAssistantResponseAsync(
                 result.BubbleText,
                 false,
@@ -428,7 +431,8 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var result = await _conversationService.StartStoryIdleAsync(CancellationToken.None);
+            var result = await _roleplaySessionController.StartIdleAsync(
+                CancellationToken.None);
             var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, ConversationMode.Story);
             SetCharacterMood(assistantMood);
             await DisplayAssistantResponseAsync(

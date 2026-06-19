@@ -2,11 +2,12 @@ using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Presentation;
+using LivingMetalGhost.Core.Roleplay;
 using LivingMetalGhost.Providers.Llm;
 
 namespace LivingMetalGhost.Core.Services;
 
-public sealed class ConversationService
+public sealed class ConversationService : IRoleplayConversation
 {
     private readonly AppConfigLoader _configLoader;
     private readonly ILlmProviderFactory _providerFactory;
@@ -49,6 +50,15 @@ public sealed class ConversationService
     {
         return ChatAsync(text, ConversationMode.Story, cancellationToken);
     }
+
+    Task<SkillResult> IRoleplayConversation.SendAsync(
+        string text,
+        CancellationToken cancellationToken) =>
+        RoleplayAsync(text, cancellationToken);
+
+    Task<SkillResult> IRoleplayConversation.StartIdleAsync(
+        CancellationToken cancellationToken) =>
+        StartStoryIdleAsync(cancellationToken);
 
     public void RememberExternalTurn(
         ConversationMode mode,
