@@ -105,7 +105,7 @@ public sealed class ConversationService : IRoleplayConversation
             ? _advancedConversationSupport.BuildRepositoryContext(normalizedText)
             : string.Empty;
         var provider = _providerFactory.Create(options.Provider);
-        if (image is not null && !provider.SupportsImageInput)
+        if (image is not null && !provider.SupportsImageInput(options))
         {
             throw new InvalidOperationException(
                 $"{provider.Name} 프로바이더는 이미지 입력을 지원하지 않습니다. Gemini 또는 이미지 입력을 지원하는 OpenAI 호환 프로바이더를 선택해 주세요.");

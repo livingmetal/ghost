@@ -126,7 +126,13 @@ public partial class MainViewModel : ObservableObject
 
     public void SelectImage(string filePath, bool storyMode)
     {
-        var image = ImageInputService.Load(filePath);
+        SetSelectedImage(ImageInputService.Load(filePath), storyMode);
+    }
+
+    public void SetSelectedImage(
+        LlmImageAttachment image,
+        bool storyMode)
+    {
         if (storyMode)
         {
             StorySelectedImage = image;

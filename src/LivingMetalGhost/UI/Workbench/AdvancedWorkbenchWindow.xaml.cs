@@ -5,9 +5,9 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Services;
+using LivingMetalGhost.UI.Dialogs;
 using LivingMetalGhost.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Win32;
 
 namespace LivingMetalGhost.UI.Views;
 
@@ -390,24 +390,15 @@ public partial class AdvancedWorkbenchWindow : Window
             return;
         }
 
-        var dialog = new OpenFileDialog
-        {
-            Title = "고급 대화에 첨부할 이미지 선택",
-            Filter = "지원 이미지|*.png;*.jpg;*.jpeg;*.webp;*.heic;*.heif|모든 파일|*.*"
-        };
-        if (dialog.ShowDialog(this) != true)
+        var image = ImageAttachmentDialog.Select(
+            this,
+            "고급 대화에 첨부할 이미지 선택");
+        if (image is null)
         {
             return;
         }
 
-        try
-        {
-            viewModel.SelectImage(dialog.FileName, storyMode: false);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "이미지 첨부", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
+        viewModel.SetSelectedImage(image, storyMode: false);
     }
 
     private void RemoveImageButton_OnClick(object sender, RoutedEventArgs e)

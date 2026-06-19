@@ -22,7 +22,8 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
     }
 
     public string Name => "OpenAI-Compatible";
-    public bool SupportsImageInput => true;
+    public bool SupportsImageInput(LlmOptions options) =>
+        LlmCapabilityPolicy.SupportsOpenAiCompatibleImageInput(options);
 
     public async Task<LlmResponse> GenerateAsync(LlmRequest request, CancellationToken ct)
     {
