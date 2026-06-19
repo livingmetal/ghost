@@ -1,4 +1,3 @@
-using System.IO;
 using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
@@ -17,9 +16,7 @@ public sealed class ConversationService
     private readonly RoleplayMemoryDigestService _roleplayMemoryDigestService;
     private readonly ConversationHistoryStore _historyStore;
     private readonly HiddenTraitScheduler _hiddenTraitScheduler;
-    private readonly AdvancedSessionLogService _advancedSessionLogService;
-    private readonly WorkspaceStore _workspaceStore;
-    private readonly Core.Workspace.WorkspaceContextBuilder _workspaceContextBuilder;
+    private readonly AdvancedConversationSupport _advancedConversationSupport;
     public ConversationService(
         AppConfigLoader configLoader,
         ILlmProviderFactory providerFactory,
@@ -29,9 +26,7 @@ public sealed class ConversationService
         RoleplayMemoryDigestService roleplayMemoryDigestService,
         ConversationHistoryStore historyStore,
         HiddenTraitScheduler hiddenTraitScheduler,
-        AdvancedSessionLogService advancedSessionLogService,
-        WorkspaceStore workspaceStore,
-        Core.Workspace.WorkspaceContextBuilder workspaceContextBuilder)
+        AdvancedConversationSupport advancedConversationSupport)
     {
         _configLoader = configLoader;
         _providerFactory = providerFactory;
@@ -41,29 +36,7 @@ public sealed class ConversationService
         _roleplayMemoryDigestService = roleplayMemoryDigestService;
         _historyStore = historyStore;
         _hiddenTraitScheduler = hiddenTraitScheduler;
-        _advancedSessionLogService = advancedSessionLogService;
-        _workspaceStore = workspaceStore;
-        _workspaceContextBuilder = workspaceContextBuilder;
-    }
-
-    private string BuildRepositoryContext(ConversationMode mode, string userText)
-    {
-        if (mode != ConversationMode.Advanced)
-        {
-            return string.Empty;
-        }
-
-        try
-        {
-            var root = _workspaceStore.Load().RootPath;
-            return string.IsNullOrWhiteSpace(root)
-                ? string.Empty
-                : _workspaceContextBuilder.Build(root, userText);
-        }
-        catch
-        {
-            return string.Empty;
-        }
+        _advancedConversationSupport = advancedConversationSupport;
     }
 
     public Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
@@ -113,7 +86,9 @@ public sealed class ConversationService
             : text;
         var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
         var options = LlmOptions.FromSettings(llm);
-        var repositoryContext = BuildRepositoryContext(mode, text);
+        var repositoryContext = mode == ConversationMode.Advanced
+            ? _advancedConversationSupport.BuildRepositoryContext(text)
+            : string.Empty;
         var provider = _providerFactory.Create(options.Provider);
         var response = await provider.GenerateAsync(new LlmRequest
         {
@@ -149,18 +124,13 @@ public sealed class ConversationService
         }
         else if (mode == ConversationMode.Advanced)
         {
-            await _advancedSessionLogService.AppendTurnAsync(new AdvancedSessionLogEntry
-            {
-                Provider = options.Provider,
-                Model = options.Model,
-                CharacterId = character.Id,
-                CharacterName = character.DisplayName,
-                UserText = text,
-                AssistantText = characterText,
-                Mood = characterMood,
-                Action = "advanced-chat",
-                UsedContext = GetAdvancedUsedContextLabels()
-            }, cancellationToken);
+            await _advancedConversationSupport.RecordTurnAsync(
+                options,
+                character,
+                text,
+                characterText,
+                characterMood,
+                cancellationToken);
         }
 
         return new SkillResult
@@ -262,22 +232,6 @@ public sealed class ConversationService
             Action = "story-idle",
             UsedLlm = true
         };
-    }
-
-    private IReadOnlyList<string> GetAdvancedUsedContextLabels()
-    {
-        var labels = new List<string>();
-        if (File.Exists(_advancedSessionLogService.PinnedContextFile))
-        {
-            labels.Add("pinned_context");
-        }
-
-        if (File.Exists(_advancedSessionLogService.ProjectMemoryFile))
-        {
-            labels.Add("project_memory");
-        }
-
-        return labels;
     }
 
     private static string? NormalizeMood(string? mood, CharacterVisualProfile visual)

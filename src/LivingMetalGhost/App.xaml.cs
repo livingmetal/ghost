@@ -138,6 +138,7 @@ public partial class App : Application
         services.AddSingleton<RoleplayStateUpdater>();
         services.AddSingleton<RoleplayMemoryDigestService>();
         services.AddSingleton<AdvancedSessionLogService>();
+        services.AddSingleton<AdvancedConversationSupport>();
         services.AddSingleton<ProjectMemoryStore>();
         services.AddSingleton<WorkspaceStore>();
         services.AddSingleton<Core.Workspace.WorkspaceReadService>();

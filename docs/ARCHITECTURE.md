@@ -185,6 +185,11 @@ approval, reusable workspace-memory, and repository-snapshot prompt rules.
 General `PromptAssembler` selects this policy without directly accessing
 Workbench persistence.
 
+`Core/Workbench/Services/AdvancedConversationSupport.cs` owns per-turn
+repository context creation and Advanced session-log metadata. General
+`ConversationService` delegates to this boundary instead of depending directly
+on workspace and session stores.
+
 Current debt: approval handling uses service-location calls from
 `UI/Workbench/ViewModels/MainViewModel.Approvals.cs`, and command/workbench concerns cross UI,
 `Skills`, and the Workbench area.
