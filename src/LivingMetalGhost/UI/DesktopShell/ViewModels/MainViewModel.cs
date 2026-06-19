@@ -33,6 +33,9 @@ public partial class MainViewModel : ObservableObject
     private string inputText = string.Empty;
 
     [ObservableProperty]
+    private LlmImageAttachment? selectedImage;
+
+    [ObservableProperty]
     private string pendingUserMessageText = string.Empty;
 
     [ObservableProperty]
@@ -40,6 +43,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string storyInputText = string.Empty;
+
+    [ObservableProperty]
+    private LlmImageAttachment? storySelectedImage;
 
     [ObservableProperty]
     private string characterMood = "idle";
@@ -117,4 +123,29 @@ public partial class MainViewModel : ObservableObject
 
     public ConversationMode CurrentMode =>
         ConversationModeCoordinator.GetCompanionMode(IsAdvancedMode);
+
+    public void SelectImage(string filePath, bool storyMode)
+    {
+        var image = ImageInputService.Load(filePath);
+        if (storyMode)
+        {
+            StorySelectedImage = image;
+        }
+        else
+        {
+            SelectedImage = image;
+        }
+    }
+
+    public void ClearSelectedImage(bool storyMode)
+    {
+        if (storyMode)
+        {
+            StorySelectedImage = null;
+        }
+        else
+        {
+            SelectedImage = null;
+        }
+    }
 }

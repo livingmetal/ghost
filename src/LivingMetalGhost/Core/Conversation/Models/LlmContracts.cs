@@ -18,10 +18,20 @@ public sealed class LlmRequest
     public LlmOptions? Options { get; set; }
 
     public IReadOnlyList<LlmHistoryMessage> History { get; set; } = [];
+    public LlmImageAttachment? Image { get; set; }
 
     /// <summary>Options 의 Model 을 우선 사용하고, 없으면 Model 필드로 폴백한다.</summary>
     public string ResolveModel() =>
         !string.IsNullOrWhiteSpace(Options?.Model) ? Options!.Model : Model;
+}
+
+public sealed record LlmImageAttachment(
+    string FileName,
+    string MimeType,
+    string Base64Data,
+    string SourcePath)
+{
+    public string DataUrl => $"data:{MimeType};base64,{Base64Data}";
 }
 
 public sealed class LlmHistoryMessage
@@ -47,6 +57,7 @@ public sealed class UserRequest
 {
     public string RawText { get; set; } = string.Empty;
     public bool UseAdvancedModel { get; set; }
+    public LlmImageAttachment? Image { get; set; }
 }
 
 public sealed class SkillResult

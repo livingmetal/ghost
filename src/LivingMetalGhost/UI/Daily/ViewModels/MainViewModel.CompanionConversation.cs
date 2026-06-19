@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
+using LivingMetalGhost.AppCore.Conversation;
 using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.UI.Presentation;
@@ -33,12 +34,20 @@ public partial class MainViewModel
         }
 
         var submittedInput = InputText;
+        var submittedImage = SelectedImage;
+        var promptText = ImageInputService.BuildPromptText(
+            submittedInput,
+            submittedImage);
+        var displayText = ImageInputService.BuildDisplayText(
+            submittedInput,
+            submittedImage);
         var request = new UserRequest
         {
-            RawText = submittedInput.Trim(),
-            UseAdvancedModel = IsAdvancedMode
+            RawText = promptText,
+            UseAdvancedModel = IsAdvancedMode,
+            Image = submittedImage
         };
-        if (string.IsNullOrWhiteSpace(request.RawText))
+        if (string.IsNullOrWhiteSpace(request.RawText) && request.Image is null)
         {
             return;
         }
@@ -46,11 +55,11 @@ public partial class MainViewModel
         CancelMoodHold();
         SetCharacterMood(_spriteDirector.ResolveThinkingMood(CurrentMode));
         _isResponding = true;
-        PendingUserMessageText = request.RawText;
+        PendingUserMessageText = displayText;
         IsUserMessagePending = true;
         Messages.Add(new ChatMessage
         {
-            Text = request.RawText,
+            Text = displayText,
             SpeakerName = "YOU",
             IsUser = true,
             IsRoleplay = false
@@ -61,6 +70,7 @@ public partial class MainViewModel
             var turn = await _companionConversationController.SendAsync(
                 request.RawText,
                 request.UseAdvancedModel,
+                request.Image,
                 CancellationToken.None);
             var result = turn.Result;
             BubbleText = result.BubbleText;
@@ -74,8 +84,12 @@ public partial class MainViewModel
             {
                 InputText = string.Empty;
             }
+            if (ReferenceEquals(SelectedImage, submittedImage))
+            {
+                SelectedImage = null;
+            }
 
-            await WriteLogAsync(request.RawText, result.BubbleText, isProactive: false, assistantMood);
+            await WriteLogAsync(displayText, result.BubbleText, isProactive: false, assistantMood);
             if (IsAdvancedMode)
             {
                 CapturePatchProposals(result.BubbleText);

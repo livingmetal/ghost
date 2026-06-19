@@ -92,6 +92,28 @@ public sealed class ConversationRequestFactoryTests : IDisposable
             request.SystemPrompt);
     }
 
+    [Fact]
+    public void Create_ForwardsImageOnlyForCurrentRequest()
+    {
+        var image = new LlmImageAttachment(
+            "sample.png",
+            "image/png",
+            "AA==",
+            "sample.png");
+
+        var request = _factory.Create(
+            new AppConfig(),
+            CreateCharacter(),
+            ConversationMode.Daily,
+            new StoryState(),
+            "describe",
+            new LlmOptions { Provider = "gemini", Model = "model" },
+            image: image);
+
+        Assert.Same(image, request.Image);
+        Assert.Empty(request.History);
+    }
+
     private static CharacterProfile CreateCharacter()
     {
         return new CharacterProfile(

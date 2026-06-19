@@ -150,11 +150,46 @@
                 </Border>
 
                 <Grid Grid.Row="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <Border Grid.Row="0"
+                            Grid.ColumnSpan="3"
+                            Margin="0,0,0,7"
+                            Padding="9,5"
+                            CornerRadius="8"
+                            Background="#E9E2F5">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StorySelectedImage}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right"
+                                    Width="22"
+                                    Height="22"
+                                    Padding="0"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    Click="RemoveImageButton_OnClick"
+                                    Content="×" />
+                            <TextBlock VerticalAlignment="Center"
+                                       Foreground="#5D4775"
+                                       Text="{Binding StorySelectedImage.FileName, StringFormat=이미지: {0}}" />
+                        </DockPanel>
+                    </Border>
                     <TextBox x:Name="PromptTextBox"
+                             Grid.Row="1"
                              MinHeight="64"
                              MaxHeight="120"
                              Padding="12,10"
@@ -166,8 +201,21 @@
                              PreviewKeyDown="PromptTextBox_OnPreviewKeyDown"
                              Text="{Binding StoryInputText, UpdateSourceTrigger=PropertyChanged}"
                              ToolTip="평문=대사 · *행동* · (속마음)" />
-                    <Button x:Name="SendButton"
+                    <Button Grid.Row="1"
                             Grid.Column="1"
+                            Margin="8,0,0,0"
+                            Width="44"
+                            Background="#EEE7F7"
+                            Foreground="#5D4775"
+                            BorderBrush="#B8AEDA"
+                            BorderThickness="1"
+                            Click="AttachImageButton_OnClick"
+                            Content="＋"
+                            FontSize="20"
+                            ToolTip="이미지 첨부" />
+                    <Button x:Name="SendButton"
+                            Grid.Row="1"
+                            Grid.Column="2"
                             Margin="8,0,0,0"
                             MinWidth="76"
                             Padding="14,8"

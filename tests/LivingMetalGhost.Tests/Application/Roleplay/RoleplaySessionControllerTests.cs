@@ -86,12 +86,21 @@ public sealed class RoleplaySessionControllerTests : IDisposable
     [Fact]
     public async Task SendAndIdle_AreDelegatedToRoleplayConversation()
     {
-        var sendResult = await _controller.SendAsync("hello", CancellationToken.None);
+        var image = new LlmImageAttachment(
+            "scene.png",
+            "image/png",
+            "AA==",
+            "scene.png");
+        var sendResult = await _controller.SendAsync(
+            "hello",
+            image,
+            CancellationToken.None);
         var idleResult = await _controller.StartIdleAsync(CancellationToken.None);
 
         Assert.Equal("send:hello", sendResult.BubbleText);
         Assert.Equal("idle", idleResult.BubbleText);
         Assert.Equal("hello", _conversation.LastText);
+        Assert.Same(image, _conversation.LastImage);
         Assert.Equal(1, _conversation.SendCount);
         Assert.Equal(1, _conversation.IdleCount);
     }
@@ -99,14 +108,17 @@ public sealed class RoleplaySessionControllerTests : IDisposable
     private sealed class StubRoleplayConversation : IRoleplayConversation
     {
         public string LastText { get; private set; } = string.Empty;
+        public LlmImageAttachment? LastImage { get; private set; }
         public int SendCount { get; private set; }
         public int IdleCount { get; private set; }
 
         public Task<SkillResult> SendAsync(
             string text,
+            LlmImageAttachment? image,
             CancellationToken cancellationToken)
         {
             LastText = text;
+            LastImage = image;
             SendCount++;
             return Task.FromResult(new SkillResult { BubbleText = $"send:{text}" });
         }

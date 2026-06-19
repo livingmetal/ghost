@@ -24,12 +24,14 @@ public sealed class CompanionConversationController
     public async Task<CompanionConversationTurn> SendAsync(
         string text,
         bool useAdvancedModel,
+        LlmImageAttachment? image,
         CancellationToken cancellationToken)
     {
         var request = new UserRequest
         {
             RawText = text,
-            UseAdvancedModel = useAdvancedModel
+            UseAdvancedModel = useAdvancedModel,
+            Image = image
         };
         var skill = _intentRouter.Route(request);
         var result = await skill.HandleAsync(request, cancellationToken);

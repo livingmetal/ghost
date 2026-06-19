@@ -1,3 +1,4 @@
+using LivingMetalGhost.AppCore.Conversation;
 using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
@@ -43,21 +44,29 @@ public sealed class ConversationService : IRoleplayConversation
         _externalTurnRecorder = externalTurnRecorder;
     }
 
-    public Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
+    public Task<SkillResult> ChatAsync(
+        string text,
+        bool advanced,
+        LlmImageAttachment? image,
+        CancellationToken cancellationToken)
     {
         var mode = advanced ? ConversationMode.Advanced : ConversationMode.Daily;
-        return ChatAsync(text, mode, cancellationToken);
+        return ChatAsync(text, mode, image, cancellationToken);
     }
 
-    public Task<SkillResult> RoleplayAsync(string text, CancellationToken cancellationToken)
+    public Task<SkillResult> RoleplayAsync(
+        string text,
+        LlmImageAttachment? image,
+        CancellationToken cancellationToken)
     {
-        return ChatAsync(text, ConversationMode.Story, cancellationToken);
+        return ChatAsync(text, ConversationMode.Story, image, cancellationToken);
     }
 
     Task<SkillResult> IRoleplayConversation.SendAsync(
         string text,
+        LlmImageAttachment? image,
         CancellationToken cancellationToken) =>
-        RoleplayAsync(text, cancellationToken);
+        RoleplayAsync(text, image, cancellationToken);
 
     Task<SkillResult> IRoleplayConversation.StartIdleAsync(
         CancellationToken cancellationToken) =>
@@ -76,20 +85,32 @@ public sealed class ConversationService : IRoleplayConversation
             source);
     }
 
-    private async Task<SkillResult> ChatAsync(string text, ConversationMode mode, CancellationToken cancellationToken)
+    private async Task<SkillResult> ChatAsync(
+        string text,
+        ConversationMode mode,
+        LlmImageAttachment? image,
+        CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
         var character = CharacterCatalog.Get(config.App.GhostId);
         var storyState = _storyStateStore.Load();
+        var normalizedText = ImageInputService.BuildPromptText(text, image);
+        var userDisplayText = ImageInputService.BuildDisplayText(text, image);
         var userTextForProvider = mode == ConversationMode.Story
-            ? RoleplayInputFormatter.FormatForPrompt(text)
-            : text;
+            ? RoleplayInputFormatter.FormatForPrompt(normalizedText)
+            : normalizedText;
         var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
         var options = LlmOptions.FromSettings(llm);
         var repositoryContext = mode == ConversationMode.Advanced
-            ? _advancedConversationSupport.BuildRepositoryContext(text)
+            ? _advancedConversationSupport.BuildRepositoryContext(normalizedText)
             : string.Empty;
         var provider = _providerFactory.Create(options.Provider);
+        if (image is not null && !provider.SupportsImageInput)
+        {
+            throw new InvalidOperationException(
+                $"{provider.Name} 프로바이더는 이미지 입력을 지원하지 않습니다. Gemini 또는 이미지 입력을 지원하는 OpenAI 호환 프로바이더를 선택해 주세요.");
+        }
+
         var response = await provider.GenerateAsync(
             _requestFactory.Create(
                 config,
@@ -98,19 +119,23 @@ public sealed class ConversationService : IRoleplayConversation
                 storyState,
                 userTextForProvider,
                 options,
-                repositoryContext),
+                repositoryContext,
+                image),
             cancellationToken);
         var processed = _responseProcessor.Process(
             response.Text,
             mode,
             character.Visual);
 
-        _historyStore.Add(mode, "user", userTextForProvider);
+        _historyStore.Add(
+            mode,
+            "user",
+            ImageInputService.BuildDisplayText(userTextForProvider, image));
         _historyStore.Add(mode, "assistant", processed.Text);
         if (mode == ConversationMode.Story)
         {
             _roleplayStateUpdater.UpdateAfterTurn(
-                text,
+                userDisplayText,
                 processed.Text,
                 processed.Mood);
             await _roleplayMemoryDigestService.DigestIfDueAsync(options, cancellationToken);
@@ -120,7 +145,7 @@ public sealed class ConversationService : IRoleplayConversation
             await _advancedConversationSupport.RecordTurnAsync(
                 options,
                 character,
-                text,
+                userDisplayText,
                 processed.Text,
                 processed.Mood,
                 cancellationToken);

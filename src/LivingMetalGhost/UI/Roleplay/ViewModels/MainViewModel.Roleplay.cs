@@ -1,5 +1,6 @@
 using System.Text;
 using CommunityToolkit.Mvvm.Input;
+using LivingMetalGhost.AppCore.Conversation;
 using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.Core.Models;
 
@@ -49,8 +50,15 @@ public partial class MainViewModel
             return;
         }
 
-        var rawText = StoryInputText.Trim();
-        if (string.IsNullOrWhiteSpace(rawText))
+        var submittedInput = StoryInputText;
+        var submittedImage = StorySelectedImage;
+        var rawText = ImageInputService.BuildPromptText(
+            submittedInput,
+            submittedImage);
+        var displayText = ImageInputService.BuildDisplayText(
+            submittedInput,
+            submittedImage);
+        if (string.IsNullOrWhiteSpace(rawText) && submittedImage is null)
         {
             return;
         }
@@ -58,7 +66,7 @@ public partial class MainViewModel
         _isStoryResponding = true;
         StoryMessages.Add(new ChatMessage
         {
-            Text = rawText,
+            Text = displayText,
             SpeakerName = "YOU",
             IsUser = true,
             IsRoleplay = true
@@ -69,7 +77,12 @@ public partial class MainViewModel
         {
             var result = await _roleplaySessionController.SendAsync(
                 rawText,
+                submittedImage,
                 CancellationToken.None);
+            if (ReferenceEquals(StorySelectedImage, submittedImage))
+            {
+                StorySelectedImage = null;
+            }
             await DisplayAssistantResponseAsync(
                 result.BubbleText,
                 false,
@@ -78,7 +91,7 @@ public partial class MainViewModel
                 ConversationMode.Story,
                 false);
             await WriteLogAsync(
-                rawText,
+                displayText,
                 result.BubbleText,
                 false,
                 result.Mood,

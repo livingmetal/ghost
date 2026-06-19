@@ -27,7 +27,8 @@ public sealed class ConversationRequestFactory
         StoryState storyState,
         string userText,
         LlmOptions options,
-        string repositoryContext = "")
+        string repositoryContext = "",
+        LlmImageAttachment? image = null)
     {
         return new LlmRequest
         {
@@ -35,6 +36,7 @@ public sealed class ConversationRequestFactory
             UserTitle = config.App.UserTitle,
             Model = options.Model,
             Options = options,
+            Image = image,
             SystemPrompt = _promptAssembler.BuildSystemPrompt(
                 config,
                 character,

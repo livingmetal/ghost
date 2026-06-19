@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.UI.ViewModels;
+using Microsoft.Win32;
 
 namespace LivingMetalGhost.UI.Views;
 
@@ -286,6 +287,38 @@ public partial class ChatWindow : Window
         {
             viewModel.SendCommand.Execute(null);
         }
+    }
+
+    private void AttachImageButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        var dialog = new OpenFileDialog
+        {
+            Title = "대화에 첨부할 이미지 선택",
+            Filter = "지원 이미지|*.png;*.jpg;*.jpeg;*.webp;*.heic;*.heif|모든 파일|*.*"
+        };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            viewModel.SelectImage(dialog.FileName, storyMode: false);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "이미지 첨부", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void RemoveImageButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        (DataContext as MainViewModel)?.ClearSelectedImage(storyMode: false);
     }
 
     private void SetDailyAwakeState()

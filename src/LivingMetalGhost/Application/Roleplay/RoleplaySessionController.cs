@@ -41,8 +41,9 @@ public sealed class RoleplaySessionController
 
     public Task<SkillResult> SendAsync(
         string text,
+        LlmImageAttachment? image,
         CancellationToken cancellationToken) =>
-        _conversation.SendAsync(text, cancellationToken);
+        _conversation.SendAsync(text, image, cancellationToken);
 
     public Task<SkillResult> StartIdleAsync(CancellationToken cancellationToken) =>
         _conversation.StartIdleAsync(cancellationToken);

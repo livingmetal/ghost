@@ -48,6 +48,20 @@ Explicit current and tomorrow regional weather requests are parsed locally and
 do not require the LLM to know the forecast. The LLM only turns the verified
 API result into a character response when it is available.
 
+## Image Input
+
+Daily, Story, and Advanced input panels include an image attachment button.
+Gemini and other image-capable OpenAI-compatible endpoints receive the selected
+image as a multimodal `image_url` data block.
+
+- Supported files: PNG, JPEG, WEBP, HEIC, HEIF
+- Maximum file size: 10 MB
+- One image can be attached to each turn.
+- Image bytes are used only for the current API request. Conversation history
+  and logs store the file name marker, not the Base64 data.
+- CLI/local providers that do not advertise image input return a clear error
+  instead of silently ignoring the image.
+
 ## Requirements
 
 - Windows 10 or 11

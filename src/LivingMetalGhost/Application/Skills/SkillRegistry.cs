@@ -20,6 +20,11 @@ public sealed class SkillRegistry
 
     public IGhostSkill Resolve(UserRequest request)
     {
+        if (request.Image is not null)
+        {
+            return _skills.OfType<ChatSkill>().Single();
+        }
+
         return _skills.FirstOrDefault(skill => skill.CanHandle(request)) ?? _skills.Last();
     }
 }

@@ -22,6 +22,7 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
     }
 
     public string Name => "OpenAI-Compatible";
+    public bool SupportsImageInput => true;
 
     public async Task<LlmResponse> GenerateAsync(LlmRequest request, CancellationToken ct)
     {
@@ -56,7 +57,11 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
             role = message.Role,
             content = message.Content
         }));
-        messages.Add(new { role = "user", content = request.UserText });
+        messages.Add(new
+        {
+            role = "user",
+            content = BuildUserContent(request)
+        });
 
         var output = new StringBuilder();
         var continuedAutomatically = false;
@@ -112,6 +117,24 @@ public sealed class OpenAiCompatibleProvider : ILlmProvider
             Text = output.ToString().Trim(),
             FromFallback = false,
             ContinuedAutomatically = continuedAutomatically
+        };
+    }
+
+    internal static object BuildUserContent(LlmRequest request)
+    {
+        if (request.Image is null)
+        {
+            return request.UserText;
+        }
+
+        return new object[]
+        {
+            new { type = "text", text = request.UserText },
+            new
+            {
+                type = "image_url",
+                image_url = new { url = request.Image.DataUrl }
+            }
         };
     }
 
