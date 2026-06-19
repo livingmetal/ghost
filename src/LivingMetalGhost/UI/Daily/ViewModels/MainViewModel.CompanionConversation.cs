@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.UI.Presentation;
 
 namespace LivingMetalGhost.UI.ViewModels;
 
@@ -31,7 +32,12 @@ public partial class MainViewModel
             return;
         }
 
-        var request = new UserRequest { RawText = InputText.Trim(), UseAdvancedModel = IsAdvancedMode };
+        var submittedInput = InputText;
+        var request = new UserRequest
+        {
+            RawText = submittedInput.Trim(),
+            UseAdvancedModel = IsAdvancedMode
+        };
         if (string.IsNullOrWhiteSpace(request.RawText))
         {
             return;
@@ -47,7 +53,6 @@ public partial class MainViewModel
             IsUser = true,
             IsRoleplay = false
         });
-        InputText = string.Empty;
 
         try
         {
@@ -61,6 +66,11 @@ public partial class MainViewModel
             SetCharacterMood(assistantMood);
             CaptureAgentJobs(turn.Request, result);
             await DisplayAssistantResponseAsync(result.BubbleText, isProactive: false, assistantMood);
+            if (SubmittedInputPolicy.ShouldClear(InputText, submittedInput))
+            {
+                InputText = string.Empty;
+            }
+
             await WriteLogAsync(request.RawText, result.BubbleText, isProactive: false, assistantMood);
             if (IsAdvancedMode)
             {

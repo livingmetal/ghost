@@ -305,6 +305,10 @@ Roleplay persistence and conversation services.
 typing animation for Daily, Roleplay, and Advanced presentations. View models
 retain only speaking-state and mood coordination around that presenter.
 
+Daily/Advanced submitted input remains visible while the assistant is
+responding. It is cleared after response presentation only when the user has not
+edited the input in the meantime; failed sends remain available for retry.
+
 Character selection, scale persistence, speaking-state coordination, and
 post-speech mood timing are physically isolated in
 `UI/CharacterPresentation/ViewModels/MainViewModel.CharacterPresentation.cs`.
