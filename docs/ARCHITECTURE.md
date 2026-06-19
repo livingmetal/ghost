@@ -128,6 +128,9 @@ uses this store instead of owning history collections directly.
 `Core/Conversation/Responses/ConversationResponseParser.cs` owns leading mood
 tag parsing and removal of legacy Roleplay metadata tags.
 
+`Core/Conversation/Responses/CharacterSpeechSanitizer.cs` owns final dialogue
+cleanup, including stock-phrase removal and whitespace normalization.
+
 Current debt: Daily, Story, and Advanced workflows share one large service.
 Repository context, Story memory digestion, response cleanup, and history
 management are coupled to provider invocation.

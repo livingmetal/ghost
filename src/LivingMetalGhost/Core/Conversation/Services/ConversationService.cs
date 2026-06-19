@@ -1,5 +1,4 @@
 using System.IO;
-using System.Text.RegularExpressions;
 using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
@@ -132,7 +131,7 @@ public sealed class ConversationService
         var storyCleanText = mode == ConversationMode.Story
             ? ConversationResponseParser.StripLegacyRoleplayTags(parsed.Text)
             : parsed.Text;
-        var characterText = PolishCharacterSpeech(storyCleanText);
+        var characterText = CharacterSpeechSanitizer.Sanitize(storyCleanText);
         var characterMood = ResolveResponseMood(
             mode,
             parsed.Mood,
@@ -197,7 +196,7 @@ public sealed class ConversationService
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
         var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
-        var characterText = PolishCharacterSpeech(parsed.Text);
+        var characterText = CharacterSpeechSanitizer.Sanitize(parsed.Text);
         var characterMood = ResolveResponseMood(
             mode,
             parsed.Mood,
@@ -325,7 +324,7 @@ public sealed class ConversationService
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
         var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
-        var characterText = PolishCharacterSpeech(
+        var characterText = CharacterSpeechSanitizer.Sanitize(
             ConversationResponseParser.StripLegacyRoleplayTags(parsed.Text));
         var characterMood = ResolveResponseMood(
             mode,
@@ -498,49 +497,6 @@ public sealed class ConversationService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(mood => mood, StringComparer.OrdinalIgnoreCase)
             .ToArray();
-    }
-
-    private static string PolishCharacterSpeech(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return string.Empty;
-        }
-
-        var polished = text.Trim();
-        var bannedPrefixes = new[]
-        {
-            @"^좋은 질문입니다[.!。]?\s*",
-            @"^좋은 질문이에요[.!。]?\s*",
-            @"^요약하면[:,]?\s*",
-            @"^정리하면[:,]?\s*",
-            @"^결론부터 말하면[:,]?\s*",
-            @"^핵심부터 말하면[:,]?\s*",
-            @"^다음과 같이 정리할 수 있습니다[.!。]?\s*"
-        };
-
-        foreach (var prefix in bannedPrefixes)
-        {
-            polished = Regex.Replace(polished, prefix, string.Empty, RegexOptions.IgnoreCase);
-        }
-
-        var bannedPhrases = new[]
-        {
-            "도움이 되었으면 좋겠습니다.",
-            "도움이 되었으면 좋겠어요.",
-            "필요하시면 더 설명드릴게요.",
-            "필요하면 더 설명드릴게요.",
-            "궁금한 점이 있으면 말씀해 주세요.",
-            "추가로 궁금한 점이 있으면 알려주세요."
-        };
-
-        foreach (var phrase in bannedPhrases)
-        {
-            polished = polished.Replace(phrase, string.Empty, StringComparison.OrdinalIgnoreCase);
-        }
-
-        polished = Regex.Replace(polished, @"\n{3,}", Environment.NewLine + Environment.NewLine);
-        return polished.Trim();
     }
 
     private sealed class HiddenTraitRuntimeState
