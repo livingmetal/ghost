@@ -27,6 +27,11 @@ public sealed class SlashIntentPlanner
             return new SlashIntentPlan(SlashCapabilities.Help, intentText);
         }
 
+        if (TryBuildDirectWeatherPlan(intentText, out var weatherPlan))
+        {
+            return weatherPlan;
+        }
+
         var config = _configLoader.Load();
         var options = LlmOptions.FromSettings(config.Llm);
         try
@@ -53,6 +58,24 @@ public sealed class SlashIntentPlanner
         }
 
         return BuildFallbackPlan(intentText);
+    }
+
+    public static bool TryBuildDirectWeatherPlan(
+        string text,
+        out SlashIntentPlan plan)
+    {
+        var normalized = text.Trim();
+        if (!ContainsAny(normalized, "날씨", "기온", "weather"))
+        {
+            plan = new SlashIntentPlan(SlashCapabilities.Unknown, normalized);
+            return false;
+        }
+
+        plan = new SlashIntentPlan(
+            SlashCapabilities.Weather,
+            normalized,
+            ExtractWeatherLocation(normalized));
+        return true;
     }
 
     public static bool TryParsePlan(
@@ -242,13 +265,32 @@ public sealed class SlashIntentPlanner
         var location = text
             .Replace("오늘", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("현재", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("지역", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("날씨", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("기온", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("확인해줘", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("확인", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("알려줘", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("어때", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("weather", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Trim(' ', '?', '!', '.', ',');
+            .Trim(' ', '?', '!', '.', ',', ':');
+
+        location = TrimTrailingLocationParticle(location);
         return string.IsNullOrWhiteSpace(location) ? "대전" : location;
+    }
+
+    private static string TrimTrailingLocationParticle(string location)
+    {
+        var trimmed = location.Trim();
+        foreach (var particle in new[] { "에서의", "에서", "의", "은", "는" })
+        {
+            if (trimmed.EndsWith(particle, StringComparison.Ordinal))
+            {
+                return trimmed[..^particle.Length].Trim();
+            }
+        }
+
+        return trimmed;
     }
 
     private static bool ContainsAny(string text, params string[] words) =>

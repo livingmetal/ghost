@@ -37,11 +37,15 @@ and then lets the character explain the verified result.
 /시간
 /문지캠퍼스 점심 식사
 /서울 날씨
+/지역: 부산 날씨
 ```
 
 Inputs beginning with `//` remain ordinary text so comments and paths are not
 captured. Initial live capabilities are Korea date/time, KAIST Munji campus
 menus, regional current weather through Open-Meteo, and relative reminders.
+Explicit regional weather requests are parsed locally and do not require the
+LLM to know current weather. The LLM only turns the verified API result into a
+character response when it is available.
 
 ## Requirements
 

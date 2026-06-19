@@ -8,6 +8,26 @@ namespace LivingMetalGhost.Tests.Application.SlashAgents;
 
 public sealed class SlashIntentPlannerTests
 {
+    [Theory]
+    [InlineData("서울 날씨", "서울")]
+    [InlineData("서울의 날씨 알려줘", "서울")]
+    [InlineData("지역: 부산 날씨 확인해줘", "부산")]
+    [InlineData("날씨", "대전")]
+    public async Task PlanAsync_RoutesExplicitWeatherWithoutCallingLlm(
+        string text,
+        string expectedLocation)
+    {
+        var planner = new SlashIntentPlanner(
+            null!,
+            new ThrowingProviderFactory());
+
+        var plan = await planner.PlanAsync(text, CancellationToken.None);
+
+        Assert.Equal(SlashCapabilities.Weather, plan.Capability);
+        Assert.Equal(expectedLocation, plan.Location);
+        Assert.False(plan.UsedLlm);
+    }
+
     [Fact]
     public async Task PlanAsync_UsesLlmSelectedCapabilityAndArguments()
     {
@@ -97,6 +117,12 @@ public sealed class SlashIntentPlannerTests
         }
 
         public ILlmProvider Create(string providerName) => _provider;
+    }
+
+    private sealed class ThrowingProviderFactory : ILlmProviderFactory
+    {
+        public ILlmProvider Create(string providerName) =>
+            throw new InvalidOperationException("The LLM should not be called.");
     }
 
     private sealed class StubProvider : ILlmProvider
