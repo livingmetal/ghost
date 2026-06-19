@@ -1,4 +1,5 @@
 using System.Text;
+using LivingMetalGhost.AppCore.ModeCoordination;
 
 namespace LivingMetalGhost.UI.ViewModels;
 
@@ -38,7 +39,9 @@ public partial class MainViewModel
 
     public void ResetRoleplayState()
     {
-        var keepEnabled = IsStoryMode && !IsAdvancedMode;
+        var keepEnabled = ConversationModeCoordinator.IsRoleplayActive(
+            IsStoryMode,
+            IsAdvancedMode);
         var state = _storyStateStore.Reset(keepEnabled);
         IsStoryMode = state.Enabled;
         StoryMessages.Clear();

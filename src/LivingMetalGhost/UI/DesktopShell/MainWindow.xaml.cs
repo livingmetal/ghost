@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
+using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.UI.ViewModels;
 using LivingMetalGhost.UI.Views;
@@ -117,7 +118,9 @@ public partial class MainWindow : Window
         }
 
         var advanced = _subscribedViewModel.IsAdvancedMode;
-        StoryModeMenuItem.IsChecked = !advanced && _subscribedViewModel.IsStoryMode;
+        StoryModeMenuItem.IsChecked = ConversationModeCoordinator.IsRoleplayActive(
+            _subscribedViewModel.IsStoryMode,
+            advanced);
         StoryModeMenuItem.IsEnabled = !advanced;
         StoryModeMenuItem.ToolTip = advanced
             ? "고급 모드 중에는 롤플레잉 모드가 일시 중지됩니다. 고급 모드를 끄면 이전 상태로 돌아갑니다."
@@ -291,9 +294,18 @@ public partial class MainWindow : Window
         }
 
         e.Cancel = true;
-        if (_subscribedViewModel is { IsStoryMode: true, IsAdvancedMode: false })
+        var viewModel = _subscribedViewModel;
+        if (viewModel is null)
         {
-            _subscribedViewModel.SetStoryMode(false);
+            _storyWindow?.Hide();
+            return;
+        }
+
+        if (ConversationModeCoordinator.IsRoleplayActive(
+                viewModel.IsStoryMode,
+                viewModel.IsAdvancedMode))
+        {
+            viewModel.SetStoryMode(false);
         }
         else
         {
@@ -326,7 +338,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_subscribedViewModel is { IsStoryMode: true, IsAdvancedMode: false })
+        if (ConversationModeCoordinator.IsRoleplayActive(
+                _subscribedViewModel.IsStoryMode,
+                _subscribedViewModel.IsAdvancedMode))
         {
             _chatWindow?.Hide();
             EnsureStoryWindow();

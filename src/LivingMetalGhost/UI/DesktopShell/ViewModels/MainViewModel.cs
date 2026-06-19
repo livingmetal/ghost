@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Presentation;
@@ -106,9 +107,8 @@ public partial class MainViewModel : ObservableObject
     /// <summary>고급 Workbench / Agent Dock 에 표시할 현재 작업들.</summary>
     public ObservableCollection<AgentJob> ActiveAgentJobs { get; } = [];
 
-    public ConversationMode CurrentMode => IsAdvancedMode
-        ? ConversationMode.Advanced
-        : ConversationMode.Daily;
+    public ConversationMode CurrentMode =>
+        ConversationModeCoordinator.GetCompanionMode(IsAdvancedMode);
 
     public string ActiveProviderLabel => BuildProviderLabel(CurrentMode);
 
@@ -198,13 +198,9 @@ public partial class MainViewModel : ObservableObject
 
     public void SetAdvancedMode(bool enabled)
     {
-        if (enabled && !IsAdvancedModeAvailable)
-        {
-            IsAdvancedMode = false;
-            return;
-        }
-
-        IsAdvancedMode = enabled;
+        IsAdvancedMode = ConversationModeCoordinator.ResolveAdvancedEnabled(
+            enabled,
+            IsAdvancedModeAvailable);
     }
 
     public void ToggleAdvancedMode()
@@ -418,7 +414,10 @@ public partial class MainViewModel : ObservableObject
     /// <summary>스토리 모드에서 사용자가 조용할 때 짧은 존재감 비트를 띄운다(Phase 4 idle presence).</summary>
     public async Task StartStoryIdleAsync()
     {
-        if (!IsStoryMode || IsAdvancedMode || _isResponding || _isStoryResponding || IsCharacterSpeaking)
+        if (!ConversationModeCoordinator.IsRoleplayActive(IsStoryMode, IsAdvancedMode) ||
+            _isResponding ||
+            _isStoryResponding ||
+            IsCharacterSpeaking)
         {
             return;
         }

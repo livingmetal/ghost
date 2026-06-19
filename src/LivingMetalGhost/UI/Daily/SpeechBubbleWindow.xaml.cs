@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.UI.ViewModels;
 
@@ -82,7 +83,10 @@ public partial class SpeechBubbleWindow : Window
     {
         if (e.PropertyName is nameof(MainViewModel.IsAdvancedMode) or nameof(MainViewModel.IsStoryMode))
         {
-            if (_viewModel is { IsAdvancedMode: true } or { IsStoryMode: true })
+            if (_viewModel is not null &&
+                ConversationModeCoordinator.IsCompanionOverlaySuppressed(
+                    _viewModel.IsStoryMode,
+                    _viewModel.IsAdvancedMode))
             {
                 HideBubble(immediate: true);
             }
@@ -169,7 +173,10 @@ public partial class SpeechBubbleWindow : Window
 
     private void ShowBubble(bool allowEmpty)
     {
-        if (_viewModel is { IsAdvancedMode: true } or { IsStoryMode: true })
+        if (_viewModel is not null &&
+            ConversationModeCoordinator.IsCompanionOverlaySuppressed(
+                _viewModel.IsStoryMode,
+                _viewModel.IsAdvancedMode))
         {
             return;
         }

@@ -219,6 +219,15 @@ implementations.
 Owns mode transitions and coordinates Daily, Story, and Advanced sessions. This
 is the first useful seam to extract from `MainViewModel`.
 
+`ConversationModeCoordinator` now owns the pure mode rules used by the desktop
+shell:
+
+- Daily and Advanced are the two Companion conversation presentations;
+- Story state remains enabled while Advanced is active, but Roleplay UI is
+  suspended until Advanced closes;
+- Daily chat and speech-bubble overlays are suppressed during Story or
+  Advanced presentation.
+
 ### Core/Conversation
 
 Owns conversation requests, history, response normalization, and provider-facing

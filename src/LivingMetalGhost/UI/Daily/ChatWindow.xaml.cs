@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.UI.ViewModels;
 
@@ -109,7 +110,11 @@ public partial class ChatWindow : Window
             or nameof(MainViewModel.ActiveProviderLabel))
         {
             ApplyModeVisuals();
-            if (_subscribedViewModel is { IsAdvancedMode: true } or { IsStoryMode: true })
+            var viewModel = _subscribedViewModel;
+            if (viewModel is not null &&
+                ConversationModeCoordinator.IsCompanionOverlaySuppressed(
+                    viewModel.IsStoryMode,
+                    viewModel.IsAdvancedMode))
             {
                 _speechBubbleWindow?.HideBubble(immediate: true);
             }
@@ -285,7 +290,10 @@ public partial class ChatWindow : Window
 
     private void SetDailyAwakeState()
     {
-        if (_subscribedViewModel is null || _subscribedViewModel.IsAdvancedMode || _subscribedViewModel.IsStoryMode)
+        if (_subscribedViewModel is null ||
+            ConversationModeCoordinator.IsCompanionOverlaySuppressed(
+                _subscribedViewModel.IsStoryMode,
+                _subscribedViewModel.IsAdvancedMode))
         {
             return;
         }
@@ -296,7 +304,11 @@ public partial class ChatWindow : Window
 
     private void SetDailySleepState()
     {
-        if (_subscribedViewModel is null || _subscribedViewModel.IsAdvancedMode || _subscribedViewModel.IsStoryMode || _subscribedViewModel.IsCharacterSpeaking)
+        if (_subscribedViewModel is null ||
+            ConversationModeCoordinator.IsCompanionOverlaySuppressed(
+                _subscribedViewModel.IsStoryMode,
+                _subscribedViewModel.IsAdvancedMode) ||
+            _subscribedViewModel.IsCharacterSpeaking)
         {
             return;
         }
