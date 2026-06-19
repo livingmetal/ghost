@@ -160,7 +160,7 @@ Additional logical seams completed:
 - mode-specific ViewModel command grouping for Companion and Roleplay;
 - desktop runtime settings and provider availability service;
 - DesktopShell service and window support grouping;
-- manifest-aware character mood resolver.
+- manifest-aware character mood resolver shared by prompts and responses.
 
 ## Phase 5 - Character Presentation Boundary
 

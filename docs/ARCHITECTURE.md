@@ -124,7 +124,8 @@ reserved for deterministic application rules.
 `Core/Characters/Presentation/CharacterMoodResolver.cs` filters requested moods
 against the selected character manifest before applying the mode expression
 policy. Conversation orchestration no longer interprets sprite or modular-state
-capabilities directly.
+capabilities directly. Prompt assembly uses the same resolver when advertising
+available moods, preventing prompt and response validation from drifting apart.
 
 `Core/Conversation/History/ConversationHistoryStore.cs` owns bounded in-memory
 history, channel resolution, snapshots, and role counts. `ConversationService`

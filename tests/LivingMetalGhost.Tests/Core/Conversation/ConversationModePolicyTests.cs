@@ -1,6 +1,7 @@
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.Core.Workbench;
 using Xunit;
@@ -72,7 +73,9 @@ public sealed class ConversationModePolicyTests : IDisposable
         var paths = new AppPaths(_root);
         var workspaceStore = new WorkspaceStore(paths);
         var sessionLog = new AdvancedSessionLogService(paths, workspaceStore);
-        var assembler = new PromptAssembler(new AdvancedPromptPolicy(sessionLog));
+        var assembler = new PromptAssembler(
+            new AdvancedPromptPolicy(sessionLog),
+            new CharacterMoodResolver());
 
         var prompt = assembler.BuildSystemPrompt(
             new AppConfig(),
@@ -93,7 +96,9 @@ public sealed class ConversationModePolicyTests : IDisposable
         var paths = new AppPaths(_root);
         var workspaceStore = new WorkspaceStore(paths);
         var sessionLog = new AdvancedSessionLogService(paths, workspaceStore);
-        var assembler = new PromptAssembler(new AdvancedPromptPolicy(sessionLog));
+        var assembler = new PromptAssembler(
+            new AdvancedPromptPolicy(sessionLog),
+            new CharacterMoodResolver());
 
         var prompt = assembler.BuildSystemPrompt(
             new AppConfig(),

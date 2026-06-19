@@ -1,6 +1,7 @@
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Roleplay;
 using LivingMetalGhost.Core.Workbench;
 
@@ -13,10 +14,14 @@ namespace LivingMetalGhost.Core.Services;
 public sealed class PromptAssembler
 {
     private readonly AdvancedPromptPolicy _advancedPromptPolicy;
+    private readonly CharacterMoodResolver _characterMoodResolver;
 
-    public PromptAssembler(AdvancedPromptPolicy advancedPromptPolicy)
+    public PromptAssembler(
+        AdvancedPromptPolicy advancedPromptPolicy,
+        CharacterMoodResolver characterMoodResolver)
     {
         _advancedPromptPolicy = advancedPromptPolicy;
+        _characterMoodResolver = characterMoodResolver;
     }
 
     public string BuildSystemPrompt(
@@ -137,7 +142,7 @@ public sealed class PromptAssembler
             ConversationMode.Story => RoleplayPromptPolicy.Build(
                 storyState,
                 character.DisplayName,
-                GetAvailableSpriteMoods(character.Visual)),
+                _characterMoodResolver.GetAvailableMoods(character.Visual)),
             _ => BuildDailyModeDirective()
         };
     }
@@ -153,7 +158,7 @@ public sealed class PromptAssembler
             """;
     }
 
-    private static string BuildSpriteMoodDirective(
+    private string BuildSpriteMoodDirective(
         CharacterProfile character,
         ConversationMode mode)
     {
@@ -168,7 +173,7 @@ public sealed class PromptAssembler
                 """;
         }
 
-        var availableMoods = GetAvailableSpriteMoods(character.Visual);
+        var availableMoods = _characterMoodResolver.GetAvailableMoods(character.Visual);
         var availableMoodList = string.Join(", ", availableMoods);
 
         return $$"""
@@ -204,48 +209,4 @@ public sealed class PromptAssembler
             """;
     }
 
-    private static IReadOnlyList<string> GetAvailableSpriteMoods(CharacterVisualProfile visual)
-    {
-        var moods = new List<string>();
-
-        if (visual is ModularCharacterVisualProfile modular)
-        {
-            moods.AddRange(modular.States.Keys
-                .Where(mood => !string.IsNullOrWhiteSpace(mood))
-                .Where(mood => !string.Equals(mood, modular.BlinkStateName, StringComparison.OrdinalIgnoreCase)));
-
-            if (modular.SpeakingStates.Count > 0 || modular.SpeakingStatesByState.Count > 0)
-            {
-                moods.Add("speaking");
-            }
-        }
-        else if (visual is SpriteCharacterVisualProfile sprite)
-        {
-            if (!string.IsNullOrWhiteSpace(sprite.IdleSpritePath))
-            {
-                moods.Add("idle");
-            }
-
-            moods.AddRange(sprite.MoodSpritePaths.Keys);
-            moods.AddRange(sprite.MoodBlinkSpritePaths.Keys);
-            moods.AddRange(sprite.MoodCycleSpritePaths.Keys);
-
-            if (sprite.SpeakingSpritePaths.Count > 0)
-            {
-                moods.Add("speaking");
-            }
-        }
-
-        if (moods.Count == 0)
-        {
-            moods.Add("speaking");
-        }
-
-        return moods
-            .Where(mood => !string.IsNullOrWhiteSpace(mood))
-            .Select(mood => mood.Trim().ToLowerInvariant())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(mood => mood, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-    }
 }
