@@ -131,6 +131,10 @@ available moods, preventing prompt and response validation from drifting apart.
 history, channel resolution, snapshots, and role counts. `ConversationService`
 uses this store instead of owning history collections directly.
 
+`ExternalConversationTurnRecorder` normalizes tool and agent results before
+adding them to Companion history. `ConversationService.RememberExternalTurn`
+remains as a compatibility facade for existing skills.
+
 `Core/Conversation/Responses/ConversationResponseParser.cs` owns leading mood
 tag parsing and removal of legacy Roleplay metadata tags.
 

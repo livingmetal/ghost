@@ -19,6 +19,7 @@ public sealed class ConversationService : IRoleplayConversation
     private readonly HiddenTraitScheduler _hiddenTraitScheduler;
     private readonly AdvancedConversationSupport _advancedConversationSupport;
     private readonly CharacterMoodResolver _characterMoodResolver;
+    private readonly ExternalConversationTurnRecorder _externalTurnRecorder;
     public ConversationService(
         AppConfigLoader configLoader,
         ILlmProviderFactory providerFactory,
@@ -29,7 +30,8 @@ public sealed class ConversationService : IRoleplayConversation
         ConversationHistoryStore historyStore,
         HiddenTraitScheduler hiddenTraitScheduler,
         AdvancedConversationSupport advancedConversationSupport,
-        CharacterMoodResolver characterMoodResolver)
+        CharacterMoodResolver characterMoodResolver,
+        ExternalConversationTurnRecorder externalTurnRecorder)
     {
         _configLoader = configLoader;
         _providerFactory = providerFactory;
@@ -41,6 +43,7 @@ public sealed class ConversationService : IRoleplayConversation
         _hiddenTraitScheduler = hiddenTraitScheduler;
         _advancedConversationSupport = advancedConversationSupport;
         _characterMoodResolver = characterMoodResolver;
+        _externalTurnRecorder = externalTurnRecorder;
     }
 
     public Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
@@ -69,24 +72,11 @@ public sealed class ConversationService : IRoleplayConversation
         string assistantText,
         string source)
     {
-        if (string.IsNullOrWhiteSpace(userText) && string.IsNullOrWhiteSpace(assistantText))
-        {
-            return;
-        }
-
-        var normalizedSource = string.IsNullOrWhiteSpace(source)
-            ? "external"
-            : source.Trim();
-        var rememberedAssistantText = string.IsNullOrWhiteSpace(assistantText)
-            ? $"[{normalizedSource} result]{Environment.NewLine}(no text returned)"
-            : $"[{normalizedSource} result]{Environment.NewLine}{assistantText.Trim()}";
-
-        if (!string.IsNullOrWhiteSpace(userText))
-        {
-            _historyStore.Add(mode, "user", userText.Trim());
-        }
-
-        _historyStore.Add(mode, "assistant", rememberedAssistantText);
+        _externalTurnRecorder.Record(
+            mode,
+            userText,
+            assistantText,
+            source);
     }
 
     private async Task<SkillResult> ChatAsync(string text, ConversationMode mode, CancellationToken cancellationToken)

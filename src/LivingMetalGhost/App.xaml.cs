@@ -154,6 +154,7 @@ public partial class App : Application
         services.AddSingleton<AdvancedPromptPolicy>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationHistoryStore>();
+        services.AddSingleton<ExternalConversationTurnRecorder>();
         services.AddSingleton<HiddenTraitScheduler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<IRoleplayConversation>(
