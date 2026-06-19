@@ -11,6 +11,7 @@
         ShowInTaskbar="False"
         ShowActivated="False">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <LinearGradientBrush x:Key="InputFillBrush" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#FFF8F0" Offset="0" />
             <GradientStop Color="#F6EADD" Offset="1" />
@@ -18,13 +19,35 @@
     </Window.Resources>
 
     <Grid Background="Transparent" Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
         <!-- ChatWindow.xaml.cs keeps these names for mode labels, but the default chat input uses compact bubble UI. -->
-        <StackPanel Visibility="Collapsed">
+        <StackPanel Grid.Row="0" Visibility="Collapsed">
             <TextBlock x:Name="TitleLabel" />
             <TextBlock x:Name="ProviderLabel" />
         </StackPanel>
 
+        <Border Grid.Row="0"
+                MaxWidth="390"
+                Margin="54,0,12,8"
+                Padding="14,9"
+                HorizontalAlignment="Right"
+                Background="#E8D7F6"
+                BorderBrush="#C4A1DF"
+                BorderThickness="1"
+                CornerRadius="16,16,4,16"
+                Visibility="{Binding IsUserMessagePending, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Text="{Binding PendingUserMessageText}"
+                       TextWrapping="Wrap"
+                       Foreground="#34213F"
+                       FontSize="13" />
+        </Border>
+
         <Border x:Name="InputPanel"
+                Grid.Row="1"
                 Padding="10,10,14,10"
                 Background="{StaticResource InputFillBrush}"
                 BorderBrush="#E4D4C6"

@@ -33,6 +33,12 @@ public partial class MainViewModel : ObservableObject
     private string inputText = string.Empty;
 
     [ObservableProperty]
+    private string pendingUserMessageText = string.Empty;
+
+    [ObservableProperty]
+    private bool isUserMessagePending;
+
+    [ObservableProperty]
     private string storyInputText = string.Empty;
 
     [ObservableProperty]

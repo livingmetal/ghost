@@ -46,6 +46,8 @@ public partial class MainViewModel
         CancelMoodHold();
         SetCharacterMood(_spriteDirector.ResolveThinkingMood(CurrentMode));
         _isResponding = true;
+        PendingUserMessageText = request.RawText;
+        IsUserMessagePending = true;
         Messages.Add(new ChatMessage
         {
             Text = request.RawText,
@@ -66,6 +68,8 @@ public partial class MainViewModel
             SetCharacterMood(assistantMood);
             CaptureAgentJobs(turn.Request, result);
             await DisplayAssistantResponseAsync(result.BubbleText, isProactive: false, assistantMood);
+            IsUserMessagePending = false;
+            PendingUserMessageText = string.Empty;
             if (SubmittedInputPolicy.ShouldClear(InputText, submittedInput))
             {
                 InputText = string.Empty;
@@ -81,6 +85,8 @@ public partial class MainViewModel
         }
         catch (Exception ex)
         {
+            IsUserMessagePending = false;
+            PendingUserMessageText = string.Empty;
             BubbleText = $"요청을 처리하지 못했어요: {ex.Message}";
             IsCharacterSpeaking = false;
             SetCharacterMood("error");

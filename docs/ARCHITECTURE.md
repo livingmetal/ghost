@@ -308,6 +308,9 @@ retain only speaking-state and mood coordination around that presenter.
 Daily/Advanced submitted input remains visible while the assistant is
 responding. It is cleared after response presentation only when the user has not
 edited the input in the meantime; failed sends remain available for retry.
+Daily chat also renders the submitted text as an outgoing user bubble until the
+assistant response presentation completes, so the sent message remains visible
+even when focus or binding updates affect the editor.
 
 Character selection, scale persistence, speaking-state coordination, and
 post-speech mood timing are physically isolated in
