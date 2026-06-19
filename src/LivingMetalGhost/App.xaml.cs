@@ -163,6 +163,7 @@ public partial class App : Application
         services.AddSingleton<CompanionConversationController>();
         services.AddSingleton<ConversationTurnLogWriter>();
         services.AddSingleton<DesktopRuntimeSettingsService>();
+        services.AddSingleton<CharacterMoodResolver>();
         services.AddSingleton<SpriteDirector>();
         services.AddSingleton<AssistantMessagePresenter>();
         services.AddSingleton<FactStore>();

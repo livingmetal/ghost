@@ -18,6 +18,7 @@ public sealed class ConversationService : IRoleplayConversation
     private readonly ConversationHistoryStore _historyStore;
     private readonly HiddenTraitScheduler _hiddenTraitScheduler;
     private readonly AdvancedConversationSupport _advancedConversationSupport;
+    private readonly CharacterMoodResolver _characterMoodResolver;
     public ConversationService(
         AppConfigLoader configLoader,
         ILlmProviderFactory providerFactory,
@@ -27,7 +28,8 @@ public sealed class ConversationService : IRoleplayConversation
         RoleplayMemoryDigestService roleplayMemoryDigestService,
         ConversationHistoryStore historyStore,
         HiddenTraitScheduler hiddenTraitScheduler,
-        AdvancedConversationSupport advancedConversationSupport)
+        AdvancedConversationSupport advancedConversationSupport,
+        CharacterMoodResolver characterMoodResolver)
     {
         _configLoader = configLoader;
         _providerFactory = providerFactory;
@@ -38,6 +40,7 @@ public sealed class ConversationService : IRoleplayConversation
         _historyStore = historyStore;
         _hiddenTraitScheduler = hiddenTraitScheduler;
         _advancedConversationSupport = advancedConversationSupport;
+        _characterMoodResolver = characterMoodResolver;
     }
 
     public Task<SkillResult> ChatAsync(string text, bool advanced, CancellationToken cancellationToken)
@@ -120,7 +123,7 @@ public sealed class ConversationService : IRoleplayConversation
             ? ConversationResponseParser.StripLegacyRoleplayTags(parsed.Text)
             : parsed.Text;
         var characterText = CharacterSpeechSanitizer.Sanitize(storyCleanText);
-        var characterMood = ResolveResponseMood(
+        var characterMood = _characterMoodResolver.Resolve(
             mode,
             parsed.Mood,
             character.Visual);
@@ -180,7 +183,7 @@ public sealed class ConversationService : IRoleplayConversation
         }, cancellationToken);
         var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
         var characterText = CharacterSpeechSanitizer.Sanitize(parsed.Text);
-        var characterMood = ResolveResponseMood(
+        var characterMood = _characterMoodResolver.Resolve(
             mode,
             parsed.Mood,
             character.Visual);
@@ -227,7 +230,7 @@ public sealed class ConversationService : IRoleplayConversation
         var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
         var characterText = CharacterSpeechSanitizer.Sanitize(
             ConversationResponseParser.StripLegacyRoleplayTags(parsed.Text));
-        var characterMood = ResolveResponseMood(
+        var characterMood = _characterMoodResolver.Resolve(
             mode,
             parsed.Mood,
             character.Visual);
@@ -242,73 +245,6 @@ public sealed class ConversationService : IRoleplayConversation
             Action = "story-idle",
             UsedLlm = true
         };
-    }
-
-    private static string? NormalizeMood(string? mood, CharacterVisualProfile visual)
-    {
-        if (string.IsNullOrWhiteSpace(mood))
-        {
-            return null;
-        }
-
-        var normalized = mood.Trim().ToLowerInvariant();
-        return GetAvailableSpriteMoods(visual).Contains(normalized, StringComparer.OrdinalIgnoreCase)
-            ? normalized
-            : null;
-    }
-
-    private static string ResolveResponseMood(
-        ConversationMode mode,
-        string? requestedMood,
-        CharacterVisualProfile visual)
-    {
-        var normalizedMood = NormalizeMood(requestedMood, visual);
-        return CharacterExpressionPolicy.ResolveResponseState(normalizedMood, mode);
-    }
-
-    private static IReadOnlyList<string> GetAvailableSpriteMoods(CharacterVisualProfile visual)
-    {
-        var moods = new List<string>();
-
-        if (visual is ModularCharacterVisualProfile modular)
-        {
-            moods.AddRange(modular.States.Keys
-                .Where(mood => !string.IsNullOrWhiteSpace(mood))
-                .Where(mood => !string.Equals(mood, modular.BlinkStateName, StringComparison.OrdinalIgnoreCase)));
-
-            if (modular.SpeakingStates.Count > 0 || modular.SpeakingStatesByState.Count > 0)
-            {
-                moods.Add("speaking");
-            }
-        }
-        else if (visual is SpriteCharacterVisualProfile sprite)
-        {
-            if (!string.IsNullOrWhiteSpace(sprite.IdleSpritePath))
-            {
-                moods.Add("idle");
-            }
-
-            moods.AddRange(sprite.MoodSpritePaths.Keys);
-            moods.AddRange(sprite.MoodBlinkSpritePaths.Keys);
-            moods.AddRange(sprite.MoodCycleSpritePaths.Keys);
-
-            if (sprite.SpeakingSpritePaths.Count > 0)
-            {
-                moods.Add("speaking");
-            }
-        }
-
-        if (moods.Count == 0)
-        {
-            moods.Add("speaking");
-        }
-
-        return moods
-            .Where(mood => !string.IsNullOrWhiteSpace(mood))
-            .Select(mood => mood.Trim().ToLowerInvariant())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(mood => mood, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
     }
 
 }

@@ -121,6 +121,11 @@ Daily and Story responses may use LLM-selected semantic moods. Advanced
 responses do not request or accept LLM mood selection; their visual behavior is
 reserved for deterministic application rules.
 
+`Core/Characters/Presentation/CharacterMoodResolver.cs` filters requested moods
+against the selected character manifest before applying the mode expression
+policy. Conversation orchestration no longer interprets sprite or modular-state
+capabilities directly.
+
 `Core/Conversation/History/ConversationHistoryStore.cs` owns bounded in-memory
 history, channel resolution, snapshots, and role counts. `ConversationService`
 uses this store instead of owning history collections directly.
