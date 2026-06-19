@@ -19,6 +19,12 @@ runtime: crop/framing
 ```text
 outfits/<outfit-id>/
   outfit.draft.json
+  forward_clasped/
+    inner_top.png
+    outer_top.png
+    sleeve_left.png
+    sleeve_right.png
+    neck_item.png
   neutral_stand/
     inner_top.png
     outer_top.png

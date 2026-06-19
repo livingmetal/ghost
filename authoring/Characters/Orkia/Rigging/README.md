@@ -52,11 +52,12 @@ README.md
 
 ## Standard pose set
 
-초기 표준 포즈는 세 개만 둔다.
+초기 표준 포즈는 네 개만 둔다.
 
 | Pose id | Purpose |
 |---|---|
-| `neutral_stand` | idle, listening, speaking, soft-smile 계열 기본 포즈 |
+| `forward_clasped` | idle, listening, speaking, soft-smile 계열 기본 포즈 |
+| `neutral_stand` | 팔을 내린 대체 직립 포즈 |
 | `thinking_tilt` | thinking, skeptical, confused, concerned 계열 진단 포즈 |
 | `explain_hand` | curious, explaining, tutorial 계열 설명 포즈 |
 
@@ -76,7 +77,7 @@ sleeve_right
 neck_item
 head_base
 ear_left / ear_right
-hair_back / hair_front
+hair_back / hair_side_left / hair_side_right / hair_front
 eye / pupil / brow / mouth
 face_accessory
 head_accessory
@@ -105,7 +106,7 @@ concerned
 
 ## Practical workflow
 
-1. `body-templates/neutral_stand.svg`를 그림 프로그램에 guide layer로 올린다.
+1. `body-templates/forward_clasped.svg`를 그림 프로그램에 guide layer로 올린다.
 2. 같은 캔버스 크기에서 body, clothes, face, accessory layer를 그린다.
 3. PNG export는 항상 전체 캔버스 기준으로 한다.
 4. 파일은 `parts/`, `outfits/`, `accessories/` 아래에 넣는다.

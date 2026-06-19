@@ -52,6 +52,8 @@ v0의 목표는 얼굴과 말하기만 분리하는 것이다.
 parts/
   body_base.png
   hair_back.png
+  hair_side_left.png
+  hair_side_right.png
   head_base.png
   ear_left.png
   ear_right.png
@@ -113,14 +115,18 @@ front hair if it covers the eyes
 
 ### 3. Hair
 
-최소 두 레이어로 나눈다.
+긴 네추럴 웨이브는 최소 네 레이어로 나눈다.
 
 ```text
 hair_back
+hair_side_left
+hair_side_right
 hair_front
 ```
 
-긴 머리카락 끝이 몸 뒤로 흐르면 `hair_back`은 body 뒤쪽에 둬도 된다. 눈을 덮는 앞머리는 `hair_front`로 둔다.
+큰 머리 질량은 `hair_back`으로 body 뒤쪽에 둔다. 어깨 바깥으로 흐르는 좌우
+웨이브는 `hair_side_left/right`로 분리해 작은 sway를 허용한다. 눈을 덮는
+앞머리와 얼굴 옆 짧은 가닥은 `hair_front`로 둔다.
 
 ### 4. Eyes
 
@@ -281,7 +287,7 @@ AI 이미지는 최종 파츠로 바로 믿지 않는다.
 나쁜 용도:
 
 ```text
-동일 캐릭터 전신 포즈 3개 자동 생성
+동일 캐릭터의 여러 전신 포즈를 좌표 검수 없이 자동 생성
 완성된 파츠 PNG 자동 생성
 정확한 300x598 좌표계 자동 유지
 눈/입/소매 파츠 자동 분리
@@ -293,7 +299,7 @@ AI 결과는 참고 이미지로 보고, 실제 런타임 파츠는 template 위
 
 첫 asset pass는 다음만 만족하면 된다.
 
-1. `neutral_stand` 기준 전신 조합이 원본과 비슷하게 보인다.
+1. `forward_clasped` 기준 전신 조합이 master와 비슷하게 보인다.
 2. 눈을 깜빡일 수 있다.
 3. 입을 열고 닫을 수 있다.
 4. thinking/concerned 눈썹이 구분된다.

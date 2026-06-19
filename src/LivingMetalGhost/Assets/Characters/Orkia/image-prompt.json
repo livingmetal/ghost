@@ -3,7 +3,7 @@
     "same character as approved Orkia reference",
     "purple eyes",
     "long pointed elf ears",
-    "dark purple long hair tied high",
+    "dark purple long natural-wave hair worn fully loose",
     "white shirt",
     "black tie",
     "black pleated skirt near the knees",
@@ -21,6 +21,7 @@
     "do not change eye color",
     "do not shorten elf ears",
     "do not change hair color",
+    "do not add a ponytail, hair tie, top knot, or gathered top section",
     "do not remove tie",
     "do not shorten skirt excessively",
     "do not remove stockings or boots",
@@ -44,7 +45,8 @@
     "upper-body": "upper-body framing, same character basis without redesign"
   },
   "pose_prompt_overrides": {
-    "neutral_stand": "neutral standing pose",
+    "forward_clasped": "front-facing upright pose with both hands gently clasped at the lower abdomen",
+    "neutral_stand": "neutral standing pose with arms relaxed",
     "thinking_tilt": "slight head tilt, reflective pose",
     "explain_hand": "one-hand explanation gesture"
   },

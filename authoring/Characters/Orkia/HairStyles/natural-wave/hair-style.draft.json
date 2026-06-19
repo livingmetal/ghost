@@ -1,0 +1,36 @@
+{
+  "$schema": "https://livingmetal.local/schemas/ghost-hair-style-draft.schema.json",
+  "id": "natural-wave",
+  "display_name": "Natural Wave",
+  "character_id": "orkia",
+  "status": "master-prepared",
+  "canonical_reference": "../../References/orkia-fullbody-alpha-refined-v2.png",
+  "rig_master": "../../Rigging/masters/orkia-natural-wave-forward-clasped-master-4x.png",
+  "logical_preview": "../../Rigging/masters/orkia-natural-wave-forward-clasped-master-logical.png",
+  "identity": [
+    "dark purple hair",
+    "fully loose long natural waves",
+    "soft center-to-middle part",
+    "layered face-framing bangs",
+    "broad flowing back-hair mass reaching the upper thighs"
+  ],
+  "forbidden": [
+    "ponytail",
+    "hair tie",
+    "top knot",
+    "gathered crown section",
+    "maid headband"
+  ],
+  "target_slots": [
+    "hair_back",
+    "hair_side_left",
+    "hair_side_right",
+    "hair_front"
+  ],
+  "split_notes": {
+    "hair_back": "Large continuous mass behind head, ears, shoulders, and torso.",
+    "hair_side_left": "Loose outer wave beside the left shoulder for subtle sway.",
+    "hair_side_right": "Loose outer wave beside the right shoulder for subtle sway.",
+    "hair_front": "Bangs and face-framing locks rendered above the head and face."
+  }
+}

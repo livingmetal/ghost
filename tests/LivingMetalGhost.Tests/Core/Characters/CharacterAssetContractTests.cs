@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Drawing;
 using Xunit;
 
 namespace LivingMetalGhost.Tests.Core.Characters;
@@ -71,6 +72,75 @@ public sealed class CharacterAssetContractTests
                 $"{Path.GetFileName(metadataFile)} has missing PNG references:{Environment.NewLine}" +
                 string.Join(Environment.NewLine, missingPaths));
         }
+    }
+
+    [Fact]
+    public void OrkiaAuthoring_UsesNaturalWaveForwardClaspedBaseline()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var runtimeRoot = Path.Combine(
+            repositoryRoot,
+            "src",
+            "LivingMetalGhost",
+            "Assets",
+            "Characters",
+            "Orkia");
+        var authoringRoot = Path.Combine(
+            repositoryRoot,
+            "authoring",
+            "Characters",
+            "Orkia");
+
+        using var runtimeManifest = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(runtimeRoot, "manifest.json")));
+        var defaultAppearance = runtimeManifest.RootElement
+            .GetProperty("default_appearance")
+            .GetString() ?? string.Empty;
+        Assert.Contains("네추럴 웨이브", defaultAppearance);
+        Assert.DoesNotContain("높게 묶", defaultAppearance);
+
+        using var rigManifest = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(
+                authoringRoot,
+                "Rigging",
+                "rig-manifest.draft.json")));
+        Assert.Equal(
+            "natural-wave",
+            rigManifest.RootElement
+                .GetProperty("hair_style")
+                .GetProperty("id")
+                .GetString());
+        Assert.Equal(
+            "forward_clasped",
+            rigManifest.RootElement
+                .GetProperty("state_pose_map")
+                .GetProperty("idle")
+                .GetString());
+
+        var masterPath = Path.Combine(
+            authoringRoot,
+            "Rigging",
+            "masters",
+            "orkia-natural-wave-forward-clasped-master-4x.png");
+        using var master = Image.FromFile(masterPath);
+        Assert.Equal(1200, master.Width);
+        Assert.Equal(2392, master.Height);
+        Assert.True(Image.IsAlphaPixelFormat(master.PixelFormat));
+
+        Assert.True(File.Exists(Path.Combine(
+            authoringRoot,
+            "Rigging",
+            "body-templates",
+            "forward_clasped.svg")));
+        Assert.True(File.Exists(Path.Combine(
+            authoringRoot,
+            "HairStyles",
+            "natural-wave",
+            "hair-style.draft.json")));
+        Assert.False(Directory.Exists(Path.Combine(
+            authoringRoot,
+            "HairStyles",
+            "high-ponytail")));
     }
 
     private static IEnumerable<string> EnumerateStrings(JsonElement element)

@@ -24,6 +24,8 @@ origin: top-left
 body_base.png
 head_base.png
 hair_back.png
+hair_side_left.png
+hair_side_right.png
 hair_front.png
 ear_left.png
 ear_right.png

@@ -1,7 +1,7 @@
 # Orkia 전신 실루엣 가이드
 
 참고 이미지:
-- `orkia-fullbody-alpha-refined-v1.png`
+- `orkia-fullbody-alpha-refined-v2.png`
 
 목표:
 - 현재의 크롭된 idle 디자인에서 Orkia의 기존 정체성을 잃지 않으면서 전신 스프라이트로 확장한다.
@@ -29,6 +29,6 @@
 
 향후 스프라이트 수정용 실무 체크리스트:
 - 새 전신 포즈를 만들 때는 먼저 `approved-neutral.png`와 비교해 머리와 상반신 스케일을 맞춘다.
-- 그다음 `orkia-fullbody-alpha-refined-v1.png`와 비교해 무릎 라인, 스타킹 높이, 부츠 크기를 확인한다.
+- 그다음 `orkia-fullbody-alpha-refined-v2.png`와 비교해 헤어 실루엣, 무릎 라인, 스타킹 높이, 부츠 크기를 확인한다.
 - 의도적인 파이프라인 변경이 없는 한, 모든 출력 스프라이트는 기존 `839x1671` 캔버스를 유지한다.
 - 표정이나 포즈 변화 때문에 기본 신체 비율이 달라지지 않도록 한다.

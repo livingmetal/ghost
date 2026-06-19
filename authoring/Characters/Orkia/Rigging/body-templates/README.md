@@ -17,7 +17,8 @@
 
 | File | Purpose |
 |---|---|
-| `neutral_stand.svg` | idle, listening, speaking의 기본 전신 포즈 |
+| `forward_clasped.svg` | idle, listening, speaking의 기본 전신 포즈 |
+| `neutral_stand.svg` | 팔을 내린 대체 직립 포즈 |
 | `thinking_tilt.svg` | thinking, skeptical, confused, concerned용 고개 기울임 포즈 |
 | `explain_hand.svg` | 설명/가이드용 한 손 제스처 포즈 |
 

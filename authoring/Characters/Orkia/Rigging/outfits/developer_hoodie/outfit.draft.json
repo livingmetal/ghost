@@ -18,6 +18,17 @@
     "neck_item"
   ],
   "poses": {
+    "forward_clasped": {
+      "guide": "../../body-templates/forward_clasped.svg",
+      "master_reference": "../../masters/orkia-natural-wave-forward-clasped-master-4x.png",
+      "layers": {
+        "inner_top": "forward_clasped/inner_top.png",
+        "outer_top": "forward_clasped/outer_hoodie.png",
+        "sleeve_left": "forward_clasped/sleeve_left.png",
+        "sleeve_right": "forward_clasped/sleeve_right.png",
+        "neck_item": "forward_clasped/tie.png"
+      }
+    },
     "neutral_stand": {
       "guide": "../../body-templates/neutral_stand.svg",
       "layers": {

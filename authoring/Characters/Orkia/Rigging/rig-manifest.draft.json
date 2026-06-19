@@ -13,7 +13,31 @@
     "manifest_path": "../manifest.json",
     "image_root": "../CharacterBases"
   },
+  "hair_style": {
+    "id": "natural-wave",
+    "manifest": "../HairStyles/natural-wave/hair-style.draft.json",
+    "canonical_reference": "../References/orkia-fullbody-alpha-refined-v2.png",
+    "legacy_archive": "../Legacy/HairStyles/high-ponytail"
+  },
   "pose_templates": [
+    {
+      "id": "forward_clasped",
+      "template": "body-templates/forward_clasped.svg",
+      "master_reference": "masters/orkia-natural-wave-forward-clasped-master-4x.png",
+      "description": "Default upright pose based on Orkia's maid-mode stance, with both hands gently clasped at the lower abdomen.",
+      "anchors": {
+        "head": { "x": 150, "y": 76 },
+        "neck": { "x": 150, "y": 116 },
+        "torso": { "x": 150, "y": 184 },
+        "left_shoulder": { "x": 106, "y": 136 },
+        "right_shoulder": { "x": 194, "y": 136 },
+        "left_elbow": { "x": 112, "y": 228 },
+        "right_elbow": { "x": 188, "y": 228 },
+        "left_hand": { "x": 137, "y": 278 },
+        "right_hand": { "x": 163, "y": 278 },
+        "hip": { "x": 150, "y": 300 }
+      }
+    },
     {
       "id": "neutral_stand",
       "template": "body-templates/neutral_stand.svg",
@@ -77,7 +101,9 @@
     { "id": "head_base", "kind": "head", "z": 70, "required": true },
     { "id": "ear_left", "kind": "head", "z": 68, "required": false, "parent": "head_base" },
     { "id": "ear_right", "kind": "head", "z": 68, "required": false, "parent": "head_base" },
-    { "id": "hair_back", "kind": "hair", "z": 60, "required": false, "parent": "head_base" },
+    { "id": "hair_back", "kind": "hair", "z": 5, "required": false, "parent": "head_base" },
+    { "id": "hair_side_left", "kind": "hair", "z": 65, "required": false, "parent": "head_base" },
+    { "id": "hair_side_right", "kind": "hair", "z": 66, "required": false, "parent": "head_base" },
     { "id": "hair_front", "kind": "hair", "z": 90, "required": false, "parent": "head_base" },
     { "id": "eye_left", "kind": "face", "z": 100, "required": false, "parent": "head_base" },
     { "id": "eye_right", "kind": "face", "z": 100, "required": false, "parent": "head_base" },
@@ -92,18 +118,18 @@
     { "id": "hand_item_right", "kind": "accessory", "z": 131, "required": false }
   ],
   "state_pose_map": {
-    "idle": "neutral_stand",
-    "listening": "neutral_stand",
-    "speaking": "neutral_stand",
-    "acknowledging": "neutral_stand",
-    "soft-smile": "neutral_stand",
-    "happy": "neutral_stand",
+    "idle": "forward_clasped",
+    "listening": "forward_clasped",
+    "speaking": "forward_clasped",
+    "acknowledging": "forward_clasped",
+    "soft-smile": "forward_clasped",
+    "happy": "forward_clasped",
     "thinking": "thinking_tilt",
     "skeptical": "thinking_tilt",
     "confused": "thinking_tilt",
     "concerned": "thinking_tilt",
-    "strict": "neutral_stand",
-    "serious": "neutral_stand",
+    "strict": "forward_clasped",
+    "serious": "forward_clasped",
     "curious": "explain_hand"
   },
   "first_target_states": [

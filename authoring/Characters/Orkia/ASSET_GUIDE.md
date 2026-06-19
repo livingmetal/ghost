@@ -17,7 +17,12 @@
    - 리깅이 불완전한 상태는 기존 `CharacterBases/approved-*.png`를 그대로 사용한다.
    - puppet rig는 기존 modular sprite 구조를 대체하기보다 점진적으로 보강한다.
 
-4. **표준 포즈 + 슬롯 방식**
+4. **헤어 canonical**
+   - 기본 헤어는 `References/orkia-fullbody-alpha-refined-v2.png`의 묶지 않은 긴 네추럴 웨이브다.
+   - 포니테일, 헤어 타이, 정수리에 모아 묶은 볼륨은 기본 외형에서 제외한다.
+   - 이전 포니테일 파츠는 `Legacy/HairStyles/high-ponytail/`에 보관한다.
+
+5. **표준 포즈 + 슬롯 방식**
    - 새 의상과 악세사리는 표준 전신 실루엣에 맞춰 제작한다.
    - 옷은 포즈별 오버레이로 만들고, 얼굴/머리/악세사리는 가능한 한 공통 파츠로 재사용한다.
 
@@ -40,7 +45,7 @@ Orkia/
 
 1. `manifest.json`의 `default_appearance`
 2. `image-prompt.json`의 `identity_tokens`
-3. `References/`의 기준 이미지
+3. `References/orkia-fullbody-alpha-refined-v2.png`
 4. `CharacterBases/approved-*.png`의 승인 상태 이미지
 5. `Rigging/POSE_PLAN.md`와 `rig-manifest.draft.json`의 포즈/anchor 정보
 

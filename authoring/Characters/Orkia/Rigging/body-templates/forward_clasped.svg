@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="598" viewBox="0 0 300 598">
+  <title>Orkia forward_clasped pose template</title>
+  <desc>Default front-facing rig pose based on the maid-mode clasped-hands stance.</desc>
+
+  <defs>
+    <style>
+      .guide { fill: none; stroke: #6b7280; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .body { fill: rgba(107,114,128,0.08); stroke: #4b5563; stroke-width: 2; }
+      .hair { fill: rgba(91,33,182,0.08); stroke: #6d28d9; stroke-width: 1.5; }
+      .anchor { fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+      .label { font-family: Segoe UI, Arial, sans-serif; font-size: 9px; fill: #374151; }
+      .center { stroke: #9ca3af; stroke-width: 1; stroke-dasharray: 4 4; }
+    </style>
+  </defs>
+
+  <line class="center" x1="150" y1="0" x2="150" y2="598" />
+
+  <path class="hair" d="M107 52 C91 76 88 139 83 226 C77 270 69 305 61 331 C82 322 99 304 109 278 L191 278 C201 304 218 322 239 331 C231 305 223 270 217 226 C212 139 209 76 193 52 Z" />
+  <ellipse class="body" cx="150" cy="76" rx="42" ry="53" />
+  <path class="body" d="M106 136 C117 118 183 118 194 136 C209 203 204 262 181 300 L119 300 C96 262 91 203 106 136 Z" />
+  <path class="guide" d="M106 136 C105 175 107 211 112 228 C119 248 128 268 137 278" />
+  <path class="guide" d="M194 136 C195 175 193 211 188 228 C181 248 172 268 163 278" />
+  <path class="guide" d="M137 278 C145 283 155 283 163 278" />
+  <path class="guide" d="M119 300 C124 389 128 486 132 586" />
+  <path class="guide" d="M181 300 C176 389 172 486 168 586" />
+
+  <circle class="anchor" cx="150" cy="76" r="3"/><text class="label" x="156" y="74">head</text>
+  <circle class="anchor" cx="150" cy="116" r="3"/><text class="label" x="156" y="120">neck</text>
+  <circle class="anchor" cx="150" cy="184" r="3"/><text class="label" x="156" y="188">torso</text>
+  <circle class="anchor" cx="106" cy="136" r="3"/><text class="label" x="63" y="132">left_shoulder</text>
+  <circle class="anchor" cx="194" cy="136" r="3"/><text class="label" x="200" y="132">right_shoulder</text>
+  <circle class="anchor" cx="112" cy="228" r="3"/><text class="label" x="69" y="232">left_elbow</text>
+  <circle class="anchor" cx="188" cy="228" r="3"/><text class="label" x="194" y="232">right_elbow</text>
+  <circle class="anchor" cx="137" cy="278" r="3"/><text class="label" x="94" y="282">left_hand</text>
+  <circle class="anchor" cx="163" cy="278" r="3"/><text class="label" x="169" y="282">right_hand</text>
+  <circle class="anchor" cx="150" cy="300" r="3"/><text class="label" x="156" y="304">hip</text>
+</svg>

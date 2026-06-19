@@ -31,7 +31,7 @@ Rigging/ASSET_PIPELINE.md
 
 Exit criteria:
 
-1. 표준 포즈 3개가 정리되어 있다.
+1. 기본 `forward_clasped`를 포함한 표준 포즈 4개가 정리되어 있다.
 2. slot 목록이 있다.
 3. fallback 규칙이 문서화되어 있다.
 4. asset export 규칙이 있다.
@@ -255,7 +255,7 @@ full outfit marketplace
 | 얼굴이 원본과 달라짐 | 원본 approved-neutral을 기준으로 수동 분리 |
 | WPF 성능 저하 | BitmapImage cache, slot source만 교체 |
 | 구현 중 기존 표시 깨짐 | rig 실패 시 modular PNG fallback |
-| 의상 조합 폭발 | 포즈 3개와 outfit v1부터 제한 |
+| 의상 조합 폭발 | 포즈 4개와 outfit v1부터 제한 |
 | 스토리 모드와 충돌 | state 이름은 기존 manifest state를 그대로 사용 |
 
 ## Done definition for v0
