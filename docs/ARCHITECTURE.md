@@ -180,6 +180,11 @@ Primary files:
 `CommandPolicyService` classifies commands. Workspace services provide read,
 diff, patch, and context capabilities. Agent executors adapt external tools.
 
+`Core/Workbench/Prompts/AdvancedPromptPolicy.cs` owns Advanced-only safety,
+approval, reusable workspace-memory, and repository-snapshot prompt rules.
+General `PromptAssembler` selects this policy without directly accessing
+Workbench persistence.
+
 Current debt: approval handling uses service-location calls from
 `UI/Workbench/ViewModels/MainViewModel.Approvals.cs`, and command/workbench concerns cross UI,
 `Skills`, and the Workbench area.

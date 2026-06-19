@@ -150,6 +150,7 @@ Additional logical seams completed:
 - hidden-trait scheduler aligned to conversation channels;
 - Roleplay memory digestion service;
 - Roleplay-specific prompt policy;
+- Advanced workbench prompt policy;
 - deterministic neutral expression policy and application mode coordinator.
 
 ## Phase 5 - Character Presentation Boundary

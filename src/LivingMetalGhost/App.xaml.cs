@@ -11,6 +11,7 @@ using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Reminders;
 using LivingMetalGhost.Core.Security;
 using LivingMetalGhost.Core.Services;
+using LivingMetalGhost.Core.Workbench;
 using LivingMetalGhost.Providers.Llm;
 using LivingMetalGhost.Skills;
 using LivingMetalGhost.UI.ViewModels;
@@ -144,6 +145,7 @@ public partial class App : Application
         services.AddSingleton<Core.Workspace.DiffService>();
         services.AddSingleton<Core.Workspace.PatchApplyService>();
         services.AddSingleton<Core.Workspace.PatchReviewService>();
+        services.AddSingleton<AdvancedPromptPolicy>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationHistoryStore>();
         services.AddSingleton<HiddenTraitScheduler>();
