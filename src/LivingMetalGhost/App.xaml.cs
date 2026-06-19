@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Threading;
 using LivingMetalGhost.Agents;
 using LivingMetalGhost.AppCore.Conversation;
+using LivingMetalGhost.AppCore.Desktop;
 using LivingMetalGhost.AppCore.Roleplay;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Conversation;
@@ -161,6 +162,7 @@ public partial class App : Application
         services.AddSingleton<ConversationLogService>();
         services.AddSingleton<CompanionConversationController>();
         services.AddSingleton<ConversationTurnLogWriter>();
+        services.AddSingleton<DesktopRuntimeSettingsService>();
         services.AddSingleton<SpriteDirector>();
         services.AddSingleton<AssistantMessagePresenter>();
         services.AddSingleton<FactStore>();

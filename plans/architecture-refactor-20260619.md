@@ -157,7 +157,8 @@ Additional logical seams completed:
 - shared assistant message pacing and typing presenter;
 - Companion request execution and conversation turn logging;
 - character presentation ViewModel compatibility seam;
-- mode-specific ViewModel command grouping for Companion and Roleplay.
+- mode-specific ViewModel command grouping for Companion and Roleplay;
+- desktop runtime settings and provider availability service.
 
 ## Phase 5 - Character Presentation Boundary
 

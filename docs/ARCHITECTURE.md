@@ -281,6 +281,11 @@ Daily/Advanced send and proactive flows, while
 `UI/Roleplay/ViewModels/MainViewModel.Roleplay.cs` owns Story activation, send,
 idle, reset, and state summary flows.
 
+`Application/Desktop/DesktopRuntimeSettingsService.cs` owns proactive-chat
+interval normalization and Advanced provider availability detection. The
+DesktopShell applies the returned state without interpreting provider names or
+configuration fallback rules.
+
 `Application/Conversation/CompanionConversationController.cs` owns skill routing
 and proactive Companion conversation entry points. `ConversationTurnLogWriter`
 owns provider-aware log metadata and persistence for all conversation modes.

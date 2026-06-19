@@ -3,13 +3,13 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LivingMetalGhost.AppCore.Conversation;
+using LivingMetalGhost.AppCore.Desktop;
 using LivingMetalGhost.AppCore.ModeCoordination;
 using LivingMetalGhost.AppCore.Roleplay;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Services;
-using LivingMetalGhost.Providers.Llm;
 using LivingMetalGhost.Skills;
 using LivingMetalGhost.UI.Presentation;
 
@@ -22,6 +22,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ConversationLogService _conversationLogService;
     private readonly CompanionConversationController _companionConversationController;
     private readonly ConversationTurnLogWriter _conversationTurnLogWriter;
+    private readonly DesktopRuntimeSettingsService _desktopRuntimeSettingsService;
     private readonly SpriteDirector _spriteDirector;
     private readonly RoleplaySessionController _roleplaySessionController;
     private readonly AssistantMessagePresenter _assistantMessagePresenter;
@@ -86,6 +87,7 @@ public partial class MainViewModel : ObservableObject
         ConversationLogService conversationLogService,
         CompanionConversationController companionConversationController,
         ConversationTurnLogWriter conversationTurnLogWriter,
+        DesktopRuntimeSettingsService desktopRuntimeSettingsService,
         SpriteDirector spriteDirector,
         RoleplaySessionController roleplaySessionController,
         AssistantMessagePresenter assistantMessagePresenter)
@@ -95,6 +97,7 @@ public partial class MainViewModel : ObservableObject
         _conversationLogService = conversationLogService;
         _companionConversationController = companionConversationController;
         _conversationTurnLogWriter = conversationTurnLogWriter;
+        _desktopRuntimeSettingsService = desktopRuntimeSettingsService;
         _spriteDirector = spriteDirector;
         _roleplaySessionController = roleplaySessionController;
         _assistantMessagePresenter = assistantMessagePresenter;
@@ -119,32 +122,10 @@ public partial class MainViewModel : ObservableObject
 
     public async Task RefreshLocalLmAvailabilityAsync()
     {
-        var advancedProvider = _configLoader.Load().AdvancedLlm.Provider;
-        var isInstalledApps =
-            string.Equals(advancedProvider, "installed-apps", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(advancedProvider, "installed_apps", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(advancedProvider, "apps", StringComparison.OrdinalIgnoreCase);
-        var needsLocalLm = string.Equals(advancedProvider, "lmbot", StringComparison.OrdinalIgnoreCase);
-
-        if (isInstalledApps)
-        {
-            InstalledAppDetector.Invalidate();
-            var info = await InstalledAppDetector.DetectAsync();
-            IsLocalLmAvailable = info.IsAnyAvailable;
-            IsAdvancedModeAvailable = info.IsAnyAvailable;
-        }
-        else if (needsLocalLm)
-        {
-            LocalLmDetector.Invalidate();
-            var info = await LocalLmDetector.DetectAsync();
-            IsLocalLmAvailable = info.IsAvailable;
-            IsAdvancedModeAvailable = info.IsAvailable;
-        }
-        else
-        {
-            IsLocalLmAvailable = false;
-            IsAdvancedModeAvailable = true;
-        }
+        var availability =
+            await _desktopRuntimeSettingsService.DetectAdvancedModeAvailabilityAsync();
+        IsLocalLmAvailable = availability.IsLocalLmAvailable;
+        IsAdvancedModeAvailable = availability.IsAdvancedModeAvailable;
 
         if (!IsAdvancedModeAvailable && IsAdvancedMode)
         {
@@ -159,19 +140,8 @@ public partial class MainViewModel : ObservableObject
 
     public (bool Enabled, int MinMinutes, int MaxMinutes) GetProactiveChatSettings()
     {
-        var config = _configLoader.Load();
-        var legacyInterval = Math.Clamp(config.App.ProactiveChatIntervalMinutes, 5, 240);
-        var minMinutes = config.App.ProactiveChatMinMinutes <= 0
-            ? legacyInterval
-            : Math.Clamp(config.App.ProactiveChatMinMinutes, 5, 240);
-        var maxMinutes = config.App.ProactiveChatMaxMinutes <= 0
-            ? legacyInterval
-            : Math.Clamp(config.App.ProactiveChatMaxMinutes, 5, 240);
-
-        return (
-            config.App.EnableProactiveChat,
-            Math.Min(minMinutes, maxMinutes),
-            Math.Max(minMinutes, maxMinutes));
+        var settings = _desktopRuntimeSettingsService.GetProactiveChatSettings();
+        return (settings.Enabled, settings.MinMinutes, settings.MaxMinutes);
     }
 
     // AppCommandSkill 이 돌려준 Action 값을 실제 동작으로 연결한다.
