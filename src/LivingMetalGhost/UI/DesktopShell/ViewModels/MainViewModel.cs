@@ -1,7 +1,5 @@
 using System.Collections.ObjectModel;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using LivingMetalGhost.AppCore.Conversation;
 using LivingMetalGhost.AppCore.Desktop;
 using LivingMetalGhost.AppCore.ModeCoordination;
@@ -10,7 +8,6 @@ using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Services;
-using LivingMetalGhost.Skills;
 using LivingMetalGhost.UI.Presentation;
 
 namespace LivingMetalGhost.UI.ViewModels;
@@ -72,8 +69,8 @@ public partial class MainViewModel : ObservableObject
     private bool isLocalLmAvailable;
 
     /// <summary>
-    /// 현재 설정된 고급 대화 provider 를 기준으로 고급 모드 토글 가능 여부.
-    /// lmbot: 로컬 CLI 감지 결과 / 그 외(API 기반): 항상 true.
+    /// 현재 설정된 고급 대화 provider를 기준으로 고급 모드 토글 가능 여부.
+    /// lmbot은 로컬 CLI 감지 결과를 사용하고, 그 외 API provider는 항상 활성화한다.
     /// </summary>
     [ObservableProperty]
     private bool isAdvancedModeAvailable = true;
@@ -109,100 +106,9 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<ChatMessage> Messages { get; } = [];
     public ObservableCollection<ChatMessage> StoryMessages { get; } = [];
 
-    /// <summary>고급 Workbench / Agent Dock 에 표시할 현재 작업들.</summary>
+    /// <summary>고급 Workbench와 Agent Dock에 표시할 현재 작업.</summary>
     public ObservableCollection<AgentJob> ActiveAgentJobs { get; } = [];
 
     public ConversationMode CurrentMode =>
         ConversationModeCoordinator.GetCompanionMode(IsAdvancedMode);
-
-    public string ActiveProviderLabel => BuildProviderLabel(CurrentMode);
-
-    public string StoryProviderLabel => BuildProviderLabel(ConversationMode.Story)
-        .Replace("STORY:", "ROLEPLAY:", StringComparison.OrdinalIgnoreCase);
-
-    public async Task RefreshLocalLmAvailabilityAsync()
-    {
-        var availability =
-            await _desktopRuntimeSettingsService.DetectAdvancedModeAvailabilityAsync();
-        IsLocalLmAvailable = availability.IsLocalLmAvailable;
-        IsAdvancedModeAvailable = availability.IsAdvancedModeAvailable;
-
-        if (!IsAdvancedModeAvailable && IsAdvancedMode)
-        {
-            IsAdvancedMode = false;
-        }
-    }
-
-    private string BuildProviderLabel(ConversationMode mode)
-    {
-        return _conversationTurnLogWriter.GetProviderLabel(mode);
-    }
-
-    public (bool Enabled, int MinMinutes, int MaxMinutes) GetProactiveChatSettings()
-    {
-        var settings = _desktopRuntimeSettingsService.GetProactiveChatSettings();
-        return (settings.Enabled, settings.MinMinutes, settings.MaxMinutes);
-    }
-
-    // AppCommandSkill 이 돌려준 Action 값을 실제 동작으로 연결한다.
-    // 비파괴적 명령만 즉시 처리하고, 종료처럼 위험한 명령은 의도적으로 보류한다.
-    private void DispatchAppCommand(string? action)
-    {
-        switch (action)
-        {
-            case AppCommandActions.OpenSettings:
-                OpenSettings();
-                break;
-            case AppCommandActions.OpenLog:
-                OpenConversationLog();
-                break;
-            // TODO: AppCommandActions.ExitApp 는 확인 절차를 둔 뒤 Application.Current.Shutdown() 연결.
-        }
-    }
-
-    [RelayCommand]
-    private void OpenSettings()
-    {
-        var window = new UI.Views.SettingsWindow
-        {
-            DataContext = _settingsViewModel,
-            Owner = Application.Current.MainWindow
-        };
-        window.ShowDialog();
-        RefreshSelectedCharacter();
-        OnPropertyChanged(nameof(ActiveProviderLabel));
-        OnPropertyChanged(nameof(StoryProviderLabel));
-        ProactiveSettingsRevision++;
-    }
-
-    public void OpenConversationLog()
-    {
-        var window = new UI.Views.ConversationLogWindow
-        {
-            DataContext = new ConversationLogViewModel(_conversationLogService),
-            Owner = Application.Current.MainWindow
-        };
-        window.Show();
-    }
-
-    private async Task WriteLogAsync(
-        string userText,
-        string assistantText,
-        bool isProactive,
-        string mood = "speaking",
-        ConversationMode? modeOverride = null)
-    {
-        var mode = modeOverride ?? CurrentMode;
-        await _conversationTurnLogWriter.WriteAsync(
-            new ConversationTurnLogContext(
-                userText,
-                assistantText,
-                isProactive,
-                mood,
-                mode,
-                SelectedCharacterId,
-                CharacterDisplayName),
-            CancellationToken.None);
-    }
-
 }

@@ -158,7 +158,8 @@ Additional logical seams completed:
 - Companion request execution and conversation turn logging;
 - character presentation ViewModel compatibility seam;
 - mode-specific ViewModel command grouping for Companion and Roleplay;
-- desktop runtime settings and provider availability service.
+- desktop runtime settings and provider availability service;
+- DesktopShell service and window support grouping.
 
 ## Phase 5 - Character Presentation Boundary
 
