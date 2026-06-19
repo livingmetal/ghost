@@ -1,7 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,6 +10,7 @@ using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.Providers.Llm;
 using LivingMetalGhost.Skills;
+using LivingMetalGhost.UI.Presentation;
 
 namespace LivingMetalGhost.UI.ViewModels;
 
@@ -25,6 +23,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ConversationLogService _conversationLogService;
     private readonly SpriteDirector _spriteDirector;
     private readonly RoleplaySessionController _roleplaySessionController;
+    private readonly AssistantMessagePresenter _assistantMessagePresenter;
     private bool _isResponding;
     private bool _isStoryResponding;
     private CancellationTokenSource? _moodHoldCts;
@@ -88,7 +87,8 @@ public partial class MainViewModel : ObservableObject
         ConversationService conversationService,
         ConversationLogService conversationLogService,
         SpriteDirector spriteDirector,
-        RoleplaySessionController roleplaySessionController)
+        RoleplaySessionController roleplaySessionController,
+        AssistantMessagePresenter assistantMessagePresenter)
     {
         _configLoader = configLoader;
         _intentRouter = intentRouter;
@@ -97,6 +97,7 @@ public partial class MainViewModel : ObservableObject
         _conversationLogService = conversationLogService;
         _spriteDirector = spriteDirector;
         _roleplaySessionController = roleplaySessionController;
+        _assistantMessagePresenter = assistantMessagePresenter;
         IsStoryMode = _roleplaySessionController.IsEnabled;
         RefreshSelectedCharacter();
         _ = RefreshLocalLmAvailabilityAsync();
@@ -497,8 +498,6 @@ public partial class MainViewModel : ObservableObject
         ConversationMode mode,
         bool animateCharacter)
     {
-        var compact = mode != ConversationMode.Advanced;
-        var chunks = SplitForPacedDisplay(response, compact);
         if (animateCharacter)
         {
             IsCharacterSpeaking = true;
@@ -506,25 +505,12 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            for (var index = 0; index < chunks.Count; index++)
-            {
-                var message = new ChatMessage
-                {
-                    SpeakerName = isProactive
-                        ? $"{CharacterDisplayName.ToUpperInvariant()} • 먼저 말 걸기"
-                        : CharacterDisplayName.ToUpperInvariant(),
-                    IsProactive = isProactive && index == 0,
-                    IsRoleplay = mode == ConversationMode.Story,
-                    IsTyping = true
-                };
-                targetMessages.Add(message);
-                await TypeMessageAsync(message, chunks[index]);
-
-                if (index + 1 < chunks.Count)
-                {
-                    await Task.Delay(compact ? 220 : 320);
-                }
-            }
+            await _assistantMessagePresenter.PresentAsync(
+                response,
+                isProactive,
+                CharacterDisplayName,
+                targetMessages,
+                mode);
         }
         finally
         {
@@ -643,121 +629,6 @@ public partial class MainViewModel : ObservableObject
         {
             ActiveAgentJobs.RemoveAt(0);
         }
-    }
-
-    private static async Task TypeMessageAsync(ChatMessage message, string text)
-    {
-        var elements = GetTextElements(text);
-        var batchSize = elements.Count switch
-        {
-            > 1200 => 5,
-            > 700 => 3,
-            > 350 => 2,
-            _ => 1
-        };
-        var baseDelayMilliseconds = elements.Count switch
-        {
-            > 1200 => 8,
-            > 700 => 11,
-            > 350 => 16,
-            _ => 24
-        };
-        var builder = new StringBuilder(text.Length);
-
-        for (var index = 0; index < elements.Count;)
-        {
-            var currentBatchSize = Math.Min(batchSize, elements.Count - index);
-            string lastElement = string.Empty;
-            for (var batchIndex = 0; batchIndex < currentBatchSize; batchIndex++)
-            {
-                lastElement = elements[index++];
-                builder.Append(lastElement);
-            }
-
-            message.Text = builder.ToString();
-            var delay = baseDelayMilliseconds + GetNaturalPauseMilliseconds(lastElement);
-            await Task.Delay(delay);
-        }
-
-        message.IsTyping = false;
-    }
-
-    private static IReadOnlyList<string> GetTextElements(string text)
-    {
-        var elements = new List<string>();
-        var enumerator = StringInfo.GetTextElementEnumerator(text);
-        while (enumerator.MoveNext())
-        {
-            elements.Add(enumerator.GetTextElement());
-        }
-
-        return elements;
-    }
-
-    private static int GetNaturalPauseMilliseconds(string textElement)
-    {
-        return textElement switch
-        {
-            "." or "!" or "?" or "…" => 180,
-            "," or ";" or ":" => 80,
-            "\n" or "\r\n" => 220,
-            _ => 0
-        };
-    }
-
-    private static IReadOnlyList<string> SplitForPacedDisplay(string response, bool compact)
-    {
-        var targetLength = compact ? 80 : 130;
-        var maximumLength = compact ? 140 : 220;
-        var normalized = response.Replace("\r\n", "\n").Trim();
-        if (normalized.Length <= maximumLength)
-        {
-            return [normalized];
-        }
-
-        var chunks = new List<string>();
-        var remaining = normalized;
-        while (remaining.Length > 0)
-        {
-            if (remaining.Length <= maximumLength)
-            {
-                chunks.Add(remaining.Trim());
-                break;
-            }
-
-            var splitIndex = FindSplitIndex(remaining, targetLength, maximumLength);
-            chunks.Add(remaining[..splitIndex].Trim());
-            remaining = remaining[splitIndex..].TrimStart();
-        }
-
-        return chunks;
-    }
-
-    private static int FindSplitIndex(string text, int targetLength, int maximumLength)
-    {
-        var searchLength = Math.Min(maximumLength, text.Length);
-        var preferredSeparators = new[] { "\n\n", "\n", ". ", "! ", "? ", "。", "！", "？", ", ", " " };
-        var bestIndex = -1;
-        var bestDistance = int.MaxValue;
-
-        foreach (var separator in preferredSeparators)
-        {
-            var index = text.LastIndexOf(separator, searchLength - 1, StringComparison.Ordinal);
-            if (index <= 20)
-            {
-                continue;
-            }
-
-            var candidate = index + separator.Length;
-            var distance = Math.Abs(candidate - targetLength);
-            if (distance < bestDistance)
-            {
-                bestIndex = candidate;
-                bestDistance = distance;
-            }
-        }
-
-        return bestIndex > 0 ? bestIndex : maximumLength;
     }
 
     private async Task WriteLogAsync(

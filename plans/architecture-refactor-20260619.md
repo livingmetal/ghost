@@ -153,7 +153,8 @@ Additional logical seams completed:
 - Advanced workbench prompt policy;
 - Advanced repository-context and session-log support;
 - deterministic neutral expression policy and application mode coordinator;
-- Roleplay session controller and conversation contract.
+- Roleplay session controller and conversation contract;
+- shared assistant message pacing and typing presenter.
 
 ## Phase 5 - Character Presentation Boundary
 

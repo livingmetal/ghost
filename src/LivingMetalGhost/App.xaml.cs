@@ -16,6 +16,7 @@ using LivingMetalGhost.Core.Services;
 using LivingMetalGhost.Core.Workbench;
 using LivingMetalGhost.Providers.Llm;
 using LivingMetalGhost.Skills;
+using LivingMetalGhost.UI.Presentation;
 using LivingMetalGhost.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -158,6 +159,7 @@ public partial class App : Application
         services.AddSingleton<RoleplaySessionController>();
         services.AddSingleton<ConversationLogService>();
         services.AddSingleton<SpriteDirector>();
+        services.AddSingleton<AssistantMessagePresenter>();
         services.AddSingleton<FactStore>();
         services.AddSingleton<KaistMenuParser>();
         services.AddSingleton<KaistMunjiMenuService>();

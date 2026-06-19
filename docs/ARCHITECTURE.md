@@ -265,6 +265,10 @@ shell:
 desktop shell. The UI consumes session operations without directly coordinating
 Roleplay persistence and conversation services.
 
+`UI/Presentation/AssistantMessagePresenter.cs` owns shared message chunking and
+typing animation for Daily, Roleplay, and Advanced presentations. View models
+retain only speaking-state and mood coordination around that presenter.
+
 ### Core/Conversation
 
 Owns conversation requests, history, response normalization, and provider-facing
