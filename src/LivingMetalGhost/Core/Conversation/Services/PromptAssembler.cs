@@ -1,4 +1,5 @@
 using LivingMetalGhost.Core.Config;
+using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Models;
 
 namespace LivingMetalGhost.Core.Services;
@@ -50,10 +51,10 @@ public sealed class PromptAssembler
         var background = string.IsNullOrWhiteSpace(customProfile?.Background)
             ? character.DefaultBackground
             : customProfile.Background.Trim();
-        var spriteMoodDirective = BuildSpriteMoodDirective(character);
+        var spriteMoodDirective = BuildSpriteMoodDirective(character, mode);
         var modeDirective = BuildModeDirective(mode, storyState, character, repositoryContext);
 
-        return $"""
+        var prompt = $"""
             You are not ChatGPT, a generic chatbot, or a detached API assistant.
             You are {character.DisplayName}, a resident desktop character who speaks directly from inside the user's workspace.
             Every reply is spoken dialogue from {character.DisplayName}, not assistant documentation, not a policy explanation, and not a generic help-center answer.
@@ -116,6 +117,10 @@ public sealed class PromptAssembler
             Prefer a specific emotional mood over plain speaking whenever the reply clearly leans one way.
             Choose the mood that best matches the emotional expression of the reply, then continue with the actual Korean response on the next line.
             """;
+
+        return mode == ConversationMode.Advanced
+            ? ReplaceMoodOutputWithAdvancedFormat(prompt, character)
+            : prompt;
     }
 
     private string BuildModeDirective(
@@ -257,8 +262,21 @@ public sealed class PromptAssembler
             """;
     }
 
-    private static string BuildSpriteMoodDirective(CharacterProfile character)
+    private static string BuildSpriteMoodDirective(
+        CharacterProfile character,
+        ConversationMode mode)
     {
+        if (!ConversationModePolicy.UsesLlmMood(mode))
+        {
+            return """
+                Advanced visual-state rules:
+                - Do not select or output a mood.
+                - Do not output a [mood: ...] tag.
+                - Character motion is controlled by deterministic application rules, not by this response.
+                - Do not describe animation mechanics unless the user explicitly asks about them.
+                """;
+        }
+
         var availableMoods = GetAvailableSpriteMoods(character.Visual);
         var availableMoodList = string.Join(", ", availableMoods);
 
@@ -274,6 +292,24 @@ public sealed class PromptAssembler
             - Pick the mood that best matches the actual reply, not the most dramatic mood.
             - During technical conversation, prefer subtle moods such as thinking, skeptical, concerned, acknowledging, serious, curious, or speaking when they are available.
             - Use surprised, blush, flustered, angry, or displeased only when the situation clearly justifies that expression and the mood exists in the available list.
+            """;
+    }
+
+    private static string ReplaceMoodOutputWithAdvancedFormat(
+        string prompt,
+        CharacterProfile character)
+    {
+        const string marker = "Speech examples:";
+        var markerIndex = prompt.IndexOf(marker, StringComparison.Ordinal);
+        if (markerIndex < 0)
+        {
+            return prompt;
+        }
+
+        return prompt[..markerIndex] + $"""
+            Output format:
+            Output only {character.DisplayName}'s actual Korean response.
+            Do not output a mood tag, animation cue, analysis label, or assistant-like summary unless the user explicitly asks for a structured answer.
             """;
     }
 

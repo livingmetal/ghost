@@ -110,6 +110,17 @@ Primary files:
 history, parses response mood tags, updates mode-specific persistence, and logs
 Advanced turns.
 
+Conversation history is split into two channels:
+
+- `Companion`: shared by Daily/idle conversation and Advanced workbench
+  conversation;
+- `Roleplay`: used only by Story mode and never injected into Companion
+  requests.
+
+Daily and Story responses may use LLM-selected semantic moods. Advanced
+responses do not request or accept LLM mood selection; their visual behavior is
+reserved for deterministic application rules.
+
 Current debt: Daily, Story, and Advanced workflows share one large service.
 Repository context, Story memory digestion, response cleanup, and history
 management are coupled to provider invocation.

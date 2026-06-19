@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.RegularExpressions;
+using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
 using LivingMetalGhost.Providers.Llm;
@@ -21,7 +22,7 @@ public sealed class ConversationService
     private readonly AdvancedSessionLogService _advancedSessionLogService;
     private readonly WorkspaceStore _workspaceStore;
     private readonly Core.Workspace.WorkspaceContextBuilder _workspaceContextBuilder;
-    private readonly Dictionary<ConversationMode, List<LlmHistoryMessage>> _histories = new();
+    private readonly Dictionary<ConversationHistoryChannel, List<LlmHistoryMessage>> _histories = new();
     private readonly Lock _historyLock = new();
     private readonly Dictionary<string, HiddenTraitRuntimeState> _hiddenTraitStates = new(StringComparer.OrdinalIgnoreCase);
 
@@ -134,8 +135,11 @@ public sealed class ConversationService
             ? StripLegacyStoryTags(parsed.Text)
             : parsed.Text;
         var characterText = PolishCharacterSpeech(storyCleanText);
-        var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
-                            (response.FromFallback ? "thinking" : "speaking");
+        var characterMood = ResolveResponseMood(
+            mode,
+            parsed.Mood,
+            character.Visual,
+            response.FromFallback ? "thinking" : "speaking");
 
         AddToHistory(mode, "user", userTextForProvider);
         AddToHistory(mode, "assistant", characterText);
@@ -197,8 +201,11 @@ public sealed class ConversationService
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
         var characterText = PolishCharacterSpeech(parsed.Text);
-        var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
-                            (response.FromFallback ? "happy" : "speaking");
+        var characterMood = ResolveResponseMood(
+            mode,
+            parsed.Mood,
+            character.Visual,
+            response.FromFallback ? "happy" : "speaking");
 
         AddToHistory(mode, "assistant", characterText);
 
@@ -323,8 +330,11 @@ public sealed class ConversationService
         }, cancellationToken);
         var parsed = ParseMoodTaggedResponse(response.Text);
         var characterText = PolishCharacterSpeech(StripLegacyStoryTags(parsed.Text));
-        var characterMood = NormalizeMood(parsed.Mood, character.Visual) ??
-                            (response.FromFallback ? "curious" : "soft-smile");
+        var characterMood = ResolveResponseMood(
+            mode,
+            parsed.Mood,
+            character.Visual,
+            response.FromFallback ? "curious" : "soft-smile");
 
         // idle 비트는 연속성을 위해 히스토리에만 남기고 StoryState(장면/요약)는 바꾸지 않는다.
         AddToHistory(mode, "assistant", characterText);
@@ -362,7 +372,7 @@ public sealed class ConversationService
         }
 
         var upcomingReplyIndex = GetAssistantReplyCount(mode) + 1;
-        var activeTraits = GetActiveHiddenTraits(character, upcomingReplyIndex);
+        var activeTraits = GetActiveHiddenTraits(character, mode, upcomingReplyIndex);
         if (activeTraits.Count == 0)
         {
             return "You may have hidden sides to your personality, but they should stay dormant unless they naturally surface.";
@@ -389,7 +399,10 @@ public sealed class ConversationService
         }
     }
 
-    private IReadOnlyList<HiddenCharacterTrait> GetActiveHiddenTraits(CharacterProfile character, int upcomingReplyIndex)
+    private IReadOnlyList<HiddenCharacterTrait> GetActiveHiddenTraits(
+        CharacterProfile character,
+        ConversationMode mode,
+        int upcomingReplyIndex)
     {
         var activeTraits = new List<HiddenCharacterTrait>();
 
@@ -397,7 +410,8 @@ public sealed class ConversationService
         {
             foreach (var trait in character.HiddenTraits)
             {
-                var key = $"{character.Id}:{trait.Id}";
+                var historyChannel = ConversationModePolicy.GetHistoryChannel(mode);
+                var key = $"{historyChannel}:{character.Id}:{trait.Id}";
                 if (!_hiddenTraitStates.TryGetValue(key, out var state))
                 {
                     state = new HiddenTraitRuntimeState();
@@ -466,6 +480,20 @@ public sealed class ConversationService
         return GetAvailableSpriteMoods(visual).Contains(normalized, StringComparer.OrdinalIgnoreCase)
             ? normalized
             : null;
+    }
+
+    private static string ResolveResponseMood(
+        ConversationMode mode,
+        string? requestedMood,
+        CharacterVisualProfile visual,
+        string fallbackMood)
+    {
+        if (!ConversationModePolicy.UsesLlmMood(mode))
+        {
+            return "working";
+        }
+
+        return NormalizeMood(requestedMood, visual) ?? fallbackMood;
     }
 
     private static IReadOnlyList<string> GetAvailableSpriteMoods(CharacterVisualProfile visual)
@@ -558,10 +586,11 @@ public sealed class ConversationService
 
     private List<LlmHistoryMessage> GetHistory(ConversationMode mode)
     {
-        if (!_histories.TryGetValue(mode, out var history))
+        var channel = ConversationModePolicy.GetHistoryChannel(mode);
+        if (!_histories.TryGetValue(channel, out var history))
         {
             history = [];
-            _histories[mode] = history;
+            _histories[channel] = history;
         }
 
         return history;

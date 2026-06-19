@@ -24,6 +24,20 @@ visual, handles framing, caches images, and runs blink/speaking/mood animation.
 
 These behaviors are production compatibility requirements during refactoring.
 
+## Mode Policy
+
+- Daily/idle mode may use the LLM response mood to select a semantic visual
+  state.
+- Roleplay mode has an independent conversation channel and may use the LLM
+  response mood for visual-novel expression.
+- Advanced mode shares conversation history with Daily mode but does not use
+  LLM-selected moods.
+- Advanced visual behavior will be deterministic and limited to approved
+  blinking, pose changes, and speaking frames.
+
+This policy defines an integration boundary only. The current refactor does not
+implement new sprite animation, pose assets, rigging, or composition behavior.
+
 ## Current Scope
 
 - Keep the current selected character working.
