@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using LivingMetalGhost.Core.Conversation;
 using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Presentation;
 using LivingMetalGhost.Providers.Llm;
 
 namespace LivingMetalGhost.Core.Services;
@@ -138,8 +139,7 @@ public sealed class ConversationService
         var characterMood = ResolveResponseMood(
             mode,
             parsed.Mood,
-            character.Visual,
-            response.FromFallback ? "thinking" : "speaking");
+            character.Visual);
 
         _historyStore.Add(mode, "user", userTextForProvider);
         _historyStore.Add(mode, "assistant", characterText);
@@ -204,8 +204,7 @@ public sealed class ConversationService
         var characterMood = ResolveResponseMood(
             mode,
             parsed.Mood,
-            character.Visual,
-            response.FromFallback ? "happy" : "speaking");
+            character.Visual);
 
         _historyStore.Add(mode, "assistant", characterText);
 
@@ -333,8 +332,7 @@ public sealed class ConversationService
         var characterMood = ResolveResponseMood(
             mode,
             parsed.Mood,
-            character.Visual,
-            response.FromFallback ? "curious" : "soft-smile");
+            character.Visual);
 
         // idle 비트는 연속성을 위해 히스토리에만 남기고 StoryState(장면/요약)는 바꾸지 않는다.
         _historyStore.Add(mode, "assistant", characterText);
@@ -482,15 +480,10 @@ public sealed class ConversationService
     private static string ResolveResponseMood(
         ConversationMode mode,
         string? requestedMood,
-        CharacterVisualProfile visual,
-        string fallbackMood)
+        CharacterVisualProfile visual)
     {
-        if (!ConversationModePolicy.UsesLlmMood(mode))
-        {
-            return "working";
-        }
-
-        return NormalizeMood(requestedMood, visual) ?? fallbackMood;
+        var normalizedMood = NormalizeMood(requestedMood, visual);
+        return CharacterExpressionPolicy.ResolveResponseState(normalizedMood, mode);
     }
 
     private static IReadOnlyList<string> GetAvailableSpriteMoods(CharacterVisualProfile visual)

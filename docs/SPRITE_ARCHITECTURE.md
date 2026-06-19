@@ -26,14 +26,22 @@ These behaviors are production compatibility requirements during refactoring.
 
 ## Mode Policy
 
-- Daily/idle mode may use the LLM response mood to select a semantic visual
-  state.
-- Roleplay mode has an independent conversation channel and may use the LLM
-  response mood for visual-novel expression.
+- The neutral visual state is always `idle`.
+- Blinking is an idle-state renderer behavior.
+- Speaking frames are controlled by the separate `IsSpeaking` signal, so mouth
+  movement does not require a speaking mood.
+- Daily/idle mode uses an expressive state only when the LLM supplies a valid
+  mood.
+- Roleplay mode has an independent conversation channel and uses an expressive
+  state only when the LLM supplies a valid mood for visual-novel expression.
 - Advanced mode shares conversation history with Daily mode but does not use
   LLM-selected moods.
 - Advanced visual behavior will be deterministic and limited to approved
   blinking, pose changes, and speaking frames.
+
+`CharacterExpressionPolicy` owns neutral fallback, explicit-mood normalization,
+and post-speech hold timing. `SpriteDirector` remains a compatibility facade for
+the current ViewModel.
 
 This policy defines an integration boundary only. The current refactor does not
 implement new sprite animation, pose assets, rigging, or composition behavior.
