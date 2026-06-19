@@ -26,6 +26,23 @@ plain text     -> spoken dialogue
 Single-asterisk text is not action syntax. See
 [`docs/ROLEPLAY.md`](./docs/ROLEPLAY.md) for the complete Story-mode rules.
 
+## Slash Agent
+
+Daily mode normally behaves as ordinary LLM conversation. A single leading
+slash asks the basic LLM to select one approved capability, loads current data,
+and then lets the character explain the verified result.
+
+```text
+/날짜
+/시간
+/문지캠퍼스 점심 식사
+/서울 날씨
+```
+
+Inputs beginning with `//` remain ordinary text so comments and paths are not
+captured. Initial live capabilities are Korea date/time, KAIST Munji campus
+menus, regional current weather through Open-Meteo, and relative reminders.
+
 ## Requirements
 
 - Windows 10 or 11

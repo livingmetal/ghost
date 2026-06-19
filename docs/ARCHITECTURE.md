@@ -234,9 +234,18 @@ Primary files:
 - `Core/System/Reminders/*`
 - `UI/DesktopShell/TrayIconService.cs`
 - `Application/Skills/SlashIntentSkill.cs`
+- `Application/SlashAgents/*`
 
 These are local-first utilities and should remain independent from LLM provider
 implementations where possible.
+
+`SlashIntentSkill` only detects a single leading slash. `SlashIntentPlanner`
+uses the basic conversation model to select one allowlisted capability and
+extract arguments. Independent handlers load Korea date/time, KAIST Munji menu
+data, Open-Meteo regional weather, or reminders. The verified result is passed
+through `SlashAgentResponseComposer` for character-voice narration. If planning
+or narration fails, deterministic routing and raw verified facts remain
+available. Double-slash input is never intercepted.
 
 ### Configuration, Persistence, and Infrastructure
 
