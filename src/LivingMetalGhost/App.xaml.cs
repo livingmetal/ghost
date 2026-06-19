@@ -145,6 +145,7 @@ public partial class App : Application
         services.AddSingleton<Core.Workspace.PatchReviewService>();
         services.AddSingleton<PromptAssembler>();
         services.AddSingleton<ConversationHistoryStore>();
+        services.AddSingleton<HiddenTraitScheduler>();
         services.AddSingleton<ConversationService>();
         services.AddSingleton<ConversationLogService>();
         services.AddSingleton<SpriteDirector>();

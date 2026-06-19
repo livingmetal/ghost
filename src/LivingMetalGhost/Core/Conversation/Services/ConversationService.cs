@@ -15,12 +15,10 @@ public sealed class ConversationService
     private readonly StoryStateStore _storyStateStore;
     private readonly RoleplayStateUpdater _roleplayStateUpdater;
     private readonly ConversationHistoryStore _historyStore;
+    private readonly HiddenTraitScheduler _hiddenTraitScheduler;
     private readonly AdvancedSessionLogService _advancedSessionLogService;
     private readonly WorkspaceStore _workspaceStore;
     private readonly Core.Workspace.WorkspaceContextBuilder _workspaceContextBuilder;
-    private readonly Lock _hiddenTraitLock = new();
-    private readonly Dictionary<string, HiddenTraitRuntimeState> _hiddenTraitStates = new(StringComparer.OrdinalIgnoreCase);
-
     public ConversationService(
         AppConfigLoader configLoader,
         ILlmProviderFactory providerFactory,
@@ -28,6 +26,7 @@ public sealed class ConversationService
         StoryStateStore storyStateStore,
         RoleplayStateUpdater roleplayStateUpdater,
         ConversationHistoryStore historyStore,
+        HiddenTraitScheduler hiddenTraitScheduler,
         AdvancedSessionLogService advancedSessionLogService,
         WorkspaceStore workspaceStore,
         Core.Workspace.WorkspaceContextBuilder workspaceContextBuilder)
@@ -38,6 +37,7 @@ public sealed class ConversationService
         _storyStateStore = storyStateStore;
         _roleplayStateUpdater = roleplayStateUpdater;
         _historyStore = historyStore;
+        _hiddenTraitScheduler = hiddenTraitScheduler;
         _advancedSessionLogService = advancedSessionLogService;
         _workspaceStore = workspaceStore;
         _workspaceContextBuilder = workspaceContextBuilder;
@@ -123,7 +123,7 @@ public sealed class ConversationService
                 character,
                 mode,
                 storyState,
-                BuildHiddenTraitDirective(character, mode),
+                _hiddenTraitScheduler.BuildDirective(character, mode),
                 repositoryContext),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
@@ -192,7 +192,7 @@ public sealed class ConversationService
                 character,
                 mode,
                 storyState,
-                BuildHiddenTraitDirective(character, mode)),
+                _hiddenTraitScheduler.BuildDirective(character, mode)),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
         var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
@@ -320,7 +320,7 @@ public sealed class ConversationService
                 character,
                 mode,
                 storyState,
-                BuildHiddenTraitDirective(character, mode)),
+                _hiddenTraitScheduler.BuildDirective(character, mode)),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
         var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
@@ -357,79 +357,6 @@ public sealed class ConversationService
         }
 
         return labels;
-    }
-
-    private string BuildHiddenTraitDirective(CharacterProfile character, ConversationMode mode)
-    {
-        if (character.HiddenTraits.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        var upcomingReplyIndex = GetAssistantReplyCount(mode) + 1;
-        var activeTraits = GetActiveHiddenTraits(character, mode, upcomingReplyIndex);
-        if (activeTraits.Count == 0)
-        {
-            return "You may have hidden sides to your personality, but they should stay dormant unless they naturally surface.";
-        }
-
-        var prompts = string.Join(
-            Environment.NewLine,
-            activeTraits.Select(trait => $"- {trait.Prompt}"));
-
-        return $$"""
-            A rare hidden side of your personality is surfacing for this reply.
-            Let it show subtly and naturally without naming it as a mode switch or hidden trait.
-            Keep the character recognizable and avoid breaking safety, coherence, or the established relationship.
-            Hidden side guidance:
-            {{prompts}}
-            """;
-    }
-
-    private int GetAssistantReplyCount(ConversationMode mode)
-    {
-        return _historyStore.CountByRole(mode, "assistant");
-    }
-
-    private IReadOnlyList<HiddenCharacterTrait> GetActiveHiddenTraits(
-        CharacterProfile character,
-        ConversationMode mode,
-        int upcomingReplyIndex)
-    {
-        var activeTraits = new List<HiddenCharacterTrait>();
-
-        lock (_hiddenTraitLock)
-        {
-            foreach (var trait in character.HiddenTraits)
-            {
-                var historyChannel = ConversationModePolicy.GetHistoryChannel(mode);
-                var key = $"{historyChannel}:{character.Id}:{trait.Id}";
-                if (!_hiddenTraitStates.TryGetValue(key, out var state))
-                {
-                    state = new HiddenTraitRuntimeState();
-                    state.ScheduleNext(upcomingReplyIndex, trait);
-                    _hiddenTraitStates[key] = state;
-                }
-
-                if (state.RemainingActiveReplies <= 0 && upcomingReplyIndex >= state.NextActivationReplyIndex)
-                {
-                    state.RemainingActiveReplies = Random.Shared.Next(trait.MinActiveReplies, trait.MaxActiveReplies + 1);
-                }
-
-                if (state.RemainingActiveReplies > 0)
-                {
-                    activeTraits.Add(trait);
-                    state.RemainingActiveReplies--;
-
-                    if (state.RemainingActiveReplies <= 0)
-                    {
-                        state.ScheduleNext(upcomingReplyIndex, trait);
-                    }
-                }
-            }
-        }
-
-        return activeTraits;
     }
 
     private static string? NormalizeMood(string? mood, CharacterVisualProfile visual)
@@ -499,15 +426,4 @@ public sealed class ConversationService
             .ToArray();
     }
 
-    private sealed class HiddenTraitRuntimeState
-    {
-        public int NextActivationReplyIndex { get; set; }
-        public int RemainingActiveReplies { get; set; }
-
-        public void ScheduleNext(int currentReplyIndex, HiddenCharacterTrait trait)
-        {
-            NextActivationReplyIndex = currentReplyIndex +
-                                       Random.Shared.Next(trait.MinReplyGap, trait.MaxReplyGap + 1);
-        }
-    }
 }

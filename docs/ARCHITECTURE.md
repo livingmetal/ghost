@@ -131,6 +131,10 @@ tag parsing and removal of legacy Roleplay metadata tags.
 `Core/Conversation/Responses/CharacterSpeechSanitizer.cs` owns final dialogue
 cleanup, including stock-phrase removal and whitespace normalization.
 
+`Core/Conversation/Personality/HiddenTraitScheduler.cs` owns hidden-trait
+activation state. It follows the same Companion/Roleplay channel split as
+conversation history.
+
 Current debt: Daily, Story, and Advanced workflows share one large service.
 Repository context, Story memory digestion, response cleanup, and history
 management are coupled to provider invocation.
