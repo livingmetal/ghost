@@ -141,6 +141,10 @@ tag parsing and removal of legacy Roleplay metadata tags.
 `Core/Conversation/Responses/CharacterSpeechSanitizer.cs` owns final dialogue
 cleanup, including stock-phrase removal and whitespace normalization.
 
+`ConversationResponseProcessor` composes mood-tag parsing, Roleplay legacy-tag
+cleanup, speech sanitization, and manifest-aware mood resolution. All LLM
+conversation entry points use the same response pipeline.
+
 `Core/Conversation/Personality/HiddenTraitScheduler.cs` owns hidden-trait
 activation state. It follows the same Companion/Roleplay channel split as
 conversation history.

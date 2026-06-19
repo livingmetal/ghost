@@ -18,7 +18,7 @@ public sealed class ConversationService : IRoleplayConversation
     private readonly ConversationHistoryStore _historyStore;
     private readonly HiddenTraitScheduler _hiddenTraitScheduler;
     private readonly AdvancedConversationSupport _advancedConversationSupport;
-    private readonly CharacterMoodResolver _characterMoodResolver;
+    private readonly ConversationResponseProcessor _responseProcessor;
     private readonly ExternalConversationTurnRecorder _externalTurnRecorder;
     public ConversationService(
         AppConfigLoader configLoader,
@@ -30,7 +30,7 @@ public sealed class ConversationService : IRoleplayConversation
         ConversationHistoryStore historyStore,
         HiddenTraitScheduler hiddenTraitScheduler,
         AdvancedConversationSupport advancedConversationSupport,
-        CharacterMoodResolver characterMoodResolver,
+        ConversationResponseProcessor responseProcessor,
         ExternalConversationTurnRecorder externalTurnRecorder)
     {
         _configLoader = configLoader;
@@ -42,7 +42,7 @@ public sealed class ConversationService : IRoleplayConversation
         _historyStore = historyStore;
         _hiddenTraitScheduler = hiddenTraitScheduler;
         _advancedConversationSupport = advancedConversationSupport;
-        _characterMoodResolver = characterMoodResolver;
+        _responseProcessor = responseProcessor;
         _externalTurnRecorder = externalTurnRecorder;
     }
 
@@ -108,21 +108,19 @@ public sealed class ConversationService : IRoleplayConversation
                 repositoryContext),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
-        var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
-        var storyCleanText = mode == ConversationMode.Story
-            ? ConversationResponseParser.StripLegacyRoleplayTags(parsed.Text)
-            : parsed.Text;
-        var characterText = CharacterSpeechSanitizer.Sanitize(storyCleanText);
-        var characterMood = _characterMoodResolver.Resolve(
+        var processed = _responseProcessor.Process(
+            response.Text,
             mode,
-            parsed.Mood,
             character.Visual);
 
         _historyStore.Add(mode, "user", userTextForProvider);
-        _historyStore.Add(mode, "assistant", characterText);
+        _historyStore.Add(mode, "assistant", processed.Text);
         if (mode == ConversationMode.Story)
         {
-            _roleplayStateUpdater.UpdateAfterTurn(text, characterText, characterMood);
+            _roleplayStateUpdater.UpdateAfterTurn(
+                text,
+                processed.Text,
+                processed.Mood);
             await _roleplayMemoryDigestService.DigestIfDueAsync(options, cancellationToken);
         }
         else if (mode == ConversationMode.Advanced)
@@ -131,15 +129,15 @@ public sealed class ConversationService : IRoleplayConversation
                 options,
                 character,
                 text,
-                characterText,
-                characterMood,
+                processed.Text,
+                processed.Mood,
                 cancellationToken);
         }
 
         return new SkillResult
         {
-            BubbleText = characterText,
-            Mood = characterMood,
+            BubbleText = processed.Text,
+            Mood = processed.Mood,
             Action = mode == ConversationMode.Story ? "roleplay-chat" : "chat",
             UsedLlm = true
         };
@@ -171,19 +169,17 @@ public sealed class ConversationService : IRoleplayConversation
                 _hiddenTraitScheduler.BuildDirective(character, mode)),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
-        var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
-        var characterText = CharacterSpeechSanitizer.Sanitize(parsed.Text);
-        var characterMood = _characterMoodResolver.Resolve(
+        var processed = _responseProcessor.Process(
+            response.Text,
             mode,
-            parsed.Mood,
             character.Visual);
 
-        _historyStore.Add(mode, "assistant", characterText);
+        _historyStore.Add(mode, "assistant", processed.Text);
 
         return new SkillResult
         {
-            BubbleText = characterText,
-            Mood = characterMood,
+            BubbleText = processed.Text,
+            Mood = processed.Mood,
             Action = "proactive-chat",
             UsedLlm = true
         };
@@ -217,21 +213,18 @@ public sealed class ConversationService : IRoleplayConversation
                 _hiddenTraitScheduler.BuildDirective(character, mode)),
             History = _historyStore.GetSnapshot(mode)
         }, cancellationToken);
-        var parsed = ConversationResponseParser.ParseMoodTag(response.Text);
-        var characterText = CharacterSpeechSanitizer.Sanitize(
-            ConversationResponseParser.StripLegacyRoleplayTags(parsed.Text));
-        var characterMood = _characterMoodResolver.Resolve(
+        var processed = _responseProcessor.Process(
+            response.Text,
             mode,
-            parsed.Mood,
             character.Visual);
 
         // idle 비트는 연속성을 위해 히스토리에만 남기고 StoryState(장면/요약)는 바꾸지 않는다.
-        _historyStore.Add(mode, "assistant", characterText);
+        _historyStore.Add(mode, "assistant", processed.Text);
 
         return new SkillResult
         {
-            BubbleText = characterText,
-            Mood = characterMood,
+            BubbleText = processed.Text,
+            Mood = processed.Mood,
             Action = "story-idle",
             UsedLlm = true
         };

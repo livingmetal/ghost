@@ -161,7 +161,8 @@ Additional logical seams completed:
 - desktop runtime settings and provider availability service;
 - DesktopShell service and window support grouping;
 - manifest-aware character mood resolver shared by prompts and responses;
-- external tool-result conversation history recorder.
+- external tool-result conversation history recorder;
+- shared conversation response processing pipeline.
 
 ## Phase 5 - Character Presentation Boundary
 
