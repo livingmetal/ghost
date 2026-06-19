@@ -8,21 +8,21 @@ public sealed class RoleplaySyntaxDocumentationTests
     public void PromptAssemblerAndDocs_DescribeTheSameRoleplayActionDelimiter()
     {
         var root = FindRepositoryRoot();
-        var promptAssembler = File.ReadAllText(Path.Combine(
+        var roleplayPromptPolicy = File.ReadAllText(Path.Combine(
             root,
             "src",
             "LivingMetalGhost",
             "Core",
-            "Conversation",
-            "Services",
-            "PromptAssembler.cs"));
+            "Roleplay",
+            "Prompts",
+            "RoleplayPromptPolicy.cs"));
         var readme = File.ReadAllText(Path.Combine(root, "README.md"));
         var syntaxGuide = File.ReadAllText(Path.Combine(root, "plans", "roleplay-input-syntax.md"));
 
-        Assert.Contains("Text inside double asterisks is visible action or scene narration", promptAssembler);
-        Assert.Contains("Single-asterisk text is not action syntax", promptAssembler);
-        Assert.DoesNotContain("Text inside *asterisks* is visible action", promptAssembler);
-        Assert.DoesNotContain("Wrap each action in single asterisks", promptAssembler);
+        Assert.Contains("Text inside double asterisks is visible action or scene narration", roleplayPromptPolicy);
+        Assert.Contains("Single-asterisk text is not action syntax", roleplayPromptPolicy);
+        Assert.DoesNotContain("Text inside *asterisks* is visible action", roleplayPromptPolicy);
+        Assert.DoesNotContain("Wrap each action in single asterisks", roleplayPromptPolicy);
 
         Assert.Contains("**text**       -> visible action / narration", readme);
         Assert.Contains("Single-asterisk text", readme);

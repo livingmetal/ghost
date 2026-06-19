@@ -159,8 +159,12 @@ memory, opening text, and post-turn updates.
 and replacement of compact Story facts. General conversation orchestration only
 triggers it after a completed Roleplay turn.
 
-Current debt: Story prompt rules still live inside the general
-`PromptAssembler`, while Story display flow remains in `MainViewModel`.
+`Core/Roleplay/Prompts/RoleplayPromptPolicy.cs` owns fictional isolation,
+player-agency rules, input syntax, visual-novel response style, scene state, and
+compact memory injection. General `PromptAssembler` selects this policy without
+containing Roleplay-specific prompt text.
+
+Current debt: Story display flow remains in `MainViewModel`.
 
 ### Agent, Tool, and Command Execution
 
