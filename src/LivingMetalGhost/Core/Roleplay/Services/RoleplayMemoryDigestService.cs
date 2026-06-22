@@ -5,7 +5,7 @@ namespace LivingMetalGhost.Core.Services;
 
 public sealed class RoleplayMemoryDigestService
 {
-    private const int DigestIntervalTurns = 6;
+    private const int DigestIntervalTurns = 5;
     private readonly StoryStateStore _storyStateStore;
     private readonly ILlmProviderFactory _providerFactory;
 
@@ -38,7 +38,11 @@ public sealed class RoleplayMemoryDigestService
 
             var existingFacts = string.Join(
                 Environment.NewLine,
-                state.Facts.Select(fact => $"- ({fact.Kind}, w{fact.Weight}) {fact.Text}"));
+                state.Facts
+                    .Where(fact => string.Equals(fact.Status, "active", StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(fact => StoryFactMerger.IsProtectedKind(fact.Kind))
+                    .ThenByDescending(fact => fact.Weight)
+                    .Select(fact => $"- ({fact.Kind}, w{fact.Weight}, m{fact.MentionCount}) {fact.Text}"));
             var recentTurns = string.Join(
                 Environment.NewLine,
                 recent.Select(entry => $"User: {entry.UserText}\nCharacter: {entry.AssistantText}"));
@@ -61,14 +65,7 @@ public sealed class RoleplayMemoryDigestService
             }
 
             var latest = _storyStateStore.Load();
-            latest.Facts = digested
-                .Select(fact => new StoryMemoryFact
-                {
-                    Kind = fact.Kind,
-                    Text = fact.Text,
-                    Weight = fact.Weight
-                })
-                .ToList();
+            latest.Facts = StoryFactMerger.Merge(latest.Facts, digested).ToList();
             _storyStateStore.Save(latest);
         }
         catch (OperationCanceledException)
@@ -89,27 +86,29 @@ public sealed class RoleplayMemoryDigestService
     private static string BuildSystemPrompt()
     {
         return """
-            You maintain a compact fictional-roleplay memory. You are not a character; you only summarize.
-            Given existing memory facts and the most recent turns, return an UPDATED fact list.
+            You maintain compact fictional-roleplay continuity memory. You are not a character; you only summarize.
+            Given existing memory facts and the most recent turns, return continuity-critical candidate facts to add or update.
+            Do not return decorative prose, transient emotions, or a full scene transcript.
             Output rules:
             - Output a JSON array only. No prose, no code fences.
             - Each item: {"kind": "...", "text": "...", "weight": 1-5}.
-            - kind is one of: premise, self, relationship, question.
-            - Keep premise and self facts stable. Update relationship texture and open questions from recent events.
-            - Merge duplicates. Keep at most 8 facts. Write text in Korean, one short sentence each.
+            - kind is one of: premise, self, player, relationship, promise, open_loop, preference, location, item, boundary, question.
+            - Protect premise, self, relationship, promise, open_loop, and boundary facts from accidental deletion.
+            - Prefer facts that affect future continuity: promises, secrets, unresolved questions, relationship shifts, player preferences, important places, and named items.
+            - Merge duplicates conceptually. Keep at most 24 candidate facts. Write text in Korean, one short sentence each.
             """;
     }
 
     private static string BuildUserText(string existingFacts, string recentTurns)
     {
         return $"""
-            Existing facts:
+            Existing active facts:
             {existingFacts}
 
             Recent turns:
             {recentTurns}
 
-            Return the updated JSON fact array.
+            Return candidate memory facts that should be added or updated.
             """;
     }
 }
