@@ -1,0 +1,57 @@
+{
+  "id": "orkia-neutral-wave-parts-v1",
+  "canvas": {
+    "width": 300,
+    "height": 598
+  },
+  "source": "neutral_stand_master_v2.png",
+  "layer_order": [
+    "hair_back",
+    "body_base",
+    "ear_left",
+    "ear_right",
+    "head_base",
+    "eye_left",
+    "eye_right",
+    "brow_left",
+    "brow_right",
+    "mouth",
+    "hair_front"
+  ],
+  "defaults": {
+    "body_base": "body_base.png",
+    "hair_back": "hair_back.png",
+    "head_base": "head_base.png",
+    "ear_left": "ear_left.png",
+    "ear_right": "ear_right.png",
+    "hair_front": "hair_front.png",
+    "eye_left": "eye_left_open.png",
+    "eye_right": "eye_right_open.png",
+    "brow_left": "brow_left_neutral.png",
+    "brow_right": "brow_right_neutral.png",
+    "mouth": "mouth_closed.png"
+  },
+  "states": {
+    "blink": {
+      "eye_left": "eye_left_closed.png",
+      "eye_right": "eye_right_closed.png"
+    },
+    "speaking_a": {
+      "mouth": "mouth_open_a.png"
+    },
+    "speaking_b": {
+      "mouth": "mouth_open_b.png"
+    },
+    "smile": {
+      "mouth": "mouth_smile.png"
+    },
+    "thinking": {
+      "brow_left": "brow_left_thinking.png",
+      "brow_right": "brow_right_thinking.png"
+    },
+    "concerned": {
+      "brow_left": "brow_left_concerned.png",
+      "brow_right": "brow_right_concerned.png"
+    }
+  }
+}
