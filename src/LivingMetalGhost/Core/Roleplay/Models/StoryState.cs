@@ -15,16 +15,21 @@ public sealed class StoryState
     public string Mood { get; set; } = "daily";
     public int Tension { get; set; }
 
-    /// <summary>이야기의 기억 텍스처(전제·자기인식·관계·미해결 질문). 톤에 영향을 주되 결과를 강제하지 않는다.</summary>
+    /// <summary>이야기의 장기 연속성 기억. 전제·자기인식·관계·약속·미해결 떡밥을 보호한다.</summary>
     public List<StoryMemoryFact> Facts { get; set; } = [];
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
 }
 
-/// <summary>롤플레잉 기억 한 조각. Kind 예: premise, self, relationship, question.</summary>
+/// <summary>롤플레잉 기억 한 조각. Kind 예: premise, self, player, relationship, promise, open_loop.</summary>
 public sealed class StoryMemoryFact
 {
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Kind { get; set; } = "premise";
     public string Text { get; set; } = string.Empty;
     public int Weight { get; set; } = 1;
+    public string Status { get; set; } = "active";
+    public DateTimeOffset FirstSeenAt { get; set; } = DateTimeOffset.Now;
+    public DateTimeOffset LastMentionedAt { get; set; } = DateTimeOffset.Now;
+    public int MentionCount { get; set; } = 1;
 }

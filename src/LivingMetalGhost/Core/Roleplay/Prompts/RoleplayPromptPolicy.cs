@@ -1,4 +1,5 @@
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Services;
 
 namespace LivingMetalGhost.Core.Roleplay;
 
@@ -21,7 +22,7 @@ public static class RoleplayPromptPolicy
             Roleplaying mode rules:
             - This is fictional AI story / visual novel / ORPG mode. Treat this scene state as fiction only.
             - Never mix roleplaying facts with real project, system, security, or user memory.
-            - Never mention apps, prompts, modes, command execution, Git, settings windows, logs, or real local files unless the user explicitly exits the fiction.
+            - Never mention apps, prompts, modes, command execution, Git, settings windows, logs, or real files unless the user explicitly exits the fiction.
             - The user controls their own character. Do not decide the user's actions, emotions, choices, or dialogue for them.
             - Move the scene slowly. Prefer one small beat, reaction, or concrete hook over rushing the plot.
             - Keep {characterDisplayName}'s voice central, but use brief scene narration to create a visual novel feeling.
@@ -39,20 +40,17 @@ public static class RoleplayPromptPolicy
             - Plain text is spoken dialogue that other characters can hear.
             - Text inside double asterisks is visible action or scene narration. Render it as action, not spoken dialogue.
             - Single-asterisk text is not action syntax.
-            - Text inside (parentheses) is inner thought: the player's private mind. The character cannot hear, see, or know it. Never quote, repeat, answer, or acknowledge the thought, and never reveal awareness of its content. You may only react to visible hesitation, expression, or behavior.
-            - If the player's input is inner thought only, with no spoken dialogue and no visible action, the character perceives nothing to react to. Do not respond to the thought; continue with ambient scene or your own small initiative as if quietly waiting for the player.
-            - If the user mixes dialogue, action, and thought, respond only to the dialogue and action, and let the thought stay private.
+            - Text inside parentheses is inner thought. The character cannot hear, see, or know it. Never quote, repeat, answer, or acknowledge the thought.
+            - If the player's input is inner thought only, the character perceives nothing to react to. Continue with ambient scene or your own small initiative.
+            - If the user mixes dialogue, action, and thought, respond only to the dialogue and action.
 
             Roleplay response style:
             - Do not print labels like [Scene], [Character], [Choices], or internal parser notes.
             - Scene narration may be written in short action lines using double asterisks when it improves immersion.
             - In most story replies, include at least one short visible action/expression line using double asterisks immediately after the mood tag, unless the reply is intentionally a terse spoken answer.
             - Write your own actions, expressions, and scene narration in the third person, referring to yourself by name ("{characterDisplayName}는/이") or as 그녀, never as 나/내. Wrap each action in double asterisks.
-            - Single-asterisk text is not action syntax.
             - Keep spoken dialogue outside action delimiters and in the first person, as {characterDisplayName} actually speaking.
-            - Separate the layers onto their own lines: put action/narration, spoken dialogue, and inner thought each on a distinct line. Never blend spoken dialogue with an action or an inner thought inside the same line.
-            - Inner thought, when you show your own, goes in parentheses on its own line, e.g. "(이건 좀 이상한데...)".
-            - Character dialogue should be direct and quoted naturally when appropriate.
+            - Separate action/narration, spoken dialogue, and inner thought onto their own lines.
             - End with a concrete hook, visible reaction, or immediate question. Avoid prewritten choice lists.
 
             Current roleplaying state:
@@ -70,20 +68,29 @@ public static class RoleplayPromptPolicy
         StoryState storyState,
         string characterDisplayName)
     {
-        if (storyState.Facts.Count == 0)
+        var facts = storyState.Facts
+            .Where(fact => string.Equals(fact.Status, "active", StringComparison.OrdinalIgnoreCase))
+            .Where(fact => !string.IsNullOrWhiteSpace(fact.Text))
+            .OrderByDescending(fact => StoryFactMerger.IsProtectedKind(fact.Kind))
+            .ThenByDescending(fact => fact.Weight)
+            .ThenByDescending(fact => fact.MentionCount)
+            .Take(StoryFactMerger.MaxFacts)
+            .Select(fact => $"- ({fact.Kind}, w{fact.Weight}) {fact.Text}")
+            .ToList();
+
+        if (facts.Count == 0)
         {
             return string.Empty;
         }
 
-        var lines = storyState.Facts
-            .OrderByDescending(fact => fact.Weight)
-            .Where(fact => !string.IsNullOrWhiteSpace(fact.Text))
-            .Select(fact => $"- ({fact.Kind}) {fact.Text}");
-
         return $$"""
 
-            What {{characterDisplayName}} carries into this scene (fiction only; let it color tone and word choice, but do not force outcomes or restate it verbatim):
-            {{string.Join(Environment.NewLine, lines)}}
+            Continuity memory for {{characterDisplayName}}:
+            - Treat these facts as established fictional continuity.
+            - Do not contradict or casually reset them.
+            - Use them silently when deciding what {{characterDisplayName}} remembers, worries about, asks next, or treats as unresolved.
+            - Do not recite the list unless it is naturally relevant inside the scene.
+            {{string.Join(Environment.NewLine, facts)}}
             """;
     }
 }
