@@ -5,9 +5,9 @@
         xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
         Title="LivingMetalGhost Roleplay"
         Width="470"
-        Height="630"
+        Height="660"
         MinWidth="420"
-        MinHeight="480"
+        MinHeight="500"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -15,72 +15,56 @@
         ShowInTaskbar="False"
         ShowActivated="False">
     <Grid Background="Transparent">
-        <Border x:Name="RootBorder"
-                Margin="8"
-                Padding="16"
-                Background="#F4EFE5"
-                BorderThickness="2"
-                CornerRadius="22">
+        <Border x:Name="RootBorder" Margin="8" Padding="16" Background="#F4EFE5" BorderThickness="2" CornerRadius="22">
             <Border.BorderBrush>
                 <SolidColorBrush x:Name="BorderAccent" Color="#9B6AD6" />
             </Border.BorderBrush>
             <Border.Effect>
-                <DropShadowEffect BlurRadius="20"
-                                  ShadowDepth="6"
-                                  Opacity="0.28"
-                                  Color="#101820" />
+                <DropShadowEffect BlurRadius="20" ShadowDepth="6" Opacity="0.28" Color="#101820" />
             </Border.Effect>
 
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Grid MouseLeftButtonDown="Header_OnMouseLeftButtonDown"
-                      Cursor="SizeAll">
+                <Grid MouseLeftButtonDown="Header_OnMouseLeftButtonDown" Cursor="SizeAll">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock x:Name="TitleLabel"
-                                   FontFamily="Bahnschrift"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"
-                                   Foreground="#3A2E6B"
-                                   Text="ROLEPLAY CONSOLE" />
-                        <TextBlock x:Name="ProviderLabel"
-                                   Margin="0,2,0,0"
-                                   FontFamily="Consolas"
-                                   FontSize="10"
-                                   Foreground="#7A6BA8"
-                                   Text="{Binding StoryProviderLabel}" />
+                        <TextBlock x:Name="TitleLabel" FontFamily="Bahnschrift" FontSize="20" FontWeight="SemiBold" Foreground="#3A2E6B" Text="ROLEPLAY CONSOLE" />
+                        <TextBlock x:Name="ProviderLabel" Margin="0,2,0,0" FontFamily="Consolas" FontSize="10" Foreground="#7A6BA8" Text="{Binding StoryProviderLabel}" />
                     </StackPanel>
-                    <Button Grid.Column="1"
-                            Width="30"
-                            Height="30"
-                            Padding="0"
-                            Background="#3A2E6B"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Click="CloseButton_OnClick"
-                            Content="×" />
+                    <Button Grid.Column="1" Width="30" Height="30" Padding="0" Background="#3A2E6B" Foreground="White" BorderThickness="0" Click="CloseButton_OnClick" Content="×" />
                 </Grid>
 
-                <Border Grid.Row="1"
-                        Margin="0,14,0,10"
-                        Padding="8"
-                        CornerRadius="16"
-                        Background="#FFFDF8"
-                        BorderBrush="#D8D0C3"
-                        BorderThickness="1">
-                    <ScrollViewer x:Name="ConversationScrollViewer"
-                                  HorizontalScrollBarVisibility="Disabled"
-                                  VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding StoryMessages}"
-                                      HorizontalContentAlignment="Stretch">
+                <Border Grid.Row="1" Margin="0,14,0,0" CornerRadius="8" Background="#202020" BorderBrush="#343434" BorderThickness="1">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsStoryInfoPanelVisible}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel>
+                        <Border Padding="12,8" CornerRadius="8,8,0,0" Background="#3A3834">
+                            <TextBlock FontFamily="Georgia" FontSize="13" Foreground="#8A8178" Text="Info" />
+                        </Border>
+                        <TextBlock Margin="12,10,12,12" FontFamily="Consolas" FontSize="12" Foreground="#D8D3CD" TextWrapping="Wrap" Text="{Binding StoryInfoText}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="2" Margin="0,14,0,10" Padding="8" CornerRadius="16" Background="#FFFDF8" BorderBrush="#D8D0C3" BorderThickness="1">
+                    <ScrollViewer x:Name="ConversationScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding StoryMessages}" HorizontalContentAlignment="Stretch">
                             <ItemsControl.ItemContainerStyle>
                                 <Style TargetType="ContentPresenter">
                                     <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -88,11 +72,8 @@
                             </ItemsControl.ItemContainerStyle>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="5,4"
-                                          HorizontalAlignment="Stretch">
-                                        <Border MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"
-                                                Padding="11,9"
-                                                HorizontalAlignment="Left">
+                                    <Grid Margin="5,4" HorizontalAlignment="Stretch">
+                                        <Border MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" Padding="11,9" HorizontalAlignment="Left">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Setter Property="HorizontalAlignment" Value="Left" />
@@ -108,25 +89,8 @@
                                                 </Style>
                                             </Border.Style>
                                             <StackPanel>
-                                                <TextBlock FontSize="10"
-                                                           FontWeight="SemiBold"
-                                                           Foreground="#7A6BA8"
-                                                           Text="{Binding SpeakerName}" />
-                                                <RichTextBox Margin="0,4,0,0"
-                                                             Padding="0"
-                                                             FontFamily="Malgun Gothic"
-                                                             FontSize="14"
-                                                             Foreground="#202A35"
-                                                             Background="Transparent"
-                                                             BorderThickness="0"
-                                                             IsReadOnly="True"
-                                                             IsReadOnlyCaretVisible="False"
-                                                             IsDocumentEnabled="True"
-                                                             HorizontalScrollBarVisibility="Disabled"
-                                                             VerticalScrollBarVisibility="Disabled"
-                                                             behaviors:InlineMarkup.Text="{Binding DisplayText, Mode=OneWay}"
-                                                             behaviors:InlineMarkup.Roleplay="{Binding IsRoleplay, Mode=OneWay}"
-                                                             ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
+                                                <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#7A6BA8" Text="{Binding SpeakerName}" />
+                                                <RichTextBox Margin="0,4,0,0" Padding="0" FontFamily="Malgun Gothic" FontSize="14" Foreground="#202A35" Background="Transparent" BorderThickness="0" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsDocumentEnabled="True" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" behaviors:InlineMarkup.Text="{Binding DisplayText, Mode=OneWay}" behaviors:InlineMarkup.Roleplay="{Binding IsRoleplay, Mode=OneWay}" ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
                                                     <RichTextBox.ContextMenu>
                                                         <ContextMenu>
                                                             <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
@@ -134,12 +98,7 @@
                                                         </ContextMenu>
                                                     </RichTextBox.ContextMenu>
                                                 </RichTextBox>
-                                                <TextBlock Margin="0,4,0,0"
-                                                           HorizontalAlignment="Right"
-                                                           FontFamily="Consolas"
-                                                           FontSize="9"
-                                                           Foreground="#9A90B5"
-                                                           Text="{Binding Timestamp, StringFormat={}{0:HH:mm}}" />
+                                                <TextBlock Margin="0,4,0,0" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="9" Foreground="#9A90B5" Text="{Binding Timestamp, StringFormat={}{0:HH:mm}}" />
                                             </StackPanel>
                                         </Border>
                                     </Grid>
@@ -149,7 +108,7 @@
                     </ScrollViewer>
                 </Border>
 
-                <Grid Grid.Row="2">
+                <Grid Grid.Row="3">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -159,12 +118,7 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Border Grid.Row="0"
-                            Grid.ColumnSpan="3"
-                            Margin="0,0,0,7"
-                            Padding="9,5"
-                            CornerRadius="8"
-                            Background="#E9E2F5">
+                    <Border Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,7" Padding="9,5" CornerRadius="8" Background="#E9E2F5">
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Style.Triggers>
@@ -175,75 +129,22 @@
                             </Style>
                         </Border.Style>
                         <DockPanel>
-                            <Button DockPanel.Dock="Right"
-                                    Width="22"
-                                    Height="22"
-                                    Padding="0"
-                                    BorderThickness="0"
-                                    Background="Transparent"
-                                    Click="RemoveImageButton_OnClick"
-                                    Content="×" />
-                            <TextBlock VerticalAlignment="Center"
-                                       Foreground="#5D4775"
-                                       Text="{Binding StorySelectedImage.FileName, StringFormat=이미지: {0}}" />
+                            <Button DockPanel.Dock="Right" Width="22" Height="22" Padding="0" BorderThickness="0" Background="Transparent" Click="RemoveImageButton_OnClick" Content="×" />
+                            <TextBlock VerticalAlignment="Center" Foreground="#5D4775" Text="{Binding StorySelectedImage.FileName, StringFormat=이미지: {0}}" />
                         </DockPanel>
                     </Border>
-                    <TextBox x:Name="PromptTextBox"
-                             Grid.Row="1"
-                             MinHeight="64"
-                             MaxHeight="120"
-                             Padding="12,10"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto"
-                             BorderBrush="#B8AEDA"
-                             BorderThickness="1"
-                             PreviewKeyDown="PromptTextBox_OnPreviewKeyDown"
-                             Text="{Binding StoryInputText, UpdateSourceTrigger=PropertyChanged}"
-                             ToolTip="평문=대사 · *행동* · (속마음)" />
-                    <Button Grid.Row="1"
-                            Grid.Column="1"
-                            Margin="8,0,0,0"
-                            Width="44"
-                            Background="#EEE7F7"
-                            Foreground="#5D4775"
-                            BorderBrush="#B8AEDA"
-                            BorderThickness="1"
-                            Click="AttachImageButton_OnClick"
-                            Content="＋"
-                            FontSize="20"
-                            ToolTip="이미지 첨부" />
-                    <Button x:Name="SendButton"
-                            Grid.Row="1"
-                            Grid.Column="2"
-                            Margin="8,0,0,0"
-                            MinWidth="76"
-                            Padding="14,8"
-                            VerticalAlignment="Stretch"
-                            Background="#9B6AD6"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Command="{Binding StorySendCommand}"
-                            Content="SEND" />
+                    <TextBox x:Name="PromptTextBox" Grid.Row="1" MinHeight="64" MaxHeight="120" Padding="12,10" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" BorderBrush="#B8AEDA" BorderThickness="1" PreviewKeyDown="PromptTextBox_OnPreviewKeyDown" Text="{Binding StoryInputText, UpdateSourceTrigger=PropertyChanged}" ToolTip="평문=대사 · *행동* · (속마음)" />
+                    <Button Grid.Row="1" Grid.Column="1" Margin="8,0,0,0" Width="44" Background="#EEE7F7" Foreground="#5D4775" BorderBrush="#B8AEDA" BorderThickness="1" Click="AttachImageButton_OnClick" Content="＋" FontSize="20" ToolTip="이미지 첨부" />
+                    <Button x:Name="SendButton" Grid.Row="1" Grid.Column="2" Margin="8,0,0,0" MinWidth="76" Padding="14,8" VerticalAlignment="Stretch" Background="#9B6AD6" Foreground="White" BorderThickness="0" Command="{Binding StorySendCommand}" Content="SEND" />
                 </Grid>
             </Grid>
         </Border>
 
-        <primitives:Thumb x:Name="ResizeThumb"
-                          Width="20"
-                          Height="20"
-                          Margin="0,0,10,10"
-                          HorizontalAlignment="Right"
-                          VerticalAlignment="Bottom"
-                          Cursor="SizeNWSE"
-                          DragDelta="ResizeThumb_OnDragDelta">
+        <primitives:Thumb x:Name="ResizeThumb" Width="20" Height="20" Margin="0,0,10,10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragDelta="ResizeThumb_OnDragDelta">
             <primitives:Thumb.Template>
                 <ControlTemplate TargetType="primitives:Thumb">
                     <Grid Background="Transparent">
-                        <Path Stroke="#8C7A6D"
-                              StrokeThickness="1.6"
-                              StrokeEndLineCap="Round"
-                              Data="M 6,17 L 17,6 M 11,17 L 17,11" />
+                        <Path Stroke="#8C7A6D" StrokeThickness="1.6" StrokeEndLineCap="Round" Data="M 6,17 L 17,6 M 11,17 L 17,11" />
                     </Grid>
                 </ControlTemplate>
             </primitives:Thumb.Template>
