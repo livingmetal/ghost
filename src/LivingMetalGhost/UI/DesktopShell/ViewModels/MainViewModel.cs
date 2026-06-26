@@ -26,69 +26,28 @@ public partial class MainViewModel : ObservableObject
     private bool _isResponding;
     private bool _isStoryResponding;
 
-    [ObservableProperty]
-    private string bubbleText = "기다리고 있어요.";
-
-    [ObservableProperty]
-    private string inputText = string.Empty;
-
-    [ObservableProperty]
-    private LlmImageAttachment? selectedImage;
-
-    [ObservableProperty]
-    private string pendingUserMessageText = string.Empty;
-
-    [ObservableProperty]
-    private bool isUserMessagePending;
-
-    [ObservableProperty]
-    private string storyInputText = string.Empty;
-
-    [ObservableProperty]
-    private LlmImageAttachment? storySelectedImage;
-
-    [ObservableProperty]
-    private string characterMood = "idle";
-
-    [ObservableProperty]
-    private string characterStateLabel = "IDLE";
-
-    [ObservableProperty]
-    private bool isCharacterSpeaking;
-
-    [ObservableProperty]
-    private string selectedCharacterId = "ssuang";
-
-    [ObservableProperty]
-    private string characterDisplayName = "쑝";
-
-    [ObservableProperty]
-    private string selectedCharacterSizePresetId = "normal";
-
-    [ObservableProperty]
-    private double characterScale = 1.0;
-
-    [ObservableProperty]
-    private string selectedCharacterFramingPresetId = "full-body";
-
-    [ObservableProperty]
-    private bool isAdvancedMode;
-
-    [ObservableProperty]
-    private bool isStoryMode;
-
-    [ObservableProperty]
-    private bool isLocalLmAvailable;
-
-    /// <summary>
-    /// 현재 설정된 고급 대화 provider를 기준으로 고급 모드 토글 가능 여부.
-    /// lmbot은 로컬 CLI 감지 결과를 사용하고, 그 외 API provider는 항상 활성화한다.
-    /// </summary>
-    [ObservableProperty]
-    private bool isAdvancedModeAvailable = true;
-
-    [ObservableProperty]
-    private int proactiveSettingsRevision;
+    [ObservableProperty] private string bubbleText = "기다리고 있어요.";
+    [ObservableProperty] private string inputText = string.Empty;
+    [ObservableProperty] private LlmImageAttachment? selectedImage;
+    [ObservableProperty] private string pendingUserMessageText = string.Empty;
+    [ObservableProperty] private bool isUserMessagePending;
+    [ObservableProperty] private string storyInputText = string.Empty;
+    [ObservableProperty] private LlmImageAttachment? storySelectedImage;
+    [ObservableProperty] private string storyInfoText = string.Empty;
+    [ObservableProperty] private bool isStoryInfoPanelVisible = true;
+    [ObservableProperty] private string characterMood = "idle";
+    [ObservableProperty] private string characterStateLabel = "IDLE";
+    [ObservableProperty] private bool isCharacterSpeaking;
+    [ObservableProperty] private string selectedCharacterId = "ssuang";
+    [ObservableProperty] private string characterDisplayName = "쑝";
+    [ObservableProperty] private string selectedCharacterSizePresetId = "normal";
+    [ObservableProperty] private double characterScale = 1.0;
+    [ObservableProperty] private string selectedCharacterFramingPresetId = "full-body";
+    [ObservableProperty] private bool isAdvancedMode;
+    [ObservableProperty] private bool isStoryMode;
+    [ObservableProperty] private bool isLocalLmAvailable;
+    [ObservableProperty] private bool isAdvancedModeAvailable = true;
+    [ObservableProperty] private int proactiveSettingsRevision;
 
     public MainViewModel(
         AppConfigLoader configLoader,
@@ -111,47 +70,41 @@ public partial class MainViewModel : ObservableObject
         _roleplaySessionController = roleplaySessionController;
         _assistantMessagePresenter = assistantMessagePresenter;
         IsStoryMode = _roleplaySessionController.IsEnabled;
+        RefreshStoryInfoPanel(_roleplaySessionController.GetSnapshot().State);
         RefreshSelectedCharacter();
         _ = RefreshLocalLmAvailabilityAsync();
     }
 
     public ObservableCollection<ChatMessage> Messages { get; } = [];
     public ObservableCollection<ChatMessage> StoryMessages { get; } = [];
-
-    /// <summary>고급 Workbench와 Agent Dock에 표시할 현재 작업.</summary>
     public ObservableCollection<AgentJob> ActiveAgentJobs { get; } = [];
 
-    public ConversationMode CurrentMode =>
-        ConversationModeCoordinator.GetCompanionMode(IsAdvancedMode);
+    public ConversationMode CurrentMode => ConversationModeCoordinator.GetCompanionMode(IsAdvancedMode);
+
+    public void RefreshStoryInfoPanel(StoryState state)
+    {
+        var config = _configLoader.Load();
+        IsStoryInfoPanelVisible = config.RoleplayLlm.EnableStatePanel;
+        var scene = string.IsNullOrWhiteSpace(state.Location) ? state.Scene : state.Location;
+        if (string.IsNullOrWhiteSpace(scene)) scene = "장소 미정";
+        var status = string.IsNullOrWhiteSpace(state.StatusText) ? state.Mood : state.StatusText;
+        StoryInfoText = $"[No.] #{state.TurnNumber}\n[Date] {state.StoryDate} | {state.StoryTime}\n[Place] {scene}\n\n[Love] {state.Affection}%\n[Info] {status}";
+    }
 
     public void SelectImage(string filePath, bool storyMode)
     {
         SetSelectedImage(ImageInputService.Load(filePath), storyMode);
     }
 
-    public void SetSelectedImage(
-        LlmImageAttachment image,
-        bool storyMode)
+    public void SetSelectedImage(LlmImageAttachment image, bool storyMode)
     {
-        if (storyMode)
-        {
-            StorySelectedImage = image;
-        }
-        else
-        {
-            SelectedImage = image;
-        }
+        if (storyMode) StorySelectedImage = image;
+        else SelectedImage = image;
     }
 
     public void ClearSelectedImage(bool storyMode)
     {
-        if (storyMode)
-        {
-            StorySelectedImage = null;
-        }
-        else
-        {
-            SelectedImage = null;
-        }
+        if (storyMode) StorySelectedImage = null;
+        else SelectedImage = null;
     }
 }
