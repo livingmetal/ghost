@@ -2,10 +2,10 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="LivingMetalGhost Settings"
-        Width="720"
-        Height="780"
-        MinWidth="640"
-        MinHeight="620"
+        Width="760"
+        Height="820"
+        MinWidth="680"
+        MinHeight="640"
         WindowStartupLocation="CenterOwner"
         Background="#F4EFE5"
         ResizeMode="CanResize"
@@ -172,114 +172,82 @@
                 </ScrollViewer>
             </TabItem>
 
+            <TabItem Header="롤플레잉 설정">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <Border Style="{StaticResource Card}" BorderBrush="#4B5563" Background="#F8FAFC">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Crack형 상태 기반 라우팅" />
+                                <TextBlock Margin="0,3,0,0" Style="{StaticResource Hint}" Text="캐릭터 출력, 디렉터 상태판정, 메모리 압축을 각각 다른 모델과 키로 분리합니다." />
+                                <CheckBox Margin="0,14,0,0" Content="상태 패널 사용" IsChecked="{Binding RoleplayEnableStatePanel}" />
+                                <CheckBox Margin="0,8,0,0" Content="디렉터 상태 업데이트 사용" IsChecked="{Binding RoleplayEnableDirectorStateUpdate}" />
+                                <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="상태 패널 지표" />
+                                <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayStatePanelMetrics, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}" BorderBrush="#AABFAA" Background="#F6FAF6">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="캐릭터 모델" />
+                                <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" Text="사용자에게 보이는 지문과 대사를 생성합니다." />
+                                <Grid Margin="0,14,0,0">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,10,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Provider" /><ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding RoleplayProviders}" SelectedItem="{Binding RoleplayCharacterProvider}" /></StackPanel>
+                                    <StackPanel Grid.Column="1"><TextBlock Style="{StaticResource FieldLabel}" Text="Model" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayCharacterModel, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                </Grid>
+                                <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" />
+                                <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayCharacterBaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="캐릭터 API 키" />
+                                <Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><PasswordBox x:Name="RoleplayCharacterApiKeyPasswordBox" Padding="10,8" PasswordChanged="RoleplayCharacterApiKeyPasswordBox_OnPasswordChanged" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearRoleplayCharacterKeyCommand}" Content="제거" /></Grid>
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}" Text="{Binding RoleplayCharacterKeyStatus}" />
+                                <Button Margin="0,12,0,0" HorizontalAlignment="Right" Style="{StaticResource PresetBtn}" Command="{Binding TestRoleplayCharacterConnectionCommand}" Content="캐릭터 테스트" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}" BorderBrush="#BFAAAA" Background="#FFF7F7">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="디렉터 모델" />
+                                <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" Text="시간, 장소, 관계 수치, 이벤트 발생을 판단하는 모델입니다." />
+                                <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><StackPanel Margin="0,0,10,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Provider" /><ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding RoleplayProviders}" SelectedItem="{Binding RoleplayDirectorProvider}" /></StackPanel><StackPanel Grid.Column="1"><TextBlock Style="{StaticResource FieldLabel}" Text="Model" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayDirectorModel, UpdateSourceTrigger=PropertyChanged}" /></StackPanel></Grid>
+                                <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayDirectorBaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="디렉터 API 키" /><Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><PasswordBox x:Name="RoleplayDirectorApiKeyPasswordBox" Padding="10,8" PasswordChanged="RoleplayDirectorApiKeyPasswordBox_OnPasswordChanged" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearRoleplayDirectorKeyCommand}" Content="제거" /></Grid>
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}" Text="{Binding RoleplayDirectorKeyStatus}" /><Button Margin="0,12,0,0" HorizontalAlignment="Right" Style="{StaticResource PresetBtn}" Command="{Binding TestRoleplayDirectorConnectionCommand}" Content="디렉터 테스트" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}" BorderBrush="#9B96C0" Background="#F7F7FC">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="메모리 모델" />
+                                <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" Text="최근 턴을 압축하고 장기 기억을 정리합니다." />
+                                <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><StackPanel Margin="0,0,10,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Provider" /><ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding RoleplayProviders}" SelectedItem="{Binding RoleplayMemoryProvider}" /></StackPanel><StackPanel Grid.Column="1"><TextBlock Style="{StaticResource FieldLabel}" Text="Model" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayMemoryModel, UpdateSourceTrigger=PropertyChanged}" /></StackPanel></Grid>
+                                <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayMemoryBaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="메모리 API 키" /><Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><PasswordBox x:Name="RoleplayMemoryApiKeyPasswordBox" Padding="10,8" PasswordChanged="RoleplayMemoryApiKeyPasswordBox_OnPasswordChanged" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearRoleplayMemoryKeyCommand}" Content="제거" /></Grid>
+                                <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}" Text="{Binding RoleplayMemoryKeyStatus}" />
+                                <StackPanel Margin="0,12,0,0" Orientation="Horizontal" HorizontalAlignment="Right"><Button Style="{StaticResource PresetBtn}" Command="{Binding TestRoleplayMemoryConnectionCommand}" Content="메모리 테스트" /><Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0" Command="{Binding SaveRoleplayRoutingCommand}" Content="롤플레잉 설정 저장" /></StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <TabItem Header="API">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
                         <Border Style="{StaticResource Card}" BorderBrush="#AABFAA" Background="#F6FAF6">
                             <StackPanel>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource SectionTitle}" Text="기본 대화" />
-                                        <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" Text="가벼운 대화. Gemini 권장." />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <Button Style="{StaticResource PresetBtn}" Command="{Binding ApplyGeminiFreePresetCommand}" Content="Gemini" />
-                                        <Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0" Command="{Binding ApplyCodexPresetCommand}" Content="Codex" />
-                                    </StackPanel>
-                                </Grid>
-                                <Grid Margin="0,14,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="180" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Margin="0,0,10,0">
-                                        <TextBlock Style="{StaticResource FieldLabel}" Text="Provider" />
-                                        <ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding Providers}" SelectedItem="{Binding Provider}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Style="{StaticResource FieldLabel}" Text="Model" />
-                                        <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" />
-                                <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="기본 모드 키" />
-                                <Grid Margin="0,6,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <PasswordBox x:Name="ApiKeyPasswordBox" Padding="10,8" PasswordChanged="ApiKeyPasswordBox_OnPasswordChanged" />
-                                    <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearApiKeyCommand}" Content="제거" />
-                                </Grid>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="기본 대화" />
+                                <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><StackPanel Margin="0,0,10,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Provider" /><ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding Providers}" SelectedItem="{Binding Provider}" /></StackPanel><StackPanel Grid.Column="1"><TextBlock Style="{StaticResource FieldLabel}" Text="Model" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}" /></StackPanel></Grid>
+                                <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="기본 모드 키" /><Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><PasswordBox x:Name="ApiKeyPasswordBox" Padding="10,8" PasswordChanged="ApiKeyPasswordBox_OnPasswordChanged" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearApiKeyCommand}" Content="제거" /></Grid>
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}" Text="{Binding ApiKeyStatus}" />
                             </StackPanel>
                         </Border>
-
                         <Border Style="{StaticResource Card}" BorderBrush="#9B96C0" Background="#F7F7FC">
                             <StackPanel>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource SectionTitle}" Text="고급 대화" />
-                                        <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" Text="설계 검토, 코드, 긴 작업용 API 또는 로컬 앱 연결." />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <Button Style="{StaticResource PresetBtn}" Command="{Binding ApplyAdvancedOpenAiPresetCommand}" Content="ChatGPT" />
-                                        <Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0" Command="{Binding ApplyInstalledAppsPresetCommand}" Content="Claude" />
-                                    </StackPanel>
-                                </Grid>
-                                <Grid Margin="0,14,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="180" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Margin="0,0,10,0">
-                                        <TextBlock Style="{StaticResource FieldLabel}" Text="Provider" />
-                                        <ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding AdvancedProviders}" SelectedItem="{Binding AdvancedProvider}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Style="{StaticResource FieldLabel}" Text="Model" />
-                                        <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding AdvancedModel, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" />
-                                <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding AdvancedBaseUrl, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="고급 모드 키" />
-                                <Grid Margin="0,6,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <PasswordBox x:Name="AdvancedApiKeyPasswordBox" Padding="10,8" PasswordChanged="AdvancedApiKeyPasswordBox_OnPasswordChanged" />
-                                    <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearAdvancedApiKeyCommand}" Content="제거" />
-                                </Grid>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="고급 대화" />
+                                <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><StackPanel Margin="0,0,10,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Provider" /><ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding AdvancedProviders}" SelectedItem="{Binding AdvancedProvider}" /></StackPanel><StackPanel Grid.Column="1"><TextBlock Style="{StaticResource FieldLabel}" Text="Model" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding AdvancedModel, UpdateSourceTrigger=PropertyChanged}" /></StackPanel></Grid>
+                                <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding AdvancedBaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="고급 모드 키" /><Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><PasswordBox x:Name="AdvancedApiKeyPasswordBox" Padding="10,8" PasswordChanged="AdvancedApiKeyPasswordBox_OnPasswordChanged" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearAdvancedApiKeyCommand}" Content="제거" /></Grid>
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}" Text="{Binding AdvancedApiKeyStatus}" />
-                                <Grid Margin="0,12,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox Padding="8,6" Text="{Binding AdvancedTemperature, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="1" Margin="6,0" Padding="8,6" Text="{Binding AdvancedMaxOutputTokens, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="2" Padding="8,6" Text="{Binding AdvancedTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
-                                </Grid>
-                                <Grid Margin="0,12,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <ComboBox Padding="8,6" ItemsSource="{Binding InstalledAppsPreferredApps}" SelectedItem="{Binding InstalledAppsPreferredApp}" />
-                                    <Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding DetectInstalledAppsCommand}" Content="앱 감지" />
-                                </Grid>
+                                <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><TextBox Padding="8,6" Text="{Binding AdvancedTemperature, UpdateSourceTrigger=PropertyChanged}" /><TextBox Grid.Column="1" Margin="6,0" Padding="8,6" Text="{Binding AdvancedMaxOutputTokens, UpdateSourceTrigger=PropertyChanged}" /><TextBox Grid.Column="2" Padding="8,6" Text="{Binding AdvancedTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" /></Grid>
+                                <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><ComboBox Padding="8,6" ItemsSource="{Binding InstalledAppsPreferredApps}" SelectedItem="{Binding InstalledAppsPreferredApp}" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding DetectInstalledAppsCommand}" Content="앱 감지" /></Grid>
                                 <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}" TextWrapping="Wrap" Text="{Binding InstalledAppsStatus}" />
                             </StackPanel>
                         </Border>
@@ -293,31 +261,11 @@
                         <Border Style="{StaticResource Card}" BorderBrush="#C0AA90" Background="#FBF9F6">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource SectionTitle}" Text="코드 작업 에이전트" />
-                                <Grid Margin="0,14,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <ComboBox Padding="8,6" ItemsSource="{Binding AgentExecutors}" SelectedItem="{Binding AgentDefaultExecutor}" />
-                                    <ComboBox Grid.Column="1" Margin="6,0,0,0" Padding="8,6" ItemsSource="{Binding AgentApprovalModes}" SelectedItem="{Binding AgentApprovalMode}" />
-                                </Grid>
+                                <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><ComboBox Padding="8,6" ItemsSource="{Binding AgentExecutors}" SelectedItem="{Binding AgentDefaultExecutor}" /><ComboBox Grid.Column="1" Margin="6,0,0,0" Padding="8,6" ItemsSource="{Binding AgentApprovalModes}" SelectedItem="{Binding AgentApprovalMode}" /></Grid>
                                 <CheckBox Margin="0,12,0,0" Content="실제 실행 허용" IsChecked="{Binding AgentEnableExecution}" />
-                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="작업 루트" />
-                                <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding AgentWorkspaceRoot, UpdateSourceTrigger=PropertyChanged}" />
-                                <Grid Margin="0,12,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox Padding="10,8" Text="{Binding ClaudeCodeExecutable, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox Grid.Column="1" Margin="6,0,0,0" Padding="10,8" Text="{Binding AgentCodexExecutable, UpdateSourceTrigger=PropertyChanged}" />
-                                </Grid>
-                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="제한 시간(초)" />
-                                <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding AgentTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
-                                <StackPanel Margin="0,12,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Button Style="{StaticResource PresetBtn}" Command="{Binding ApplyClaudeCodeAgentPresetCommand}" Content="Claude Code" />
-                                    <Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0" Command="{Binding ApplyCodexAgentPresetCommand}" Content="Codex CLI" />
-                                </StackPanel>
+                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="작업 루트" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding AgentWorkspaceRoot, UpdateSourceTrigger=PropertyChanged}" />
+                                <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><TextBox Padding="10,8" Text="{Binding ClaudeCodeExecutable, UpdateSourceTrigger=PropertyChanged}" /><TextBox Grid.Column="1" Margin="6,0,0,0" Padding="10,8" Text="{Binding AgentCodexExecutable, UpdateSourceTrigger=PropertyChanged}" /></Grid>
+                                <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="제한 시간(초)" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding AgentTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -330,11 +278,8 @@
         </Border>
 
         <Grid Grid.Row="3" Margin="0,14,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}" TextWrapping="Wrap" Text="기본/고급 키는 분리 저장됩니다. 스토리보드는 현재 story_state.json에 저장됩니다." />
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}" TextWrapping="Wrap" Text="기본/고급/롤플레잉 키는 분리 저장됩니다. 스토리보드는 현재 story_state.json에 저장됩니다." />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button MinWidth="105" Padding="14,8" Command="{Binding TestConnectionCommand}" Content="기본 테스트" />
                 <Button MinWidth="105" Margin="8,0,0,0" Padding="14,8" Command="{Binding TestAdvancedConnectionCommand}" Content="고급 테스트" />
