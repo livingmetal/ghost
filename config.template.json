@@ -24,6 +24,41 @@
     "streaming": true,
     "timeout_seconds": 30
   },
+  "roleplay_llm": {
+    "character": {
+      "provider": "Gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "model": "gemini-3.1-flash-lite",
+      "api_key_source": "dpapi:roleplay-character",
+      "temperature": 0.9,
+      "max_output_tokens": 2048,
+      "streaming": true,
+      "timeout_seconds": 45
+    },
+    "director": {
+      "provider": "Gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "model": "gemini-3.1-flash-lite",
+      "api_key_source": "dpapi:roleplay-director",
+      "temperature": 0.25,
+      "max_output_tokens": 1024,
+      "streaming": false,
+      "timeout_seconds": 45
+    },
+    "memory": {
+      "provider": "Gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "model": "gemini-3.1-flash-lite",
+      "api_key_source": "dpapi:roleplay-memory",
+      "temperature": 0.2,
+      "max_output_tokens": 1024,
+      "streaming": false,
+      "timeout_seconds": 45
+    },
+    "enable_state_panel": true,
+    "enable_director_state_update": true,
+    "state_panel_metrics": "affection,trust,tension"
+  },
   "advanced_llm": {
     "provider": "installed-apps",
     "base_url": "https://api.openai.com/v1/",
