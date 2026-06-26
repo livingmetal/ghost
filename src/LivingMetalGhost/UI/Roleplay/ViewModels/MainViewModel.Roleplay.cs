@@ -13,6 +13,7 @@ public partial class MainViewModel
         var wasEnabled = IsStoryMode;
         var state = _roleplaySessionController.SetEnabled(enabled);
         IsStoryMode = enabled;
+        RefreshStoryInfoPanel(state);
 
         if (enabled && !wasEnabled)
         {
@@ -27,6 +28,7 @@ public partial class MainViewModel
 
     private void ShowRoleplayOpening(StoryState state)
     {
+        RefreshStoryInfoPanel(state);
         var openingText = _roleplaySessionController.BuildOpeningText(state);
         StoryMessages.Add(new ChatMessage
         {
@@ -52,12 +54,8 @@ public partial class MainViewModel
 
         var submittedInput = StoryInputText;
         var submittedImage = StorySelectedImage;
-        var rawText = ImageInputService.BuildPromptText(
-            submittedInput,
-            submittedImage);
-        var displayText = ImageInputService.BuildDisplayText(
-            submittedInput,
-            submittedImage);
+        var rawText = ImageInputService.BuildPromptText(submittedInput, submittedImage);
+        var displayText = ImageInputService.BuildDisplayText(submittedInput, submittedImage);
         if (string.IsNullOrWhiteSpace(rawText) && submittedImage is null)
         {
             return;
@@ -75,27 +73,14 @@ public partial class MainViewModel
 
         try
         {
-            var result = await _roleplaySessionController.SendAsync(
-                rawText,
-                submittedImage,
-                CancellationToken.None);
+            var result = await _roleplaySessionController.SendAsync(rawText, submittedImage, CancellationToken.None);
+            RefreshStoryInfoPanel(_roleplaySessionController.GetSnapshot().State);
             if (ReferenceEquals(StorySelectedImage, submittedImage))
             {
                 StorySelectedImage = null;
             }
-            await DisplayAssistantResponseAsync(
-                result.BubbleText,
-                false,
-                result.Mood,
-                StoryMessages,
-                ConversationMode.Story,
-                false);
-            await WriteLogAsync(
-                displayText,
-                result.BubbleText,
-                false,
-                result.Mood,
-                ConversationMode.Story);
+            await DisplayAssistantResponseAsync(result.BubbleText, false, result.Mood, StoryMessages, ConversationMode.Story, false);
+            await WriteLogAsync(displayText, result.BubbleText, false, result.Mood, ConversationMode.Story);
         }
         catch (Exception ex)
         {
@@ -112,7 +97,6 @@ public partial class MainViewModel
         }
     }
 
-    /// <summary>스토리 모드에서 사용자가 조용할 때 짧은 존재감 비트를 띄운다(Phase 4 idle presence).</summary>
     public async Task StartStoryIdleAsync()
     {
         if (!ConversationModeCoordinator.IsRoleplayActive(IsStoryMode, IsAdvancedMode) ||
@@ -129,21 +113,14 @@ public partial class MainViewModel
 
         try
         {
-            var result = await _roleplaySessionController.StartIdleAsync(
-                CancellationToken.None);
+            var result = await _roleplaySessionController.StartIdleAsync(CancellationToken.None);
+            RefreshStoryInfoPanel(_roleplaySessionController.GetSnapshot().State);
             var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, ConversationMode.Story);
             SetCharacterMood(assistantMood);
-            await DisplayAssistantResponseAsync(
-                result.BubbleText,
-                isProactive: true,
-                assistantMood,
-                StoryMessages,
-                ConversationMode.Story,
-                animateCharacter: true);
+            await DisplayAssistantResponseAsync(result.BubbleText, isProactive: true, assistantMood, StoryMessages, ConversationMode.Story, animateCharacter: true);
         }
         catch
         {
-            // Idle presence is optional and should fail silently.
         }
         finally
         {
@@ -156,18 +133,19 @@ public partial class MainViewModel
         var snapshot = _roleplaySessionController.GetSnapshot();
         var state = snapshot.State;
         var memoryEntries = snapshot.MemoryEntries;
-        var scene = string.IsNullOrWhiteSpace(state.Scene)
-            ? "아직 고정된 장면 없음"
-            : state.Scene.Trim();
-        var summary = string.IsNullOrWhiteSpace(state.Summary)
-            ? "아직 누적 요약 없음"
-            : state.Summary.Trim();
+        var scene = string.IsNullOrWhiteSpace(state.Scene) ? "아직 고정된 장면 없음" : state.Scene.Trim();
+        var summary = string.IsNullOrWhiteSpace(state.Summary) ? "아직 누적 요약 없음" : state.Summary.Trim();
 
         var builder = new StringBuilder();
         builder.AppendLine($"상태: {(state.Enabled ? "켜짐" : "꺼짐")}");
         builder.AppendLine($"롤플레잉 창: {(IsStoryMode ? "열림" : "닫힘")}");
         builder.AppendLine($"제목: {state.Title}");
         builder.AppendLine($"플레이어 역할: {state.PlayerRole}");
+        builder.AppendLine($"턴: {state.TurnNumber}");
+        builder.AppendLine($"시간: {state.StoryDate} {state.StoryTime}");
+        builder.AppendLine($"장소: {state.Location}");
+        builder.AppendLine($"호감도: {state.Affection}%");
+        builder.AppendLine($"상태문: {state.StatusText}");
         builder.AppendLine($"분위기: {state.Mood}");
         builder.AppendLine($"긴장도: {state.Tension}/5");
         builder.AppendLine($"저장된 턴: {memoryEntries}");
@@ -186,11 +164,10 @@ public partial class MainViewModel
 
     public void ResetRoleplayState()
     {
-        var keepEnabled = ConversationModeCoordinator.IsRoleplayActive(
-            IsStoryMode,
-            IsAdvancedMode);
+        var keepEnabled = ConversationModeCoordinator.IsRoleplayActive(IsStoryMode, IsAdvancedMode);
         var state = _roleplaySessionController.Reset(keepEnabled);
         IsStoryMode = state.Enabled;
+        RefreshStoryInfoPanel(state);
         StoryMessages.Clear();
         if (IsStoryMode)
         {
