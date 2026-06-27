@@ -48,7 +48,9 @@ public sealed class StoryStateStore
         try
         {
             var json = File.ReadAllText(_stateFile);
-            return JsonSerializer.Deserialize<StoryState>(json, _jsonOptions) ?? CreateDefaultState();
+            var state = JsonSerializer.Deserialize<StoryState>(json, _jsonOptions) ?? CreateDefaultState();
+            NormalizeLoadedState(state);
+            return state;
         }
         catch (JsonException)
         {
@@ -68,6 +70,7 @@ public sealed class StoryStateStore
     {
         var state = Load();
         state.Enabled = enabled;
+        state.ShowOpeningOnActivation = enabled && !state.OpeningShown;
         if (enabled && string.IsNullOrWhiteSpace(state.Scene))
         {
             ApplyTemplate(state);
@@ -75,6 +78,11 @@ public sealed class StoryStateStore
             {
                 ApplyOpeningScene(state);
             }
+        }
+
+        if (state.ShowOpeningOnActivation)
+        {
+            state.OpeningShown = true;
         }
 
         state.UpdatedAt = DateTimeOffset.Now;
@@ -88,11 +96,18 @@ public sealed class StoryStateStore
         var resetState = CreateDefaultState();
         PreserveStoryboard(resetState, previousState);
         resetState.Enabled = keepEnabled;
+        resetState.OpeningShown = false;
+        resetState.ShowOpeningOnActivation = keepEnabled;
         resetState.Summary = StripRuntimeBeats(previousState.Summary);
 
         // 리셋은 런타임 진행만 비우고, 캐릭터 전제 같은 시드 기억 텍스처는 템플릿에서 되살린다.
         var template = ResolveActiveTemplate();
         resetState.Facts = template is null ? [] : CloneFacts(template.Facts);
+        if (keepEnabled)
+        {
+            resetState.OpeningShown = true;
+        }
+
         Save(resetState);
 
         try
@@ -269,6 +284,10 @@ public sealed class StoryStateStore
             PlayerRole = "아키텍쳐",
             Mood = "quiet_tension",
             Tension = 1,
+            Location = string.Empty,
+            Affection = 0,
+            StatusText = "장소와 상황은 아직 고정되지 않았다.",
+            OpeningShown = false,
             UpdatedAt = DateTimeOffset.Now
         };
         ApplyOpeningScene(state);
@@ -285,6 +304,14 @@ public sealed class StoryStateStore
         state.Summary = "정체불명의 서비스가 깨어났고, 오르키아와 함께 조심스럽게 상황을 확인한다.";
         state.Mood = "quiet_tension";
         state.Tension = Math.Clamp(state.Tension <= 0 ? 1 : state.Tension, 0, 5);
+        if (string.IsNullOrWhiteSpace(state.Location))
+        {
+            state.Location = "장소 미정";
+        }
+        if (string.IsNullOrWhiteSpace(state.StatusText))
+        {
+            state.StatusText = "장소와 상황은 아직 고정되지 않았다.";
+        }
     }
 
     private static void PreserveStoryboard(StoryState target, StoryState source)
@@ -295,6 +322,19 @@ public sealed class StoryStateStore
         target.OpeningLine = string.IsNullOrWhiteSpace(source.OpeningLine) ? target.OpeningLine : source.OpeningLine.Trim();
         target.Mood = string.IsNullOrWhiteSpace(source.Mood) ? target.Mood : source.Mood.Trim();
         target.Tension = Math.Clamp(source.Tension <= 0 ? target.Tension : source.Tension, 0, 5);
+    }
+
+    private static void NormalizeLoadedState(StoryState state)
+    {
+        if (string.Equals(state.Location, "명주고등학교 0층실", StringComparison.OrdinalIgnoreCase))
+        {
+            state.Location = string.Empty;
+        }
+
+        if (state.TurnNumber > 0 || !string.IsNullOrWhiteSpace(state.Summary))
+        {
+            state.OpeningShown = true;
+        }
     }
 
     private static string StripRuntimeBeats(string summary)
