@@ -29,7 +29,8 @@ public sealed class ConversationRequestFactoryTests : IDisposable
             new PromptAssembler(
                 new AdvancedPromptPolicy(sessionLog),
                 new CharacterMoodResolver(),
-                storyCharacterStore),
+                storyCharacterStore,
+                new StoryPlanStore(paths)),
             _history,
             new HiddenTraitScheduler(_history));
     }

@@ -135,6 +135,9 @@ public partial class App : Application
         services.AddSingleton<StoryStateStore>();
         services.AddSingleton<StoryPlanStore>();
         services.AddSingleton<StoryCharacterStore>();
+        services.AddSingleton<RoleplayWriterService>();
+        services.AddSingleton<RoleplayCharacterService>();
+        services.AddSingleton<RoleplayDirectorService>();
         services.AddSingleton<RoleplayStateUpdater>();
         services.AddSingleton<RoleplayMemoryDigestService>();
         services.AddSingleton<AdvancedSessionLogService>();

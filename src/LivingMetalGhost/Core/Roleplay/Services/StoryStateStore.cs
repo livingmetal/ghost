@@ -29,9 +29,10 @@ public sealed class StoryStateStore
     public StoryStateStore(AppPaths paths, AppConfigLoader configLoader)
     {
         _configLoader = configLoader;
-        _storyRoot = Path.Combine(paths.Root, "Stories", "default");
+        _storyRoot = Path.Combine(paths.Root, "story");
         _stateFile = Path.Combine(_storyRoot, "story_state.json");
         _memoryFile = Path.Combine(_storyRoot, "memory.jsonl");
+        MigrateLegacyData(paths.Root, _storyRoot);
     }
 
     public string StoryRoot => _storyRoot;
@@ -366,5 +367,39 @@ public sealed class StoryStateStore
         }
 
         return string.Join(Environment.NewLine, keptLines).Trim();
+    }
+
+    private static void MigrateLegacyData(string appRoot, string storyRoot)
+    {
+        var legacyRoot = Path.Combine(appRoot, "Stories", "default");
+        if (!Directory.Exists(legacyRoot))
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(storyRoot);
+            CopyIfMissing(
+                Path.Combine(legacyRoot, "story_state.json"),
+                Path.Combine(storyRoot, "story_state.json"));
+            CopyIfMissing(
+                Path.Combine(legacyRoot, "memory.jsonl"),
+                Path.Combine(storyRoot, "memory.jsonl"));
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static void CopyIfMissing(string source, string destination)
+    {
+        if (File.Exists(source) && !File.Exists(destination))
+        {
+            File.Copy(source, destination);
+        }
     }
 }

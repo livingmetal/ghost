@@ -87,6 +87,23 @@ public sealed class RoleplayMemoryDigestServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DigestIfDueAsync_DoesNotRepeatSuccessfulDigestForSameTurn()
+    {
+        AppendMemory(6);
+        var provider = new StubProvider(
+            """[{"kind":"premise","text":"기억할 사실","weight":3}]""");
+        var service = new RoleplayMemoryDigestService(
+            _store,
+            new StubProviderFactory(provider));
+
+        await service.DigestIfDueAsync(CreateOptions(), CancellationToken.None);
+        await service.DigestIfDueAsync(CreateOptions(), CancellationToken.None);
+
+        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(6, _store.Load().LastMemoryDigestTurn);
+    }
+
+    [Fact]
     public async Task DigestIfDueAsync_InvalidResponsePreservesExistingFacts()
     {
         var state = _store.Load();

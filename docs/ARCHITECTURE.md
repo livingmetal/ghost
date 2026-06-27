@@ -176,16 +176,30 @@ Primary files:
 - `Core/Roleplay/Services/StoryStateStore.cs`
 - `Core/Roleplay/Services/StoryTemplateCatalog.cs`
 - `Core/Roleplay/Services/StoryMemoryDigestParser.cs`
+- `Core/Roleplay/Services/RoleplayWriterService.cs`
+- `Core/Roleplay/Services/RoleplayCharacterService.cs`
+- `Core/Roleplay/Services/RoleplayDirectorService.cs`
+- `Core/Roleplay/Services/RoleplayMemoryDigestService.cs`
 - `Core/Roleplay/Models/StoryState.cs`
 - `Core/Roleplay/Models/StoryTemplate.cs`
 - `Core/Roleplay/Models/RoleplayMemoryEntry.cs`
 
 This area owns player-input parsing, Story templates, scene state, fictional
-memory, opening text, and post-turn updates.
+memory, opening text, and post-turn updates. Roleplay runtime files now share
+the canonical `%APPDATA%\LivingMetalGhost\story` directory; legacy
+`Stories\default` state and memory are migrated on first load.
+
+The Story turn pipeline is split by endpoint responsibility. `RoleplayWriterService`
+creates and persists a reusable plan, `RoleplayCharacterService` produces the
+visible response, and `RoleplayDirectorService` proposes a structured post-turn
+state update. Director values pass through deterministic validation and
+per-turn delta limits in `RoleplayStateUpdater`; failure falls back to the
+existing heuristic update rather than failing the visible turn.
 
 `RoleplayMemoryDigestService` owns the six-turn best-effort LLM memory digest
-and replacement of compact Story facts. General conversation orchestration only
-triggers it after a completed Roleplay turn.
+and replacement of compact Story facts. A persisted digest checkpoint prevents
+duplicate consolidation at the same turn count. General conversation
+orchestration only triggers it after a completed Roleplay turn.
 
 `Application/Roleplay/RoleplaySessionController.cs` owns Roleplay activation,
 reset, state snapshots, opening text, conversation turns, and idle turns.

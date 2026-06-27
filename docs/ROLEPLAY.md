@@ -39,8 +39,11 @@ default UI.
 Story state is stored under:
 
 ```text
-%APPDATA%\LivingMetalGhost\Stories\default
+%APPDATA%\LivingMetalGhost\story
 ```
+
+Older `Stories\default` state and memory files are copied into the canonical
+directory on first load when no canonical file exists.
 
 Character-specific opening templates are loaded from:
 
@@ -58,10 +61,35 @@ Primary implementation files:
 - `Core/Roleplay/Services/StoryStateStore.cs`
 - `Core/Roleplay/Services/StoryTemplateCatalog.cs`
 - `Core/Roleplay/Services/StoryMemoryDigestParser.cs`
+- `Core/Roleplay/Services/RoleplayWriterService.cs`
+- `Core/Roleplay/Services/RoleplayCharacterService.cs`
+- `Core/Roleplay/Services/RoleplayDirectorService.cs`
+- `Core/Roleplay/Services/RoleplayMemoryDigestService.cs`
 - `Core/Roleplay/Models/StoryState.cs`
 - `Core/Roleplay/Models/StoryTemplate.cs`
 - `Core/Conversation/Services/PromptAssembler.cs`
 - `Core/Conversation/Services/ConversationService.cs`
+
+## Four-API Turn Pipeline
+
+Story mode gives each configured endpoint one responsibility:
+
+1. Writer creates `story_plan.json` when no usable plan exists. The plan is
+   persisted and supplied to later Character prompts as optional continuity
+   guidance, never as a script that overrides player agency.
+2. Character produces the only user-visible roleplay response using the
+   isolated Roleplay history, character manifest, current state, and plan.
+3. Director observes the completed turn and returns a JSON state proposal.
+   The application validates text lengths, metric names, ranges, and maximum
+   per-turn deltas before persisting it. The deterministic updater is the
+   fallback when Director is disabled or fails.
+4. Memory consolidates the latest six completed turns into compact fictional
+   facts. A persisted checkpoint prevents the same successful interval from
+   being digested twice.
+
+Writer, Director, and Memory are best-effort helpers: their provider or parser
+failures do not discard a successful Character response. Cancellation still
+propagates so closing or stopping a turn remains immediate.
 
 ## Isolation Rules
 

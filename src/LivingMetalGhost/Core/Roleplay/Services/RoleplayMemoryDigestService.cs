@@ -22,14 +22,14 @@ public sealed class RoleplayMemoryDigestService
         CancellationToken cancellationToken)
     {
         var turnCount = _storyStateStore.CountMemoryEntries();
-        if (!IsDigestDue(turnCount))
+        var state = _storyStateStore.Load();
+        if (!IsDigestDue(turnCount) || state.LastMemoryDigestTurn >= turnCount)
         {
             return;
         }
 
         try
         {
-            var state = _storyStateStore.Load();
             var recent = _storyStateStore.ReadRecentMemory(DigestIntervalTurns);
             if (recent.Count == 0)
             {
@@ -69,6 +69,7 @@ public sealed class RoleplayMemoryDigestService
                     Weight = fact.Weight
                 })
                 .ToList();
+            latest.LastMemoryDigestTurn = turnCount;
             _storyStateStore.Save(latest);
         }
         catch (OperationCanceledException)
