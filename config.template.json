@@ -68,6 +68,13 @@
     "enable_state_panel": true,
     "enable_director_state_update": true,
     "state_panel_metrics": "affection,trust,tension",
+    "info_labels": {
+      "turn": "No.",
+      "date": "Date",
+      "place": "Place",
+      "affection": "Affection",
+      "status": "Info"
+    },
     "writer_settings": {
       "genre": "현대판타지, 심리극",
       "story_length": "medium",
