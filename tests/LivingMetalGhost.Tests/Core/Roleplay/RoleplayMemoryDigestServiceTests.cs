@@ -104,6 +104,22 @@ public sealed class RoleplayMemoryDigestServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DigestIfDueAsync_RetriesAfterMissedIntervalOnNextTurn()
+    {
+        AppendMemory(7);
+        var provider = new StubProvider(
+            """[{"kind":"question","text":"놓친 요약을 다시 시도했다.","weight":2}]""");
+        var service = new RoleplayMemoryDigestService(
+            _store,
+            new StubProviderFactory(provider));
+
+        await service.DigestIfDueAsync(CreateOptions(), CancellationToken.None);
+
+        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(7, _store.Load().LastMemoryDigestTurn);
+    }
+
+    [Fact]
     public async Task DigestIfDueAsync_InvalidResponsePreservesExistingFacts()
     {
         var state = _store.Load();

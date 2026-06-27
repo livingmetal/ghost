@@ -13,6 +13,7 @@ public sealed class RoleplayWriterService
     private readonly ILlmProviderFactory _providerFactory;
     private readonly SemaphoreSlim _generationLock = new(1, 1);
     private DateTimeOffset? _lastFailedAttemptAt;
+    private string _lastFailedPlanIdentity = string.Empty;
 
     public RoleplayWriterService(
         StoryPlanStore storyPlanStore,
@@ -31,12 +32,14 @@ public sealed class RoleplayWriterService
         CancellationToken cancellationToken)
     {
         var existing = _storyPlanStore.Load();
-        if (existing.HasContent())
+        var planIdentity = BuildPlanIdentity(character.Id, config.RoleplayLlm.WriterSettings);
+        if (StoryPlanIdentity.Matches(existing, character.Id, config.RoleplayLlm.WriterSettings))
         {
             return existing;
         }
 
         if (_lastFailedAttemptAt is { } lastFailure &&
+            string.Equals(_lastFailedPlanIdentity, planIdentity, StringComparison.Ordinal) &&
             DateTimeOffset.UtcNow - lastFailure < FailureRetryDelay)
         {
             return null;
@@ -46,7 +49,7 @@ public sealed class RoleplayWriterService
         try
         {
             existing = _storyPlanStore.Load();
-            if (existing.HasContent())
+            if (StoryPlanIdentity.Matches(existing, character.Id, config.RoleplayLlm.WriterSettings))
             {
                 return existing;
             }
@@ -70,11 +73,16 @@ public sealed class RoleplayWriterService
             if (plan is null)
             {
                 _lastFailedAttemptAt = DateTimeOffset.UtcNow;
+                _lastFailedPlanIdentity = planIdentity;
                 return null;
             }
 
+            plan.SchemaVersion = StoryPlanIdentity.CurrentSchemaVersion;
+            plan.CharacterId = character.Id;
+            plan.WriterSettingsFingerprint = StoryPlanIdentity.ComputeWriterSettingsFingerprint(settings);
             _storyPlanStore.Save(plan);
             _lastFailedAttemptAt = null;
+            _lastFailedPlanIdentity = string.Empty;
             return plan;
         }
         catch (OperationCanceledException)
@@ -85,6 +93,7 @@ public sealed class RoleplayWriterService
         {
             // Writer는 보조 API다. 실패해도 Character API가 현재 턴을 계속할 수 있어야 한다.
             _lastFailedAttemptAt = DateTimeOffset.UtcNow;
+            _lastFailedPlanIdentity = planIdentity;
             return null;
         }
         finally
@@ -92,6 +101,9 @@ public sealed class RoleplayWriterService
             _generationLock.Release();
         }
     }
+
+    private static string BuildPlanIdentity(string characterId, StoryWriterSettings settings) =>
+        $"{characterId.Trim().ToLowerInvariant()}:{StoryPlanIdentity.ComputeWriterSettingsFingerprint(settings)}";
 
     private static string BuildSystemPrompt() =>
         """

@@ -23,7 +23,7 @@ public sealed class RoleplayMemoryDigestService
     {
         var turnCount = _storyStateStore.CountMemoryEntries();
         var state = _storyStateStore.Load();
-        if (!IsDigestDue(turnCount) || state.LastMemoryDigestTurn >= turnCount)
+        if (!IsDigestDue(turnCount, state.LastMemoryDigestTurn))
         {
             return;
         }
@@ -85,6 +85,12 @@ public sealed class RoleplayMemoryDigestService
     public static bool IsDigestDue(int turnCount)
     {
         return turnCount > 0 && turnCount % DigestIntervalTurns == 0;
+    }
+
+    public static bool IsDigestDue(int turnCount, int lastSuccessfulDigestTurn)
+    {
+        return turnCount > 0 &&
+               turnCount - Math.Max(0, lastSuccessfulDigestTurn) >= DigestIntervalTurns;
     }
 
     private static string BuildSystemPrompt()

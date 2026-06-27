@@ -119,23 +119,16 @@ public sealed class ConversationService : IRoleplayConversation
 
         _historyStore.Add(mode, "user", ImageInputService.BuildDisplayText(userTextForProvider, image));
         _historyStore.Add(mode, "assistant", processed.Text);
+        RoleplayTurnCompletion? roleplayCompletion = null;
         if (mode == ConversationMode.Story)
         {
-            var directorUpdate = await _roleplayDirectorService.CreateUpdateAsync(
+            roleplayCompletion = new RoleplayTurnCompletion(FinalizeRoleplayTurnAsync(
                 config,
                 character,
                 storyState,
                 userDisplayText,
-                processed.Text,
-                processed.Mood,
-                cancellationToken);
-            _roleplayStateUpdater.UpdateAfterTurn(
-                userDisplayText,
-                processed.Text,
-                processed.Mood,
-                directorUpdate);
-            var memoryOptions = LlmOptions.FromSettings(config.RoleplayLlm.Memory);
-            await _roleplayMemoryDigestService.DigestIfDueAsync(memoryOptions, cancellationToken);
+                processed,
+                cancellationToken));
         }
         else if (mode == ConversationMode.Advanced)
         {
@@ -153,8 +146,34 @@ public sealed class ConversationService : IRoleplayConversation
             BubbleText = processed.Text,
             Mood = processed.Mood,
             Action = mode == ConversationMode.Story ? "roleplay-chat" : "chat",
-            UsedLlm = true
+            UsedLlm = true,
+            RawData = roleplayCompletion
         };
+    }
+
+    private async Task FinalizeRoleplayTurnAsync(
+        AppConfig config,
+        CharacterProfile character,
+        StoryState storyState,
+        string userDisplayText,
+        ProcessedConversationResponse processed,
+        CancellationToken cancellationToken)
+    {
+        var directorUpdate = await _roleplayDirectorService.CreateUpdateAsync(
+            config,
+            character,
+            storyState,
+            userDisplayText,
+            processed.Text,
+            processed.Mood,
+            cancellationToken);
+        _roleplayStateUpdater.UpdateAfterTurn(
+            userDisplayText,
+            processed.Text,
+            processed.Mood,
+            directorUpdate);
+        var memoryOptions = LlmOptions.FromSettings(config.RoleplayLlm.Memory);
+        await _roleplayMemoryDigestService.DigestIfDueAsync(memoryOptions, cancellationToken);
     }
 
     public async Task<SkillResult> StartConversationAsync(CancellationToken cancellationToken)

@@ -43,7 +43,8 @@ Story state is stored under:
 ```
 
 Older `Stories\default` state and memory files are copied into the canonical
-directory on first load when no canonical file exists.
+directory on first load when no canonical file exists. A migration marker
+prevents cleared canonical state from being restored again on a later launch.
 
 Character-specific opening templates are loaded from:
 
@@ -76,16 +77,18 @@ Story mode gives each configured endpoint one responsibility:
 
 1. Writer creates `story_plan.json` when no usable plan exists. The plan is
    persisted and supplied to later Character prompts as optional continuity
-   guidance, never as a script that overrides player agency.
+   guidance, never as a script that overrides player agency. Character ID,
+   schema version, and a Writer-settings fingerprint invalidate stale plans.
 2. Character produces the only user-visible roleplay response using the
-   isolated Roleplay history, character manifest, current state, and plan.
+   isolated Roleplay history, character manifest, current state, and plan. The
+   UI displays this response before waiting for Director and Memory work.
 3. Director observes the completed turn and returns a JSON state proposal.
    The application validates text lengths, metric names, ranges, and maximum
    per-turn deltas before persisting it. The deterministic updater is the
    fallback when Director is disabled or fails.
 4. Memory consolidates the latest six completed turns into compact fictional
    facts. A persisted checkpoint prevents the same successful interval from
-   being digested twice.
+   being digested twice, while a failed interval is retried on the next turn.
 
 Writer, Director, and Memory are best-effort helpers: their provider or parser
 failures do not discard a successful Character response. Cancellation still

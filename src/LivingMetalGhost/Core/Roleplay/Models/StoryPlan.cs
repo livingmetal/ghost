@@ -2,6 +2,9 @@ namespace LivingMetalGhost.Core.Models;
 
 public sealed class StoryPlan
 {
+    public int SchemaVersion { get; set; }
+    public string CharacterId { get; set; } = string.Empty;
+    public string WriterSettingsFingerprint { get; set; } = string.Empty;
     public string Title { get; set; } = "Untitled Story";
     public string Premise { get; set; } = string.Empty;
     public string Genre { get; set; } = string.Empty;

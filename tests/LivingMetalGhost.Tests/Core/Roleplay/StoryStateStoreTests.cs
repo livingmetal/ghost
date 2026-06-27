@@ -42,6 +42,44 @@ public sealed class StoryStateStoreTests
             Assert.Equal(Path.Combine(root, "story"), store.StoryRoot);
             Assert.Equal("legacy", store.Load().Title);
             Assert.True(File.Exists(Path.Combine(root, "story", "story_state.json")));
+            Assert.True(File.Exists(Path.Combine(root, "story", ".legacy-migration-v1")));
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [Fact]
+    public void Constructor_DoesNotRestoreLegacyStateAfterCanonicalStateWasCleared()
+    {
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            "LivingMetalGhost.Tests",
+            Guid.NewGuid().ToString("N"));
+        try
+        {
+            var legacyRoot = Path.Combine(root, "Stories", "default");
+            Directory.CreateDirectory(legacyRoot);
+            File.WriteAllText(
+                Path.Combine(legacyRoot, "story_state.json"),
+                """{"enabled":true,"title":"legacy"}""");
+            var paths = new LivingMetalGhost.Core.Config.AppPaths(root);
+            var loader = new LivingMetalGhost.Core.Config.AppConfigLoader(paths);
+            var firstStore = new StoryStateStore(paths, loader);
+            Assert.Equal("legacy", firstStore.Load().Title);
+
+            File.Delete(firstStore.StateFile);
+            var secondStore = new StoryStateStore(paths, loader);
+
+            Assert.NotEqual("legacy", secondStore.Load().Title);
+            Assert.False(File.Exists(secondStore.StateFile));
         }
         finally
         {

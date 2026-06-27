@@ -65,7 +65,7 @@ public sealed class PromptAssembler
             ? character.DefaultBackground
             : customProfile.Background.Trim();
         var spriteMoodDirective = BuildSpriteMoodDirective(character, mode);
-        var modeDirective = BuildModeDirective(mode, storyState, character, repositoryContext);
+        var modeDirective = BuildModeDirective(config, mode, storyState, character, repositoryContext);
 
         var prompt = $"""
             You are not ChatGPT, a generic chatbot, or a detached API assistant.
@@ -137,6 +137,7 @@ public sealed class PromptAssembler
     }
 
     private string BuildModeDirective(
+        AppConfig config,
         ConversationMode mode,
         StoryState storyState,
         CharacterProfile character,
@@ -151,7 +152,7 @@ public sealed class PromptAssembler
                                            _characterMoodResolver.GetAvailableMoods(character.Visual)) +
                                        "\n\n" +
                                        BuildRoleplayCharacterDirective(character) +
-                                       BuildStoryPlanDirective(storyState),
+                                       BuildStoryPlanDirective(config, storyState, character),
             _ => BuildDailyModeDirective()
         };
     }
@@ -210,10 +211,16 @@ public sealed class PromptAssembler
             """;
     }
 
-    private string BuildStoryPlanDirective(StoryState storyState)
+    private string BuildStoryPlanDirective(
+        AppConfig config,
+        StoryState storyState,
+        CharacterProfile character)
     {
         var plan = _storyPlanStore.Load();
-        if (!plan.HasContent())
+        if (!StoryPlanIdentity.Matches(
+                plan,
+                character.Id,
+                config.RoleplayLlm.WriterSettings))
         {
             return string.Empty;
         }

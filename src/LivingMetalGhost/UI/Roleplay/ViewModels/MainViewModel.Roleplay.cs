@@ -79,7 +79,6 @@ public partial class MainViewModel
         try
         {
             var result = await _roleplaySessionController.SendAsync(rawText, submittedImage, CancellationToken.None);
-            RefreshStoryInfoPanel(_roleplaySessionController.GetSnapshot().State);
             if (ReferenceEquals(StorySelectedImage, submittedImage))
             {
                 StorySelectedImage = null;
@@ -93,6 +92,25 @@ public partial class MainViewModel
                 SpeakerName = "STORY",
                 IsRoleplay = true
             });
+
+            if (result.RawData is RoleplayTurnCompletion completion)
+            {
+                try
+                {
+                    await completion.Completion;
+                }
+                catch (Exception ex)
+                {
+                    StoryMessages.Add(new ChatMessage
+                    {
+                        Text = $"응답은 표시했지만 롤플레잉 상태 후처리를 완료하지 못했어요: {ex.Message}",
+                        SpeakerName = "SYSTEM",
+                        IsRoleplay = true
+                    });
+                }
+            }
+
+            RefreshStoryInfoPanel(_roleplaySessionController.GetSnapshot().State);
 
             await WriteLogAsync(displayText, result.BubbleText, false, result.Mood, ConversationMode.Story);
         }

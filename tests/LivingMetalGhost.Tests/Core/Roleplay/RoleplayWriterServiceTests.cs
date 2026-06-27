@@ -61,9 +61,48 @@ public sealed class RoleplayWriterServiceTests : IDisposable
         Assert.NotNull(first);
         Assert.Equal("별빛 관측소", first.Title);
         Assert.True(store.Load().HasContent());
+        Assert.Equal(StoryPlanIdentity.CurrentSchemaVersion, first.SchemaVersion);
+        Assert.Equal("test-character", first.CharacterId);
+        Assert.NotEmpty(first.WriterSettingsFingerprint);
         Assert.Equal(first.Title, second?.Title);
         Assert.Equal(1, provider.CallCount);
         Assert.Contains("Preserve player agency", provider.LastRequest?.SystemPrompt);
+    }
+
+    [Fact]
+    public async Task EnsurePlanAsync_RegeneratesWhenWriterSettingsChange()
+    {
+        const string firstResponse =
+            """{"title":"첫 계획","premise":"첫 설정을 따른다.","acts":[]}""";
+        const string secondResponse =
+            """{"title":"새 계획","premise":"바뀐 설정을 따른다.","acts":[]}""";
+        var provider = new StubRoleplayProvider(firstResponse, secondResponse);
+        var paths = new AppPaths(_root);
+        var store = new StoryPlanStore(paths);
+        var service = new RoleplayWriterService(
+            store,
+            new StoryCharacterStore(paths),
+            new StubRoleplayProviderFactory(provider));
+        var config = new AppConfig();
+        config.RoleplayLlm.Writer.Provider = "stub";
+        var character = RoleplayApiTestSupport.CreateCharacter();
+
+        var first = await service.EnsurePlanAsync(
+            config,
+            character,
+            new StoryState(),
+            CancellationToken.None);
+        config.RoleplayLlm.WriterSettings.Genre = "우주 오페라";
+        var second = await service.EnsurePlanAsync(
+            config,
+            character,
+            new StoryState(),
+            CancellationToken.None);
+
+        Assert.Equal("첫 계획", first?.Title);
+        Assert.Equal("새 계획", second?.Title);
+        Assert.Equal(2, provider.CallCount);
+        Assert.Equal("새 계획", store.Load().Title);
     }
 
     [Fact]

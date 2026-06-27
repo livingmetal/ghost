@@ -31,8 +31,16 @@ public sealed class RoleplayCharacterServiceTests : IDisposable
     {
         var paths = new AppPaths(_root);
         var planStore = new StoryPlanStore(paths);
+        var config = new AppConfig();
+        config.RoleplayLlm.Character.Provider = "stub";
+        config.RoleplayLlm.Character.Model = "character-model";
+        var character = RoleplayApiTestSupport.CreateCharacter();
         planStore.Save(new StoryPlan
         {
+            SchemaVersion = StoryPlanIdentity.CurrentSchemaVersion,
+            CharacterId = character.Id,
+            WriterSettingsFingerprint = StoryPlanIdentity.ComputeWriterSettingsFingerprint(
+                config.RoleplayLlm.WriterSettings),
             Title = "별빛 관측소",
             Premise = "오래된 신호의 정체를 추적한다.",
             Acts = [new StoryAct { Act = 1, Goal = "첫 신호를 확인한다." }]
@@ -54,13 +62,9 @@ public sealed class RoleplayCharacterServiceTests : IDisposable
             providerFactory,
             requestFactory,
             new ConversationResponseProcessor(new CharacterMoodResolver()));
-        var config = new AppConfig();
-        config.RoleplayLlm.Character.Provider = "stub";
-        config.RoleplayLlm.Character.Model = "character-model";
-
         var result = await service.GenerateAsync(
             config,
-            RoleplayApiTestSupport.CreateCharacter(),
+            character,
             new StoryState { Enabled = true },
             "안녕",
             image: null,

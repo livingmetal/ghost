@@ -371,21 +371,29 @@ public sealed class StoryStateStore
 
     private static void MigrateLegacyData(string appRoot, string storyRoot)
     {
-        var legacyRoot = Path.Combine(appRoot, "Stories", "default");
-        if (!Directory.Exists(legacyRoot))
+        var migrationMarker = Path.Combine(storyRoot, ".legacy-migration-v1");
+        if (File.Exists(migrationMarker))
         {
             return;
         }
 
+        var legacyRoot = Path.Combine(appRoot, "Stories", "default");
         try
         {
             Directory.CreateDirectory(storyRoot);
-            CopyIfMissing(
-                Path.Combine(legacyRoot, "story_state.json"),
-                Path.Combine(storyRoot, "story_state.json"));
-            CopyIfMissing(
-                Path.Combine(legacyRoot, "memory.jsonl"),
-                Path.Combine(storyRoot, "memory.jsonl"));
+            if (Directory.Exists(legacyRoot))
+            {
+                CopyIfMissing(
+                    Path.Combine(legacyRoot, "story_state.json"),
+                    Path.Combine(storyRoot, "story_state.json"));
+                CopyIfMissing(
+                    Path.Combine(legacyRoot, "memory.jsonl"),
+                    Path.Combine(storyRoot, "memory.jsonl"));
+            }
+
+            File.WriteAllText(
+                migrationMarker,
+                $"Legacy migration checked at {DateTimeOffset.Now:O}{Environment.NewLine}");
         }
         catch (IOException)
         {
