@@ -23,6 +23,10 @@ public partial class SettingsWindow : Window
         viewModel.Reload();
         ApiKeyPasswordBox.Clear();
         AdvancedApiKeyPasswordBox.Clear();
+        RoleplayWriterApiKeyPasswordBox.Clear();
+        RoleplayCharacterApiKeyPasswordBox.Clear();
+        RoleplayDirectorApiKeyPasswordBox.Clear();
+        RoleplayMemoryApiKeyPasswordBox.Clear();
         _isLoading = false;
     }
 
@@ -39,6 +43,38 @@ public partial class SettingsWindow : Window
         if (!_isLoading && DataContext is SettingsViewModel viewModel)
         {
             viewModel.AdvancedApiKeyInput = AdvancedApiKeyPasswordBox.Password;
+        }
+    }
+
+    private void RoleplayWriterApiKeyPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_isLoading && DataContext is SettingsViewModel viewModel)
+        {
+            viewModel.RoleplayWriterKeyInput = RoleplayWriterApiKeyPasswordBox.Password;
+        }
+    }
+
+    private void RoleplayCharacterApiKeyPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_isLoading && DataContext is SettingsViewModel viewModel)
+        {
+            viewModel.RoleplayCharacterKeyInput = RoleplayCharacterApiKeyPasswordBox.Password;
+        }
+    }
+
+    private void RoleplayDirectorApiKeyPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_isLoading && DataContext is SettingsViewModel viewModel)
+        {
+            viewModel.RoleplayDirectorKeyInput = RoleplayDirectorApiKeyPasswordBox.Password;
+        }
+    }
+
+    private void RoleplayMemoryApiKeyPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_isLoading && DataContext is SettingsViewModel viewModel)
+        {
+            viewModel.RoleplayMemoryKeyInput = RoleplayMemoryApiKeyPasswordBox.Password;
         }
     }
 }
