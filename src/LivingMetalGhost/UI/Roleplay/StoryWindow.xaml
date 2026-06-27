@@ -62,8 +62,8 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Row="2" Margin="0,14,0,10" Padding="8" CornerRadius="16" Background="#FFFDF8" BorderBrush="#D8D0C3" BorderThickness="1">
-                    <ScrollViewer x:Name="ConversationScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <Border Grid.Row="2" Margin="0,14,0,10" Padding="0" CornerRadius="16" Background="#FFFDF8" BorderBrush="#D8D0C3" BorderThickness="1">
+                    <ScrollViewer x:Name="ConversationScrollViewer" Padding="14,12" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding StoryMessages}" HorizontalContentAlignment="Stretch">
                             <ItemsControl.ItemContainerStyle>
                                 <Style TargetType="ContentPresenter">
@@ -72,36 +72,28 @@
                             </ItemsControl.ItemContainerStyle>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="5,4" HorizontalAlignment="Stretch">
-                                        <Border MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" Padding="11,9" HorizontalAlignment="Left">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="HorizontalAlignment" Value="Left" />
-                                                    <Setter Property="Background" Value="#EFE9FB" />
-                                                    <Setter Property="CornerRadius" Value="4,14,14,14" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsUser}" Value="True">
-                                                            <Setter Property="HorizontalAlignment" Value="Right" />
-                                                            <Setter Property="Background" Value="#E8E2D8" />
-                                                            <Setter Property="CornerRadius" Value="14,4,14,14" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <StackPanel>
-                                                <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#7A6BA8" Text="{Binding SpeakerName}" />
-                                                <RichTextBox Margin="0,4,0,0" Padding="0" FontFamily="Malgun Gothic" FontSize="14" Foreground="#202A35" Background="Transparent" BorderThickness="0" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsDocumentEnabled="True" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" behaviors:InlineMarkup.Text="{Binding DisplayText, Mode=OneWay}" behaviors:InlineMarkup.Roleplay="{Binding IsRoleplay, Mode=OneWay}" ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
-                                                    <RichTextBox.ContextMenu>
-                                                        <ContextMenu>
-                                                            <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
-                                                            <MenuItem Command="ApplicationCommands.SelectAll" Header="전체 선택" />
-                                                        </ContextMenu>
-                                                    </RichTextBox.ContextMenu>
-                                                </RichTextBox>
-                                                <TextBlock Margin="0,4,0,0" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="9" Foreground="#9A90B5" Text="{Binding Timestamp, StringFormat={}{0:HH:mm}}" />
-                                            </StackPanel>
-                                        </Border>
-                                    </Grid>
+                                    <Border Margin="0,0,0,14" Padding="0,0,0,14" BorderBrush="#E6DED2" BorderThickness="0,0,0,1" HorizontalAlignment="Stretch">
+                                        <StackPanel>
+                                            <DockPanel Margin="0,0,0,7">
+                                                <TextBlock DockPanel.Dock="Left" FontFamily="Consolas" FontSize="11" FontWeight="SemiBold" Foreground="#7A6BA8" Text="{Binding SpeakerName}" />
+                                                <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" FontFamily="Consolas" FontSize="10" Foreground="#9A90B5" Text="{Binding Timestamp, StringFormat={}{0:HH:mm}}" />
+                                            </DockPanel>
+                                            <RichTextBox Padding="0" FontFamily="Malgun Gothic" FontSize="14" Foreground="#202A35" Background="Transparent" BorderThickness="0" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsDocumentEnabled="True" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" behaviors:InlineMarkup.Text="{Binding DisplayText, Mode=OneWay}" behaviors:InlineMarkup.Roleplay="{Binding IsRoleplay, Mode=OneWay}" ToolTip="드래그해서 선택하거나 Ctrl+C로 복사할 수 있습니다.">
+                                                <RichTextBox.Resources>
+                                                    <Style TargetType="Paragraph">
+                                                        <Setter Property="Margin" Value="0,0,0,8" />
+                                                        <Setter Property="LineHeight" Value="22" />
+                                                    </Style>
+                                                </RichTextBox.Resources>
+                                                <RichTextBox.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Command="ApplicationCommands.Copy" Header="복사" />
+                                                        <MenuItem Command="ApplicationCommands.SelectAll" Header="전체 선택" />
+                                                    </ContextMenu>
+                                                </RichTextBox.ContextMenu>
+                                            </RichTextBox>
+                                        </StackPanel>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
