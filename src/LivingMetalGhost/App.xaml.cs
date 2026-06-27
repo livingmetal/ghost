@@ -134,6 +134,7 @@ public partial class App : Application
         services.AddSingleton<DpapiSecretStore>();
         services.AddSingleton<StoryStateStore>();
         services.AddSingleton<StoryPlanStore>();
+        services.AddSingleton<StoryCharacterStore>();
         services.AddSingleton<RoleplayStateUpdater>();
         services.AddSingleton<RoleplayMemoryDigestService>();
         services.AddSingleton<AdvancedSessionLogService>();
