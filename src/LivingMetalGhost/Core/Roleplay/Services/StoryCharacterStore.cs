@@ -15,32 +15,36 @@ public sealed class StoryCharacterStore
     }
 
     public string StoryRoot => Path.Combine(_paths.Root, "story");
-    public string DefinitionsFile => Path.Combine(StoryRoot, "story_characters.json");
+    public string ManifestFile => Path.Combine(StoryRoot, "roleplay_manifest.json");
+    public string LegacyDefinitionsFile => Path.Combine(StoryRoot, "story_characters.json");
+    public string DefinitionsFile => ManifestFile;
     public string StatesFile => Path.Combine(StoryRoot, "character_state.json");
 
     public StoryCharacterDefinition LoadOrCreateDefinition(string characterId, CharacterProfile profile)
     {
-        var definitions = LoadDefinitions();
-        if (!definitions.TryGetValue(characterId, out var definition))
+        var manifest = LoadManifest();
+        if (!manifest.Characters.TryGetValue(characterId, out var definition))
         {
             definition = CreateDefaultDefinition(characterId, profile);
-            definitions[characterId] = definition;
-            SaveDefinitions(definitions);
+            manifest.Characters[characterId] = definition;
         }
         else
         {
             NormalizeDefinition(definition, profile);
         }
 
+        manifest.ActiveCharacterId = characterId;
+        SaveManifest(manifest);
         return definition;
     }
 
     public StoryCharacterDefinition ResetDefinition(string characterId, CharacterProfile profile)
     {
-        var definitions = LoadDefinitions();
+        var manifest = LoadManifest();
         var definition = CreateDefaultDefinition(characterId, profile);
-        definitions[characterId] = definition;
-        SaveDefinitions(definitions);
+        manifest.Characters[characterId] = definition;
+        manifest.ActiveCharacterId = characterId;
+        SaveManifest(manifest);
         return definition;
     }
 
@@ -59,9 +63,10 @@ public sealed class StoryCharacterStore
 
     public void SaveDefinition(StoryCharacterDefinition definition)
     {
-        var definitions = LoadDefinitions();
-        definitions[definition.Id] = definition;
-        SaveDefinitions(definitions);
+        var manifest = LoadManifest();
+        manifest.Characters[definition.Id] = definition;
+        manifest.ActiveCharacterId = definition.Id;
+        SaveManifest(manifest);
     }
 
     public void SaveState(StoryCharacterState state)
@@ -81,12 +86,85 @@ public sealed class StoryCharacterStore
 
     public void DeleteDefinitionFile()
     {
-        if (File.Exists(DefinitionsFile)) File.Delete(DefinitionsFile);
+        if (File.Exists(ManifestFile)) File.Delete(ManifestFile);
+        if (File.Exists(LegacyDefinitionsFile)) File.Delete(LegacyDefinitionsFile);
     }
 
     public void DeleteStateFile()
     {
         if (File.Exists(StatesFile)) File.Delete(StatesFile);
+    }
+
+    public RoleplayManifest LoadManifest()
+    {
+        Directory.CreateDirectory(StoryRoot);
+        if (File.Exists(ManifestFile))
+        {
+            try
+            {
+                var manifest = JsonSerializer.Deserialize<RoleplayManifest>(
+                    File.ReadAllText(ManifestFile),
+                    JsonOptions) ?? new RoleplayManifest();
+                NormalizeManifest(manifest);
+                return manifest;
+            }
+            catch
+            {
+                return new RoleplayManifest();
+            }
+        }
+
+        var migrated = TryLoadLegacyDefinitions();
+        var newManifest = new RoleplayManifest
+        {
+            Characters = migrated
+        };
+        NormalizeManifest(newManifest);
+        if (newManifest.Characters.Count > 0)
+        {
+            SaveManifest(newManifest);
+        }
+
+        return newManifest;
+    }
+
+    private Dictionary<string, StoryCharacterDefinition> TryLoadLegacyDefinitions()
+    {
+        if (!File.Exists(LegacyDefinitionsFile))
+        {
+            return new Dictionary<string, StoryCharacterDefinition>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, StoryCharacterDefinition>>(
+                       File.ReadAllText(LegacyDefinitionsFile),
+                       JsonOptions) ??
+                   new Dictionary<string, StoryCharacterDefinition>(StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return new Dictionary<string, StoryCharacterDefinition>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private void SaveManifest(RoleplayManifest manifest)
+    {
+        Directory.CreateDirectory(StoryRoot);
+        NormalizeManifest(manifest);
+        manifest.UpdatedAt = DateTimeOffset.Now;
+        File.WriteAllText(ManifestFile, JsonSerializer.Serialize(manifest, JsonOptions));
+    }
+
+    private static void NormalizeManifest(RoleplayManifest manifest)
+    {
+        manifest.ManifestVersion = manifest.ManifestVersion <= 0 ? 1 : manifest.ManifestVersion;
+        manifest.Characters ??= new Dictionary<string, StoryCharacterDefinition>(StringComparer.OrdinalIgnoreCase);
+        manifest.GlobalBoundaries ??= [];
+        if (string.IsNullOrWhiteSpace(manifest.ActiveCharacterId) && manifest.Characters.Count > 0)
+        {
+            manifest.ActiveCharacterId = manifest.Characters.Keys.First();
+        }
     }
 
     private static StoryCharacterDefinition CreateDefaultDefinition(string characterId, CharacterProfile profile) => new()
@@ -148,27 +226,6 @@ public sealed class StoryCharacterStore
         definition.Secrets ??= [];
     }
 
-    private Dictionary<string, StoryCharacterDefinition> LoadDefinitions()
-    {
-        Directory.CreateDirectory(StoryRoot);
-        if (!File.Exists(DefinitionsFile))
-        {
-            return new Dictionary<string, StoryCharacterDefinition>(StringComparer.OrdinalIgnoreCase);
-        }
-
-        try
-        {
-            return JsonSerializer.Deserialize<Dictionary<string, StoryCharacterDefinition>>(
-                       File.ReadAllText(DefinitionsFile),
-                       JsonOptions) ??
-                   new Dictionary<string, StoryCharacterDefinition>(StringComparer.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return new Dictionary<string, StoryCharacterDefinition>(StringComparer.OrdinalIgnoreCase);
-        }
-    }
-
     private Dictionary<string, StoryCharacterState> LoadStates()
     {
         Directory.CreateDirectory(StoryRoot);
@@ -188,12 +245,6 @@ public sealed class StoryCharacterStore
         {
             return new Dictionary<string, StoryCharacterState>(StringComparer.OrdinalIgnoreCase);
         }
-    }
-
-    private void SaveDefinitions(Dictionary<string, StoryCharacterDefinition> definitions)
-    {
-        Directory.CreateDirectory(StoryRoot);
-        File.WriteAllText(DefinitionsFile, JsonSerializer.Serialize(definitions, JsonOptions));
     }
 
     private void SaveStates(Dictionary<string, StoryCharacterState> states)
