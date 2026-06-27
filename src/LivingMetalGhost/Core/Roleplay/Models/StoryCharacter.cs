@@ -1,5 +1,20 @@
 namespace LivingMetalGhost.Core.Models;
 
+public sealed class RoleplayManifest
+{
+    public int ManifestVersion { get; set; } = 1;
+    public string ActiveCharacterId { get; set; } = string.Empty;
+    public Dictionary<string, StoryCharacterDefinition> Characters { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<string> GlobalBoundaries { get; set; } =
+    [
+        "롤플레잉 모드에서는 일반 모드의 외형, 배경, 성격, 말투를 직접 참조하지 않는다.",
+        "캐릭터 정의는 roleplay_manifest.json의 값을 기준으로 한다.",
+        "사용자가 지정하지 않은 학교, 병원, 교실, 양호실, 보건실 배경을 새로 만들지 않는다."
+    ];
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
+}
+
 public sealed class StoryCharacterDefinition
 {
     public string Id { get; set; } = string.Empty;
