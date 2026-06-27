@@ -23,11 +23,13 @@ public sealed class ConversationRequestFactoryTests : IDisposable
         var paths = new AppPaths(_root);
         var workspaceStore = new WorkspaceStore(paths);
         var sessionLog = new AdvancedSessionLogService(paths, workspaceStore);
+        var storyCharacterStore = new StoryCharacterStore(paths);
         _history = new ConversationHistoryStore();
         _factory = new ConversationRequestFactory(
             new PromptAssembler(
                 new AdvancedPromptPolicy(sessionLog),
-                new CharacterMoodResolver()),
+                new CharacterMoodResolver(),
+                storyCharacterStore),
             _history,
             new HiddenTraitScheduler(_history));
     }

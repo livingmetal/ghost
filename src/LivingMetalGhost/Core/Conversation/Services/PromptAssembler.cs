@@ -15,13 +15,16 @@ public sealed class PromptAssembler
 {
     private readonly AdvancedPromptPolicy _advancedPromptPolicy;
     private readonly CharacterMoodResolver _characterMoodResolver;
+    private readonly StoryCharacterStore _storyCharacterStore;
 
     public PromptAssembler(
         AdvancedPromptPolicy advancedPromptPolicy,
-        CharacterMoodResolver characterMoodResolver)
+        CharacterMoodResolver characterMoodResolver,
+        StoryCharacterStore storyCharacterStore)
     {
         _advancedPromptPolicy = advancedPromptPolicy;
         _characterMoodResolver = characterMoodResolver;
+        _storyCharacterStore = storyCharacterStore;
     }
 
     public string BuildSystemPrompt(
@@ -140,11 +143,80 @@ public sealed class PromptAssembler
         {
             ConversationMode.Advanced => _advancedPromptPolicy.Build(repositoryContext),
             ConversationMode.Story => RoleplayPromptPolicy.Build(
-                storyState,
-                character.DisplayName,
-                _characterMoodResolver.GetAvailableMoods(character.Visual)),
+                                           storyState,
+                                           character.DisplayName,
+                                           _characterMoodResolver.GetAvailableMoods(character.Visual)) +
+                                       "\n\n" +
+                                       BuildRoleplayCharacterDirective(character),
             _ => BuildDailyModeDirective()
         };
+    }
+
+    private string BuildRoleplayCharacterDirective(CharacterProfile character)
+    {
+        var definition = _storyCharacterStore.LoadOrCreateDefinition(character.Id, character);
+        var state = _storyCharacterStore.LoadOrCreateState(character.Id);
+        return $"""
+            Roleplay character sheet:
+            - Character id: {definition.Id}
+            - Display name: {definition.DisplayName}
+            - Story role: {definition.Role}
+
+            Base appearance:
+            {definition.BaseAppearance}
+
+            Base background:
+            {definition.BaseBackground}
+
+            Base personality:
+            {definition.BasePersonality}
+
+            Speech style:
+            {definition.SpeechStyle}
+
+            Character boundaries:
+            {FormatList(definition.Boundaries)}
+
+            Character secrets known to the story engine:
+            {FormatList(definition.Secrets)}
+
+            Current appearance and condition:
+            {state.CurrentAppearance}
+
+            Current emotion metrics:
+            {FormatMetrics(state.CurrentEmotion)}
+
+            Current relationship metrics:
+            {FormatMetrics(state.RelationshipMetrics)}
+
+            Personality drift:
+            {FormatMetrics(state.PersonalityDrift)}
+
+            Current goal:
+            {state.CurrentGoal}
+
+            Roleplay character rules:
+            - Treat base appearance, base background, base personality, and speech style as roleplay-only settings. Do not borrow the daily-mode character profile unless it was explicitly copied into story_characters.json.
+            - Treat base appearance and base personality as anchors, not disposable flavor text.
+            - Use current appearance, emotion metrics, relationship metrics, and personality drift to decide tone and small gestures.
+            - Personality drift can soften or harden expression, but it must not erase the base personality in a single turn.
+            - Do not let affection or trust jump dramatically without a clear event.
+            - Do not decide the user's action, feeling, memory, or spoken words.
+            - If the current place or scene is empty, say the place is not fixed yet. Do not invent school, classroom, hospital, infirmary, nurse office, or basement settings unless the user or story state explicitly names them.
+            """;
+    }
+
+    private static string FormatList(IEnumerable<string> items)
+    {
+        var list = items.Where(item => !string.IsNullOrWhiteSpace(item)).Select(item => $"- {item.Trim()}").ToList();
+        return list.Count == 0 ? "- 없음" : string.Join("\n", list);
+    }
+
+    private static string FormatMetrics(Dictionary<string, int> metrics)
+    {
+        return metrics.Count == 0
+            ? "- 없음"
+            : string.Join("\n", metrics.Select(pair => $"- {pair.Key}: {pair.Value}"));
     }
 
     private static string BuildDailyModeDirective()
@@ -205,8 +277,7 @@ public sealed class PromptAssembler
         return prompt[..markerIndex] + $"""
             Output format:
             Output only {character.DisplayName}'s actual Korean response.
-            Do not output a mood tag, animation cue, analysis label, or assistant-like summary unless the user explicitly asks for a structured answer.
+            Do not output a mood tag, animation cue, analysis label, or assistant-like summary unless the user explicitly asks about structured answer.
             """;
     }
-
 }

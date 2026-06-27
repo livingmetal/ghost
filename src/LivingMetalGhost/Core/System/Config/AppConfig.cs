@@ -112,7 +112,17 @@ public sealed class RoleplayLlmSettings
     public bool EnableStatePanel { get; set; } = true;
     public bool EnableDirectorStateUpdate { get; set; } = true;
     public string StatePanelMetrics { get; set; } = "affection,trust,tension";
+    public StoryInfoLabelSettings InfoLabels { get; set; } = new();
     public StoryWriterSettings WriterSettings { get; set; } = new();
+}
+
+public sealed class StoryInfoLabelSettings
+{
+    public string Turn { get; set; } = "No.";
+    public string Date { get; set; } = "Date";
+    public string Place { get; set; } = "Place";
+    public string Affection { get; set; } = "Affection";
+    public string Status { get; set; } = "Info";
 }
 
 public sealed class StoryWriterSettings

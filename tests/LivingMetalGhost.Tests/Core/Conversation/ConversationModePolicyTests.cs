@@ -70,12 +70,7 @@ public sealed class ConversationModePolicyTests : IDisposable
     [Fact]
     public void AdvancedPrompt_DoesNotRequestMoodTags()
     {
-        var paths = new AppPaths(_root);
-        var workspaceStore = new WorkspaceStore(paths);
-        var sessionLog = new AdvancedSessionLogService(paths, workspaceStore);
-        var assembler = new PromptAssembler(
-            new AdvancedPromptPolicy(sessionLog),
-            new CharacterMoodResolver());
+        var assembler = CreateAssembler();
 
         var prompt = assembler.BuildSystemPrompt(
             new AppConfig(),
@@ -93,12 +88,7 @@ public sealed class ConversationModePolicyTests : IDisposable
     [Fact]
     public void DailyPrompt_StillRequestsMoodTags()
     {
-        var paths = new AppPaths(_root);
-        var workspaceStore = new WorkspaceStore(paths);
-        var sessionLog = new AdvancedSessionLogService(paths, workspaceStore);
-        var assembler = new PromptAssembler(
-            new AdvancedPromptPolicy(sessionLog),
-            new CharacterMoodResolver());
+        var assembler = CreateAssembler();
 
         var prompt = assembler.BuildSystemPrompt(
             new AppConfig(),
@@ -109,6 +99,17 @@ public sealed class ConversationModePolicyTests : IDisposable
 
         Assert.Contains("Line 1: exactly one mood tag", prompt);
         Assert.Contains("[mood: speaking]", prompt);
+    }
+
+    private PromptAssembler CreateAssembler()
+    {
+        var paths = new AppPaths(_root);
+        var workspaceStore = new WorkspaceStore(paths);
+        var sessionLog = new AdvancedSessionLogService(paths, workspaceStore);
+        return new PromptAssembler(
+            new AdvancedPromptPolicy(sessionLog),
+            new CharacterMoodResolver(),
+            new StoryCharacterStore(paths));
     }
 
     private static CharacterProfile CreateCharacter()

@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
+using LivingMetalGhost.Core.Config;
 using LivingMetalGhost.Core.Models;
+using LivingMetalGhost.Core.Presentation;
 
 namespace LivingMetalGhost.Core.Services;
 
@@ -7,10 +9,17 @@ public sealed class RoleplayStateUpdater
 {
     private const int MaximumSummaryCharacters = 1600;
     private readonly StoryStateStore _storyStateStore;
+    private readonly StoryCharacterStore _storyCharacterStore;
+    private readonly AppConfigLoader _configLoader;
 
-    public RoleplayStateUpdater(StoryStateStore storyStateStore)
+    public RoleplayStateUpdater(
+        StoryStateStore storyStateStore,
+        StoryCharacterStore storyCharacterStore,
+        AppConfigLoader configLoader)
     {
         _storyStateStore = storyStateStore;
+        _storyCharacterStore = storyCharacterStore;
+        _configLoader = configLoader;
     }
 
     public void UpdateAfterTurn(
@@ -43,6 +52,7 @@ public sealed class RoleplayStateUpdater
         state.UpdatedAt = DateTimeOffset.Now;
 
         _storyStateStore.Save(state);
+        UpdateStoryCharacterState(state, cleanUserText, cleanAssistantText);
         _storyStateStore.AppendMemory(new RoleplayMemoryEntry
         {
             Timestamp = DateTimeOffset.Now,
@@ -52,6 +62,81 @@ public sealed class RoleplayStateUpdater
             Tension = state.Tension,
             Scene = state.Scene
         });
+    }
+
+    private void UpdateStoryCharacterState(StoryState storyState, string userText, string assistantText)
+    {
+        var config = _configLoader.Load();
+        var character = CharacterCatalog.Get(config.App.GhostId);
+        var characterState = _storyCharacterStore.LoadOrCreateState(character.Id);
+        var text = (userText + " " + assistantText).ToLowerInvariant();
+
+        characterState.RelationshipMetrics["affection"] = storyState.Affection;
+        characterState.RelationshipMetrics["tension"] = storyState.Tension;
+        characterState.RelationshipMetrics["trust"] = EstimateTrust(characterState.RelationshipMetrics.GetValueOrDefault("trust"), text);
+
+        characterState.CurrentEmotion["affection"] = storyState.Affection;
+        characterState.CurrentEmotion["anger"] = Math.Clamp(storyState.Tension * 18 + CountAny(text, "화", "짜증", "분노") * 8, 0, 100);
+        characterState.CurrentEmotion["fear"] = Math.Clamp(CountAny(text, "무서", "겁", "불안", "떨") * 18 + storyState.Tension * 5, 0, 100);
+        characterState.CurrentEmotion["confusion"] = Math.Clamp(CountAny(text, "혼란", "모르", "왜", "당황") * 18 + storyState.Tension * 4, 0, 100);
+        characterState.CurrentEmotion["trust"] = characterState.RelationshipMetrics["trust"];
+
+        characterState.PersonalityDrift["defensiveness"] = Math.Clamp(storyState.Tension + CountAny(text, "무시", "거짓", "상처"), 0, 10);
+        characterState.PersonalityDrift["openness"] = Math.Clamp(characterState.PersonalityDrift.GetValueOrDefault("openness") + CountAny(text, "미안", "사과", "고마", "이해"), 0, 10);
+        characterState.PersonalityDrift["dependency"] = Math.Clamp(characterState.PersonalityDrift.GetValueOrDefault("dependency") + CountAny(text, "도와", "부탁"), 0, 10);
+        characterState.PersonalityDrift["honesty"] = Math.Clamp(characterState.PersonalityDrift.GetValueOrDefault("honesty") + CountAny(text, "진실", "솔직", "말해"), 0, 10);
+
+        characterState.CurrentAppearance = BuildCurrentAppearance(storyState, text);
+        characterState.CurrentGoal = BuildCurrentGoal(storyState);
+        _storyCharacterStore.SaveState(characterState);
+    }
+
+    private static int EstimateTrust(int currentTrust, string text)
+    {
+        var trust = currentTrust;
+        trust += CountAny(text, "미안", "사과", "고마", "이해", "믿") * 2;
+        trust -= CountAny(text, "거짓", "무시", "배신", "싫") * 2;
+        return Math.Clamp(trust, -100, 100);
+    }
+
+    private static string BuildCurrentAppearance(StoryState state, string text)
+    {
+        if (text.Contains("떨", StringComparison.OrdinalIgnoreCase))
+        {
+            return "손끝이 약하게 떨리고, 표정에는 경계와 혼란이 섞여 있다.";
+        }
+
+        if (state.Tension >= 4)
+        {
+            return "자세가 굳어 있고, 시선은 날카로우며 긴장을 숨기지 못한다.";
+        }
+
+        if (state.Affection < -150)
+        {
+            return "기본 외형은 유지하지만, 표정과 거리감에서 강한 경계심이 드러난다.";
+        }
+
+        return "기본 외형을 유지하되, 현재 장면의 분위기에 맞춰 작은 표정 변화가 있다.";
+    }
+
+    private static string BuildCurrentGoal(StoryState state)
+    {
+        if (state.Tension >= 4)
+        {
+            return "상황을 통제하고 자신이 흔들리지 않았다는 것을 증명하려 한다.";
+        }
+
+        if (state.Affection < -150)
+        {
+            return "상대를 신뢰하지 않으면서도 다음 말을 관찰한다.";
+        }
+
+        return "현재 장면의 불확실성을 줄이고 대화를 이어갈 명분을 찾는다.";
+    }
+
+    private static int CountAny(string text, params string[] words)
+    {
+        return words.Count(word => text.Contains(word, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string UpdateScene(string currentScene, string userText, string assistantText)
