@@ -79,7 +79,16 @@ public partial class MainViewModel
             {
                 StorySelectedImage = null;
             }
-            await DisplayAssistantResponseAsync(result.BubbleText, false, result.Mood, StoryMessages, ConversationMode.Story, false);
+
+            var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, ConversationMode.Story);
+            SetCharacterMood(assistantMood);
+            StoryMessages.Add(new ChatMessage
+            {
+                Text = result.BubbleText,
+                SpeakerName = "STORY",
+                IsRoleplay = true
+            });
+
             await WriteLogAsync(displayText, result.BubbleText, false, result.Mood, ConversationMode.Story);
         }
         catch (Exception ex)
@@ -117,7 +126,13 @@ public partial class MainViewModel
             RefreshStoryInfoPanel(_roleplaySessionController.GetSnapshot().State);
             var assistantMood = _spriteDirector.ResolveSpeakingMood(result.Mood, ConversationMode.Story);
             SetCharacterMood(assistantMood);
-            await DisplayAssistantResponseAsync(result.BubbleText, isProactive: true, assistantMood, StoryMessages, ConversationMode.Story, animateCharacter: true);
+            StoryMessages.Add(new ChatMessage
+            {
+                Text = result.BubbleText,
+                SpeakerName = "STORY",
+                IsProactive = true,
+                IsRoleplay = true
+            });
         }
         catch
         {
