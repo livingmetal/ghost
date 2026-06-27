@@ -50,13 +50,7 @@ public partial class App : Application
         MainWindow = mainWindow;
         mainWindow.Show();
 
-        // WPF requires the owner Window to have been shown before another Window can use it as Owner.
-        // Setting DataContext after Show prevents startup mode synchronization from creating child
-        // windows while MainWindow is still in the not-yet-shown state.
         var mainViewModel = Services.GetRequiredService<MainViewModel>();
-
-        // Story state persists scene/memory, but startup mode must always be the normal prompt mode.
-        // Users can still re-enable roleplay explicitly from the menu after launch.
         mainViewModel.SetStoryMode(false);
         mainWindow.DataContext = mainViewModel;
 
@@ -80,9 +74,6 @@ public partial class App : Application
         {
             WriteCrashLog("dispatcher", e.Exception);
             e.Handled = true;
-
-            // XAML 바인딩/레이아웃 예외는 한 프레임 안에서 여러 번 반복될 수 있다.
-            // 모달 MessageBox를 매번 띄우면 오류창 폭주가 나므로 첫 1회만 알린다.
             if (Interlocked.Increment(ref _dispatcherExceptionCount) == 1)
             {
                 MessageBox.Show(
@@ -128,7 +119,6 @@ public partial class App : Application
         }
         catch
         {
-            // 마지막 안전망이다. 여기서 다시 터지면 원래 예외를 가리므로 조용히 버린다.
         }
     }
 
@@ -143,6 +133,7 @@ public partial class App : Application
         services.AddSingleton<AppConfigLoader>();
         services.AddSingleton<DpapiSecretStore>();
         services.AddSingleton<StoryStateStore>();
+        services.AddSingleton<StoryPlanStore>();
         services.AddSingleton<RoleplayStateUpdater>();
         services.AddSingleton<RoleplayMemoryDigestService>();
         services.AddSingleton<AdvancedSessionLogService>();
@@ -195,7 +186,6 @@ public partial class App : Application
         services.AddSingleton<LmBotProvider>();
         services.AddSingleton<InstalledAppsProvider>();
 
-        // 외부 작업 에이전트 계층(Provider 와 분리).
         services.AddSingleton<AgentWorkspacePolicy>();
         services.AddSingleton<CommandPolicyService>();
         services.AddSingleton<IAgentExecutorFactory, AgentExecutorFactory>();
