@@ -8,6 +8,8 @@ namespace LivingMetalGhost.UI.ViewModels;
 public partial class SettingsViewModel
 {
     private string _loadedRoleplayCharacterId = string.Empty;
+    private string _roleplayManifestPath = string.Empty;
+    private string _roleplayManifestGlobalBoundaries = string.Empty;
     private string _roleplayCharacterDisplayName = string.Empty;
     private string _roleplayCharacterRole = string.Empty;
     private string _roleplayCharacterAppearance = string.Empty;
@@ -16,6 +18,18 @@ public partial class SettingsViewModel
     private string _roleplayCharacterSpeechStyle = string.Empty;
     private string _roleplayCharacterBoundaries = string.Empty;
     private string _roleplayCharacterSecrets = string.Empty;
+
+    public string RoleplayManifestPath
+    {
+        get { EnsureRoleplayCharacterDefinitionLoaded(); return _roleplayManifestPath; }
+        set => SetProperty(ref _roleplayManifestPath, value);
+    }
+
+    public string RoleplayManifestGlobalBoundaries
+    {
+        get { EnsureRoleplayCharacterDefinitionLoaded(); return _roleplayManifestGlobalBoundaries; }
+        set => SetProperty(ref _roleplayManifestGlobalBoundaries, value);
+    }
 
     public string RoleplayCharacterDisplayName
     {
@@ -66,6 +80,24 @@ public partial class SettingsViewModel
     }
 
     [RelayCommand]
+    private void ReloadRoleplayManifest()
+    {
+        _loadedRoleplayCharacterId = string.Empty;
+        EnsureRoleplayCharacterDefinitionLoaded();
+        RaiseRoleplayManifestProperties();
+        RaiseRoleplayCharacterDefinitionProperties();
+        StatusMessage = "롤플레잉 매니패스트를 다시 불러왔습니다.";
+    }
+
+    [RelayCommand]
+    private void SaveRoleplayManifest()
+    {
+        SaveRoleplayCharacterDefinitionCore();
+        SaveRoleplayManifestGlobalsCore();
+        StatusMessage = "롤플레잉 매니패스트를 저장했습니다.";
+    }
+
+    [RelayCommand]
     private void ReloadRoleplayCharacterDefinition()
     {
         _loadedRoleplayCharacterId = string.Empty;
@@ -78,6 +110,7 @@ public partial class SettingsViewModel
     private void SaveRoleplayCharacterDefinition()
     {
         SaveRoleplayCharacterDefinitionCore();
+        SaveRoleplayManifestGlobalsCore();
         StatusMessage = "롤플레잉 매니패스트에 캐릭터 정의를 저장했습니다.";
     }
 
@@ -88,6 +121,8 @@ public partial class SettingsViewModel
         var store = new StoryCharacterStore(_paths);
         var definition = store.ResetDefinition(character.Id, character);
         LoadRoleplayCharacterDefinitionIntoFields(definition);
+        LoadRoleplayManifestGlobalsIntoFields(store);
+        RaiseRoleplayManifestProperties();
         RaiseRoleplayCharacterDefinitionProperties();
         StatusMessage = "롤플레잉 캐릭터 정의를 기본 템플릿으로 복원했습니다.";
     }
@@ -136,6 +171,7 @@ public partial class SettingsViewModel
         var store = new StoryCharacterStore(_paths);
         var definition = store.LoadOrCreateDefinition(character.Id, character);
         LoadRoleplayCharacterDefinitionIntoFields(definition);
+        LoadRoleplayManifestGlobalsIntoFields(store);
     }
 
     private void LoadRoleplayCharacterDefinitionIntoFields(StoryCharacterDefinition definition)
@@ -149,6 +185,13 @@ public partial class SettingsViewModel
         _roleplayCharacterSpeechStyle = definition.SpeechStyle;
         _roleplayCharacterBoundaries = string.Join(Environment.NewLine, definition.Boundaries ?? []);
         _roleplayCharacterSecrets = string.Join(Environment.NewLine, definition.Secrets ?? []);
+    }
+
+    private void LoadRoleplayManifestGlobalsIntoFields(StoryCharacterStore store)
+    {
+        var manifest = store.LoadManifest();
+        _roleplayManifestPath = store.ManifestFile;
+        _roleplayManifestGlobalBoundaries = string.Join(Environment.NewLine, manifest.GlobalBoundaries ?? []);
     }
 
     private void SaveRoleplayCharacterDefinitionCore()
@@ -168,6 +211,18 @@ public partial class SettingsViewModel
             Boundaries = SplitLines(RoleplayCharacterBoundaries),
             Secrets = SplitLines(RoleplayCharacterSecrets)
         });
+    }
+
+    private void SaveRoleplayManifestGlobalsCore()
+    {
+        var store = new StoryCharacterStore(_paths);
+        store.SaveGlobalBoundaries(SplitLines(RoleplayManifestGlobalBoundaries));
+    }
+
+    private void RaiseRoleplayManifestProperties()
+    {
+        OnPropertyChanged(nameof(RoleplayManifestPath));
+        OnPropertyChanged(nameof(RoleplayManifestGlobalBoundaries));
     }
 
     private void RaiseRoleplayCharacterDefinitionProperties()
