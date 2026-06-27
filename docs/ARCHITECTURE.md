@@ -208,7 +208,10 @@ and replacement of compact Story facts. A persisted digest checkpoint prevents
 duplicate consolidation at the same turn count. General conversation
 orchestration only triggers it after a completed Roleplay turn. If an interval
 fails, the elapsed-turn check retries on the next completed turn instead of
-waiting for the next exact multiple.
+waiting for the next exact multiple. `StoryFactMerger` preserves continuity
+critical premise, identity, promise, open-loop, and boundary facts when an LLM
+candidate digest omits them. Writer and Memory calls have independent runtime
+toggles; Character remains the required visible-response endpoint.
 
 `Application/Roleplay/RoleplaySessionController.cs` owns Roleplay activation,
 reset, state snapshots, opening text, conversation turns, and idle turns.

@@ -9,8 +9,11 @@ namespace LivingMetalGhost.Core.Services;
 /// </summary>
 public static class StoryMemoryDigestParser
 {
-    private const int MaxFacts = 8;
-    private static readonly string[] AllowedKinds = ["premise", "self", "relationship", "question"];
+    private static readonly string[] AllowedKinds =
+    [
+        "premise", "self", "player", "relationship", "promise", "open_loop",
+        "preference", "location", "item", "boundary", "question"
+    ];
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -53,7 +56,7 @@ public static class StoryMemoryDigestParser
             .GroupBy(fact => fact.Text, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.First())
             .OrderByDescending(fact => fact.Weight)
-            .Take(MaxFacts)
+            .Take(StoryFactMerger.MaxFacts)
             .ToList();
 
         return facts;
@@ -76,7 +79,7 @@ public static class StoryMemoryDigestParser
         return text.Substring(start, end - start + 1);
     }
 
-    private static string NormalizeKind(string? kind)
+    public static string NormalizeKind(string? kind)
     {
         if (string.IsNullOrWhiteSpace(kind))
         {

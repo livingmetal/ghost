@@ -38,6 +38,11 @@ public sealed class RoleplayWriterService
             return existing;
         }
 
+        if (!config.RoleplayLlm.EnableWriter)
+        {
+            return null;
+        }
+
         if (_lastFailedAttemptAt is { } lastFailure &&
             string.Equals(_lastFailedPlanIdentity, planIdentity, StringComparison.Ordinal) &&
             DateTimeOffset.UtcNow - lastFailure < FailureRetryDelay)

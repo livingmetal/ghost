@@ -30,7 +30,9 @@ public partial class SettingsViewModel
     private string _roleplayMemoryKeyInput = string.Empty;
     private string _roleplayMemoryKeyStatus = string.Empty;
     private bool _roleplayEnableStatePanel = true;
+    private bool _roleplayEnableWriter = true;
     private bool _roleplayEnableDirectorStateUpdate = true;
+    private bool _roleplayEnableMemory = true;
     private string _roleplayStatePanelMetrics = "affection,trust,tension";
     private string _writerGenre = "현대판타지, 심리극";
     private string _writerStoryLength = "medium";
@@ -69,7 +71,9 @@ public partial class SettingsViewModel
     public string RoleplayMemoryKeyStatus { get { EnsureRoleplayRoutingLoaded(); return _roleplayMemoryKeyStatus; } set => SetProperty(ref _roleplayMemoryKeyStatus, value); }
 
     public bool RoleplayEnableStatePanel { get { EnsureRoleplayRoutingLoaded(); return _roleplayEnableStatePanel; } set => SetProperty(ref _roleplayEnableStatePanel, value); }
+    public bool RoleplayEnableWriter { get { EnsureRoleplayRoutingLoaded(); return _roleplayEnableWriter; } set => SetProperty(ref _roleplayEnableWriter, value); }
     public bool RoleplayEnableDirectorStateUpdate { get { EnsureRoleplayRoutingLoaded(); return _roleplayEnableDirectorStateUpdate; } set => SetProperty(ref _roleplayEnableDirectorStateUpdate, value); }
+    public bool RoleplayEnableMemory { get { EnsureRoleplayRoutingLoaded(); return _roleplayEnableMemory; } set => SetProperty(ref _roleplayEnableMemory, value); }
     public string RoleplayStatePanelMetrics { get { EnsureRoleplayRoutingLoaded(); return _roleplayStatePanelMetrics; } set => SetProperty(ref _roleplayStatePanelMetrics, value); }
 
     public string WriterGenre { get { EnsureRoleplayRoutingLoaded(); return _writerGenre; } set => SetProperty(ref _writerGenre, value); }
@@ -102,7 +106,9 @@ public partial class SettingsViewModel
         LoadRoleplayEndpoint(config.RoleplayLlm.Director, ref _roleplayDirectorProvider, ref _roleplayDirectorModel, ref _roleplayDirectorBaseUrl);
         LoadRoleplayEndpoint(config.RoleplayLlm.Memory, ref _roleplayMemoryProvider, ref _roleplayMemoryModel, ref _roleplayMemoryBaseUrl);
         _roleplayEnableStatePanel = config.RoleplayLlm.EnableStatePanel;
+        _roleplayEnableWriter = config.RoleplayLlm.EnableWriter;
         _roleplayEnableDirectorStateUpdate = config.RoleplayLlm.EnableDirectorStateUpdate;
+        _roleplayEnableMemory = config.RoleplayLlm.EnableMemory;
         _roleplayStatePanelMetrics = config.RoleplayLlm.StatePanelMetrics;
         _writerGenre = config.RoleplayLlm.WriterSettings.Genre;
         _writerStoryLength = config.RoleplayLlm.WriterSettings.StoryLength;
@@ -126,7 +132,9 @@ public partial class SettingsViewModel
         ApplyRoleplayEndpoint(config.RoleplayLlm.Director, RoleplayDirectorProvider, RoleplayDirectorModel, RoleplayDirectorBaseUrl, DpapiSecretStore.RoleplayDirectorSource, 0.25, 1024);
         ApplyRoleplayEndpoint(config.RoleplayLlm.Memory, RoleplayMemoryProvider, RoleplayMemoryModel, RoleplayMemoryBaseUrl, DpapiSecretStore.RoleplayMemorySource, 0.2, 1024);
         config.RoleplayLlm.EnableStatePanel = RoleplayEnableStatePanel;
+        config.RoleplayLlm.EnableWriter = RoleplayEnableWriter;
         config.RoleplayLlm.EnableDirectorStateUpdate = RoleplayEnableDirectorStateUpdate;
+        config.RoleplayLlm.EnableMemory = RoleplayEnableMemory;
         config.RoleplayLlm.StatePanelMetrics = string.IsNullOrWhiteSpace(RoleplayStatePanelMetrics) ? "affection,trust,tension" : RoleplayStatePanelMetrics.Trim();
         config.RoleplayLlm.WriterSettings.Genre = string.IsNullOrWhiteSpace(WriterGenre) ? "현대판타지, 심리극" : WriterGenre.Trim();
         config.RoleplayLlm.WriterSettings.StoryLength = string.IsNullOrWhiteSpace(WriterStoryLength) ? "medium" : WriterStoryLength.Trim();

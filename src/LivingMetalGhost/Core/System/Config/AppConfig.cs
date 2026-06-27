@@ -110,7 +110,9 @@ public sealed class RoleplayLlmSettings
     };
 
     public bool EnableStatePanel { get; set; } = true;
+    public bool EnableWriter { get; set; } = true;
     public bool EnableDirectorStateUpdate { get; set; } = true;
+    public bool EnableMemory { get; set; } = true;
     public string StatePanelMetrics { get; set; } = "affection,trust,tension";
     public StoryInfoLabelSettings InfoLabels { get; set; } = new();
     public StoryWriterSettings WriterSettings { get; set; } = new();

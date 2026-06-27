@@ -61,7 +61,7 @@ public sealed class RoleplayMemoryDigestServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task DigestIfDueAsync_ReplacesFactsWithParsedDigest()
+    public async Task DigestIfDueAsync_MergesDigestWithoutDroppingProtectedFacts()
     {
         var state = _store.Load();
         state.Facts =
@@ -79,10 +79,12 @@ public sealed class RoleplayMemoryDigestServiceTests : IDisposable
 
         await service.DigestIfDueAsync(CreateOptions(), CancellationToken.None);
 
-        var fact = Assert.Single(_store.Load().Facts);
-        Assert.Equal("relationship", fact.Kind);
+        var facts = _store.Load().Facts;
+        Assert.Equal(2, facts.Count);
+        var fact = Assert.Single(facts, item => item.Kind == "relationship");
         Assert.Equal("신뢰가 깊어졌다.", fact.Text);
         Assert.Equal(4, fact.Weight);
+        Assert.Contains(facts, item => item.Kind == "premise" && item.Text == "old fact");
         Assert.Equal(1, provider.CallCount);
     }
 

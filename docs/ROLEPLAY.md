@@ -89,6 +89,12 @@ Story mode gives each configured endpoint one responsibility:
 4. Memory consolidates the latest six completed turns into compact fictional
    facts. A persisted checkpoint prevents the same successful interval from
    being digested twice, while a failed interval is retried on the next turn.
+   Protected premise, identity, promise, open-loop, and boundary facts are
+   merged back when a candidate digest accidentally omits them.
+
+Writer and Memory API calls can be disabled independently in Roleplay settings.
+An already compatible saved Writer plan remains usable when automatic Writer
+generation is disabled.
 
 Writer, Director, and Memory are best-effort helpers: their provider or parser
 failures do not discard a successful Character response. Cancellation still

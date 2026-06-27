@@ -106,6 +106,29 @@ public sealed class RoleplayWriterServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task EnsurePlanAsync_WhenDisabled_DoesNotCallProvider()
+    {
+        var provider = new StubRoleplayProvider(
+            """{"title":"생성되면 안 됨","premise":"disabled","acts":[]}""");
+        var paths = new AppPaths(_root);
+        var service = new RoleplayWriterService(
+            new StoryPlanStore(paths),
+            new StoryCharacterStore(paths),
+            new StubRoleplayProviderFactory(provider));
+        var config = new AppConfig();
+        config.RoleplayLlm.EnableWriter = false;
+
+        var plan = await service.EnsurePlanAsync(
+            config,
+            RoleplayApiTestSupport.CreateCharacter(),
+            new StoryState(),
+            CancellationToken.None);
+
+        Assert.Null(plan);
+        Assert.Equal(0, provider.CallCount);
+    }
+
+    [Fact]
     public void StoryPlanParser_RejectsEmptyOrMalformedOutput()
     {
         Assert.Null(StoryPlanParser.Parse("not json"));

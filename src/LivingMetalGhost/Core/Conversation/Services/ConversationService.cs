@@ -172,8 +172,11 @@ public sealed class ConversationService : IRoleplayConversation
             processed.Text,
             processed.Mood,
             directorUpdate);
-        var memoryOptions = LlmOptions.FromSettings(config.RoleplayLlm.Memory);
-        await _roleplayMemoryDigestService.DigestIfDueAsync(memoryOptions, cancellationToken);
+        if (config.RoleplayLlm.EnableMemory)
+        {
+            var memoryOptions = LlmOptions.FromSettings(config.RoleplayLlm.Memory);
+            await _roleplayMemoryDigestService.DigestIfDueAsync(memoryOptions, cancellationToken);
+        }
     }
 
     public async Task<SkillResult> StartConversationAsync(CancellationToken cancellationToken)
