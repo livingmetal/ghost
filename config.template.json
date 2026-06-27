@@ -66,7 +66,9 @@
       "timeout_seconds": 45
     },
     "enable_state_panel": true,
+    "enable_writer": true,
     "enable_director_state_update": true,
+    "enable_memory": true,
     "state_panel_metrics": "affection,trust,tension",
     "info_labels": {
       "turn": "No.",

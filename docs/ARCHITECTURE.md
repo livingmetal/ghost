@@ -176,16 +176,42 @@ Primary files:
 - `Core/Roleplay/Services/StoryStateStore.cs`
 - `Core/Roleplay/Services/StoryTemplateCatalog.cs`
 - `Core/Roleplay/Services/StoryMemoryDigestParser.cs`
+- `Core/Roleplay/Services/RoleplayWriterService.cs`
+- `Core/Roleplay/Services/RoleplayCharacterService.cs`
+- `Core/Roleplay/Services/RoleplayDirectorService.cs`
+- `Core/Roleplay/Services/RoleplayMemoryDigestService.cs`
 - `Core/Roleplay/Models/StoryState.cs`
 - `Core/Roleplay/Models/StoryTemplate.cs`
 - `Core/Roleplay/Models/RoleplayMemoryEntry.cs`
 
 This area owns player-input parsing, Story templates, scene state, fictional
-memory, opening text, and post-turn updates.
+memory, opening text, and post-turn updates. Roleplay runtime files now share
+the canonical `%APPDATA%\LivingMetalGhost\story` directory; legacy
+`Stories\default` state and memory are migrated on first load. A durable marker
+prevents explicit runtime-data clearing from re-importing the legacy files.
+
+The Story turn pipeline is split by endpoint responsibility. `RoleplayWriterService`
+creates and persists a reusable plan, `RoleplayCharacterService` produces the
+visible response, and `RoleplayDirectorService` proposes a structured post-turn
+state update. Director values pass through deterministic validation and
+per-turn delta limits in `RoleplayStateUpdater`; failure falls back to the
+existing heuristic update rather than failing the visible turn.
+
+The Character result is returned to the Story presentation before Director and
+Memory completion. `RoleplayTurnCompletion` lets the UI render the dialogue
+first, then await ordered post-turn work before refreshing the state panel.
+Writer plans carry character, schema, and settings identity so stale plans are
+not injected after routing or story-generation settings change.
 
 `RoleplayMemoryDigestService` owns the six-turn best-effort LLM memory digest
-and replacement of compact Story facts. General conversation orchestration only
-triggers it after a completed Roleplay turn.
+and replacement of compact Story facts. A persisted digest checkpoint prevents
+duplicate consolidation at the same turn count. General conversation
+orchestration only triggers it after a completed Roleplay turn. If an interval
+fails, the elapsed-turn check retries on the next completed turn instead of
+waiting for the next exact multiple. `StoryFactMerger` preserves continuity
+critical premise, identity, promise, open-loop, and boundary facts when an LLM
+candidate digest omits them. Writer and Memory calls have independent runtime
+toggles; Character remains the required visible-response endpoint.
 
 `Application/Roleplay/RoleplaySessionController.cs` owns Roleplay activation,
 reset, state snapshots, opening text, conversation turns, and idle turns.

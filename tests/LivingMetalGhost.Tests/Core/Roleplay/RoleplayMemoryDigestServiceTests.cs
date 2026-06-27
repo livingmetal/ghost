@@ -61,7 +61,7 @@ public sealed class RoleplayMemoryDigestServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task DigestIfDueAsync_ReplacesFactsWithParsedDigest()
+    public async Task DigestIfDueAsync_MergesDigestWithoutDroppingProtectedFacts()
     {
         var state = _store.Load();
         state.Facts =
@@ -79,11 +79,46 @@ public sealed class RoleplayMemoryDigestServiceTests : IDisposable
 
         await service.DigestIfDueAsync(CreateOptions(), CancellationToken.None);
 
-        var fact = Assert.Single(_store.Load().Facts);
-        Assert.Equal("relationship", fact.Kind);
+        var facts = _store.Load().Facts;
+        Assert.Equal(2, facts.Count);
+        var fact = Assert.Single(facts, item => item.Kind == "relationship");
         Assert.Equal("신뢰가 깊어졌다.", fact.Text);
         Assert.Equal(4, fact.Weight);
+        Assert.Contains(facts, item => item.Kind == "premise" && item.Text == "old fact");
         Assert.Equal(1, provider.CallCount);
+    }
+
+    [Fact]
+    public async Task DigestIfDueAsync_DoesNotRepeatSuccessfulDigestForSameTurn()
+    {
+        AppendMemory(6);
+        var provider = new StubProvider(
+            """[{"kind":"premise","text":"기억할 사실","weight":3}]""");
+        var service = new RoleplayMemoryDigestService(
+            _store,
+            new StubProviderFactory(provider));
+
+        await service.DigestIfDueAsync(CreateOptions(), CancellationToken.None);
+        await service.DigestIfDueAsync(CreateOptions(), CancellationToken.None);
+
+        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(6, _store.Load().LastMemoryDigestTurn);
+    }
+
+    [Fact]
+    public async Task DigestIfDueAsync_RetriesAfterMissedIntervalOnNextTurn()
+    {
+        AppendMemory(7);
+        var provider = new StubProvider(
+            """[{"kind":"question","text":"놓친 요약을 다시 시도했다.","weight":2}]""");
+        var service = new RoleplayMemoryDigestService(
+            _store,
+            new StubProviderFactory(provider));
+
+        await service.DigestIfDueAsync(CreateOptions(), CancellationToken.None);
+
+        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(7, _store.Load().LastMemoryDigestTurn);
     }
 
     [Fact]

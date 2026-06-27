@@ -30,7 +30,7 @@ public sealed class StoryPlanStore
         try
         {
             var json = File.ReadAllText(StoryPlanFile);
-            return JsonSerializer.Deserialize<StoryPlan>(json, JsonOptions) ?? new StoryPlan();
+            return StoryPlanParser.Parse(json) ?? new StoryPlan();
         }
         catch
         {

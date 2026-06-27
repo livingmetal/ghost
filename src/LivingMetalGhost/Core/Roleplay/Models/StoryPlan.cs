@@ -2,6 +2,9 @@ namespace LivingMetalGhost.Core.Models;
 
 public sealed class StoryPlan
 {
+    public int SchemaVersion { get; set; }
+    public string CharacterId { get; set; } = string.Empty;
+    public string WriterSettingsFingerprint { get; set; } = string.Empty;
     public string Title { get; set; } = "Untitled Story";
     public string Premise { get; set; } = string.Empty;
     public string Genre { get; set; } = string.Empty;
@@ -11,6 +14,12 @@ public sealed class StoryPlan
     public List<StoryEndingCandidate> EndingCandidates { get; set; } = [];
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
+
+    public bool HasContent() =>
+        !string.IsNullOrWhiteSpace(Premise) ||
+        (Acts?.Any(act => act is not null &&
+            (!string.IsNullOrWhiteSpace(act.Goal) || (act.Beats?.Count ?? 0) > 0)) ?? false) ||
+        (BeatSeeds?.Count ?? 0) > 0;
 }
 
 public sealed class StoryAct

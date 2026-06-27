@@ -24,6 +24,7 @@ public sealed class StoryState
     public int Affection { get; set; }
     public string StatusText { get; set; } = "장소와 상황은 아직 고정되지 않았다.";
     public bool OpeningShown { get; set; }
+    public int LastMemoryDigestTurn { get; set; }
 
     [JsonIgnore]
     public bool ShowOpeningOnActivation { get; set; }

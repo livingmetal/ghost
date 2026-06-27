@@ -22,14 +22,14 @@ public sealed class RoleplayMemoryDigestService
         CancellationToken cancellationToken)
     {
         var turnCount = _storyStateStore.CountMemoryEntries();
-        if (!IsDigestDue(turnCount))
+        var state = _storyStateStore.Load();
+        if (!IsDigestDue(turnCount, state.LastMemoryDigestTurn))
         {
             return;
         }
 
         try
         {
-            var state = _storyStateStore.Load();
             var recent = _storyStateStore.ReadRecentMemory(DigestIntervalTurns);
             if (recent.Count == 0)
             {
@@ -61,14 +61,8 @@ public sealed class RoleplayMemoryDigestService
             }
 
             var latest = _storyStateStore.Load();
-            latest.Facts = digested
-                .Select(fact => new StoryMemoryFact
-                {
-                    Kind = fact.Kind,
-                    Text = fact.Text,
-                    Weight = fact.Weight
-                })
-                .ToList();
+            latest.Facts = StoryFactMerger.Merge(latest.Facts, digested).ToList();
+            latest.LastMemoryDigestTurn = turnCount;
             _storyStateStore.Save(latest);
         }
         catch (OperationCanceledException)
@@ -86,17 +80,24 @@ public sealed class RoleplayMemoryDigestService
         return turnCount > 0 && turnCount % DigestIntervalTurns == 0;
     }
 
+    public static bool IsDigestDue(int turnCount, int lastSuccessfulDigestTurn)
+    {
+        return turnCount > 0 &&
+               turnCount - Math.Max(0, lastSuccessfulDigestTurn) >= DigestIntervalTurns;
+    }
+
     private static string BuildSystemPrompt()
     {
         return """
-            You maintain a compact fictional-roleplay memory. You are not a character; you only summarize.
-            Given existing memory facts and the most recent turns, return an UPDATED fact list.
+            You maintain compact fictional-roleplay continuity memory. You are not a character; you only summarize.
+            Given existing memory facts and the most recent turns, return continuity-critical candidate facts.
             Output rules:
             - Output a JSON array only. No prose, no code fences.
             - Each item: {"kind": "...", "text": "...", "weight": 1-5}.
-            - kind is one of: premise, self, relationship, question.
-            - Keep premise and self facts stable. Update relationship texture and open questions from recent events.
-            - Merge duplicates. Keep at most 8 facts. Write text in Korean, one short sentence each.
+            - kind is one of: premise, self, player, relationship, promise, open_loop, preference, location, item, boundary, question.
+            - Preserve premise, self, promises, open loops, and boundaries unless explicitly superseded.
+            - Prefer facts that affect future continuity over decorative prose or transient emotion.
+            - Merge duplicates. Keep at most 16 facts. Write text in Korean, one short sentence each.
             """;
     }
 

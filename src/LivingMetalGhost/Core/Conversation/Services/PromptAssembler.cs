@@ -16,15 +16,18 @@ public sealed class PromptAssembler
     private readonly AdvancedPromptPolicy _advancedPromptPolicy;
     private readonly CharacterMoodResolver _characterMoodResolver;
     private readonly StoryCharacterStore _storyCharacterStore;
+    private readonly StoryPlanStore _storyPlanStore;
 
     public PromptAssembler(
         AdvancedPromptPolicy advancedPromptPolicy,
         CharacterMoodResolver characterMoodResolver,
-        StoryCharacterStore storyCharacterStore)
+        StoryCharacterStore storyCharacterStore,
+        StoryPlanStore storyPlanStore)
     {
         _advancedPromptPolicy = advancedPromptPolicy;
         _characterMoodResolver = characterMoodResolver;
         _storyCharacterStore = storyCharacterStore;
+        _storyPlanStore = storyPlanStore;
     }
 
     public string BuildSystemPrompt(
@@ -62,7 +65,7 @@ public sealed class PromptAssembler
             ? character.DefaultBackground
             : customProfile.Background.Trim();
         var spriteMoodDirective = BuildSpriteMoodDirective(character, mode);
-        var modeDirective = BuildModeDirective(mode, storyState, character, repositoryContext);
+        var modeDirective = BuildModeDirective(config, mode, storyState, character, repositoryContext);
 
         var prompt = $"""
             You are not ChatGPT, a generic chatbot, or a detached API assistant.
@@ -134,6 +137,7 @@ public sealed class PromptAssembler
     }
 
     private string BuildModeDirective(
+        AppConfig config,
         ConversationMode mode,
         StoryState storyState,
         CharacterProfile character,
@@ -147,7 +151,8 @@ public sealed class PromptAssembler
                                            character.DisplayName,
                                            _characterMoodResolver.GetAvailableMoods(character.Visual)) +
                                        "\n\n" +
-                                       BuildRoleplayCharacterDirective(character),
+                                       BuildRoleplayCharacterDirective(character) +
+                                       BuildStoryPlanDirective(config, storyState, character),
             _ => BuildDailyModeDirective()
         };
     }
@@ -204,6 +209,62 @@ public sealed class PromptAssembler
             - Do not decide the user's action, feeling, memory, or spoken words.
             - If the current place or scene is empty, say the place is not fixed yet. Do not invent school, classroom, hospital, infirmary, nurse office, or basement settings unless the user or story state explicitly names them.
             """;
+    }
+
+    private string BuildStoryPlanDirective(
+        AppConfig config,
+        StoryState storyState,
+        CharacterProfile character)
+    {
+        var plan = _storyPlanStore.Load();
+        if (!StoryPlanIdentity.Matches(
+                plan,
+                character.Id,
+                config.RoleplayLlm.WriterSettings))
+        {
+            return string.Empty;
+        }
+
+        var act = ResolveCurrentAct(plan, storyState.TurnNumber);
+        var beats = act is null
+            ? "- 없음"
+            : FormatList(act.Beats.Take(5));
+        var seeds = FormatList(plan.BeatSeeds
+            .Take(5)
+            .Select(seed => string.IsNullOrWhiteSpace(seed.When)
+                ? seed.Beat
+                : $"{seed.When}: {seed.Beat}"));
+
+        return $"""
+
+
+            Writer continuity guide (behind the scenes; never mention or quote this plan to the player):
+            - Story title: {plan.Title}
+            - Genre: {plan.Genre}
+            - Premise: {plan.Premise}
+            - Current act goal: {act?.Goal ?? "자유롭게 현재 장면을 이어간다."}
+            - Candidate beats:
+            {beats}
+            - Optional seeds:
+            {seeds}
+
+            Writer guide rules:
+            - This is a possibility space, not a script. Follow what actually happened in the conversation.
+            - Never force an ending, reveal future beats, or decide the player's response.
+            - Use at most one small relevant hook per reply.
+            """;
+    }
+
+    private static StoryAct? ResolveCurrentAct(StoryPlan plan, int turnNumber)
+    {
+        if (plan.Acts.Count == 0)
+        {
+            return null;
+        }
+
+        var turnsPerAct = Math.Max(6, 24 / plan.Acts.Count);
+        var index = Math.Clamp(turnNumber / turnsPerAct, 0, plan.Acts.Count - 1);
+        return plan.Acts[index];
     }
 
     private static string FormatList(IEnumerable<string> items)

@@ -14,6 +14,9 @@ public sealed class ConversationService : IRoleplayConversation
     private readonly ILlmProviderFactory _providerFactory;
     private readonly ConversationRequestFactory _requestFactory;
     private readonly StoryStateStore _storyStateStore;
+    private readonly RoleplayWriterService _roleplayWriterService;
+    private readonly RoleplayCharacterService _roleplayCharacterService;
+    private readonly RoleplayDirectorService _roleplayDirectorService;
     private readonly RoleplayStateUpdater _roleplayStateUpdater;
     private readonly RoleplayMemoryDigestService _roleplayMemoryDigestService;
     private readonly ConversationHistoryStore _historyStore;
@@ -26,6 +29,9 @@ public sealed class ConversationService : IRoleplayConversation
         ILlmProviderFactory providerFactory,
         ConversationRequestFactory requestFactory,
         StoryStateStore storyStateStore,
+        RoleplayWriterService roleplayWriterService,
+        RoleplayCharacterService roleplayCharacterService,
+        RoleplayDirectorService roleplayDirectorService,
         RoleplayStateUpdater roleplayStateUpdater,
         RoleplayMemoryDigestService roleplayMemoryDigestService,
         ConversationHistoryStore historyStore,
@@ -37,6 +43,9 @@ public sealed class ConversationService : IRoleplayConversation
         _providerFactory = providerFactory;
         _requestFactory = requestFactory;
         _storyStateStore = storyStateStore;
+        _roleplayWriterService = roleplayWriterService;
+        _roleplayCharacterService = roleplayCharacterService;
+        _roleplayDirectorService = roleplayDirectorService;
         _roleplayStateUpdater = roleplayStateUpdater;
         _roleplayMemoryDigestService = roleplayMemoryDigestService;
         _historyStore = historyStore;
@@ -82,24 +91,44 @@ public sealed class ConversationService : IRoleplayConversation
         var repositoryContext = mode == ConversationMode.Advanced
             ? _advancedConversationSupport.BuildRepositoryContext(normalizedText)
             : string.Empty;
-        var provider = _providerFactory.Create(options.Provider);
-        if (image is not null && !provider.SupportsImageInput(options))
+        ProcessedConversationResponse processed;
+        if (mode == ConversationMode.Story)
         {
-            throw new InvalidOperationException($"{provider.Name} does not support image input.");
+            await _roleplayWriterService.EnsurePlanAsync(config, character, storyState, cancellationToken);
+            processed = await _roleplayCharacterService.GenerateAsync(
+                config,
+                character,
+                storyState,
+                userTextForProvider,
+                image,
+                cancellationToken);
         }
+        else
+        {
+            var provider = _providerFactory.Create(options.Provider);
+            if (image is not null && !provider.SupportsImageInput(options))
+            {
+                throw new InvalidOperationException($"{provider.Name} does not support image input.");
+            }
 
-        var response = await provider.GenerateAsync(
-            _requestFactory.Create(config, character, mode, storyState, userTextForProvider, options, repositoryContext, image),
-            cancellationToken);
-        var processed = _responseProcessor.Process(response.Text, mode, character.Visual);
+            var response = await provider.GenerateAsync(
+                _requestFactory.Create(config, character, mode, storyState, userTextForProvider, options, repositoryContext, image),
+                cancellationToken);
+            processed = _responseProcessor.Process(response.Text, mode, character.Visual);
+        }
 
         _historyStore.Add(mode, "user", ImageInputService.BuildDisplayText(userTextForProvider, image));
         _historyStore.Add(mode, "assistant", processed.Text);
+        RoleplayTurnCompletion? roleplayCompletion = null;
         if (mode == ConversationMode.Story)
         {
-            _roleplayStateUpdater.UpdateAfterTurn(userDisplayText, processed.Text, processed.Mood);
-            var memoryOptions = LlmOptions.FromSettings(config.RoleplayLlm.Memory);
-            await _roleplayMemoryDigestService.DigestIfDueAsync(memoryOptions, cancellationToken);
+            roleplayCompletion = new RoleplayTurnCompletion(FinalizeRoleplayTurnAsync(
+                config,
+                character,
+                storyState,
+                userDisplayText,
+                processed,
+                cancellationToken));
         }
         else if (mode == ConversationMode.Advanced)
         {
@@ -117,8 +146,37 @@ public sealed class ConversationService : IRoleplayConversation
             BubbleText = processed.Text,
             Mood = processed.Mood,
             Action = mode == ConversationMode.Story ? "roleplay-chat" : "chat",
-            UsedLlm = true
+            UsedLlm = true,
+            RawData = roleplayCompletion
         };
+    }
+
+    private async Task FinalizeRoleplayTurnAsync(
+        AppConfig config,
+        CharacterProfile character,
+        StoryState storyState,
+        string userDisplayText,
+        ProcessedConversationResponse processed,
+        CancellationToken cancellationToken)
+    {
+        var directorUpdate = await _roleplayDirectorService.CreateUpdateAsync(
+            config,
+            character,
+            storyState,
+            userDisplayText,
+            processed.Text,
+            processed.Mood,
+            cancellationToken);
+        _roleplayStateUpdater.UpdateAfterTurn(
+            userDisplayText,
+            processed.Text,
+            processed.Mood,
+            directorUpdate);
+        if (config.RoleplayLlm.EnableMemory)
+        {
+            var memoryOptions = LlmOptions.FromSettings(config.RoleplayLlm.Memory);
+            await _roleplayMemoryDigestService.DigestIfDueAsync(memoryOptions, cancellationToken);
+        }
     }
 
     public async Task<SkillResult> StartConversationAsync(CancellationToken cancellationToken)
@@ -151,16 +209,17 @@ public sealed class ConversationService : IRoleplayConversation
         var config = _configLoader.Load();
         var character = CharacterCatalog.Get(config.App.GhostId);
         var storyState = _storyStateStore.Load();
-        const ConversationMode mode = ConversationMode.Story;
-        var options = LlmOptions.FromSettings(config.RoleplayLlm.Character);
-        var provider = _providerFactory.Create(options.Provider);
+        await _roleplayWriterService.EnsurePlanAsync(config, character, storyState, cancellationToken);
         var userText = "Show a very short idle story beat. Do not advance the plot or decide the user's action.";
-        var response = await provider.GenerateAsync(
-            _requestFactory.Create(config, character, mode, storyState, userText, options),
-            cancellationToken);
-        var processed = _responseProcessor.Process(response.Text, mode, character.Visual);
+        var processed = await _roleplayCharacterService.GenerateAsync(
+            config,
+            character,
+            storyState,
+            userText,
+            image: null,
+            cancellationToken: cancellationToken);
 
-        _historyStore.Add(mode, "assistant", processed.Text);
+        _historyStore.Add(ConversationMode.Story, "assistant", processed.Text);
 
         return new SkillResult
         {

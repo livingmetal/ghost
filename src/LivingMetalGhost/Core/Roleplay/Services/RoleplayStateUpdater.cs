@@ -25,7 +25,8 @@ public sealed class RoleplayStateUpdater
     public void UpdateAfterTurn(
         string userText,
         string assistantText,
-        string mood)
+        string mood,
+        RoleplayDirectorUpdate? directorUpdate = null)
     {
         var state = _storyStateStore.Load();
         if (!state.Enabled)
@@ -41,18 +42,40 @@ public sealed class RoleplayStateUpdater
             return;
         }
 
+        var previousTension = state.Tension;
+        var previousAffection = state.Affection;
         state.TurnNumber++;
-        state.StoryTime = AdvanceClock(state.StoryTime, 2);
-        state.Scene = UpdateScene(state.Scene, cleanUserText, cleanAssistantText);
-        state.Summary = AppendBeat(state.Summary, cleanUserText, cleanAssistantText);
-        state.Mood = string.IsNullOrWhiteSpace(mood) ? state.Mood : mood.Trim().ToLowerInvariant();
-        state.Tension = EstimateTension(state.Tension, cleanUserText, cleanAssistantText);
-        state.Affection = EstimateAffection(state.Affection, cleanUserText, cleanAssistantText);
-        state.StatusText = BuildStatusText(state.Mood, state.Tension, state.Affection, cleanUserText, cleanAssistantText);
+        state.StoryDate = PreferDirectorText(directorUpdate?.StoryDate, state.StoryDate, 80);
+        state.StoryTime = PreferDirectorText(
+            directorUpdate?.StoryTime,
+            AdvanceClock(state.StoryTime, 2),
+            40);
+        state.Location = PreferDirectorText(directorUpdate?.Location, state.Location, 180);
+        state.Scene = PreferDirectorText(
+            directorUpdate?.Scene,
+            UpdateScene(state.Scene, cleanUserText, cleanAssistantText),
+            600);
+        state.Summary = string.IsNullOrWhiteSpace(directorUpdate?.Summary)
+            ? AppendBeat(state.Summary, cleanUserText, cleanAssistantText)
+            : TrimSummary(CleanText(directorUpdate.Summary), MaximumSummaryCharacters);
+        state.Mood = PreferDirectorText(
+            directorUpdate?.Mood,
+            string.IsNullOrWhiteSpace(mood) ? state.Mood : mood.Trim().ToLowerInvariant(),
+            80);
+        state.Tension = directorUpdate?.Tension is int directedTension
+            ? ClampDelta(directedTension, previousTension, 1, 0, 5)
+            : EstimateTension(previousTension, cleanUserText, cleanAssistantText);
+        state.Affection = directorUpdate?.Affection is int directedAffection
+            ? ClampDelta(directedAffection, previousAffection, 10, -999, 999)
+            : EstimateAffection(previousAffection, cleanUserText, cleanAssistantText);
+        state.StatusText = PreferDirectorText(
+            directorUpdate?.StatusText,
+            BuildStatusText(state.Mood, state.Tension, state.Affection, cleanUserText, cleanAssistantText),
+            500);
         state.UpdatedAt = DateTimeOffset.Now;
 
         _storyStateStore.Save(state);
-        UpdateStoryCharacterState(state, cleanUserText, cleanAssistantText);
+        UpdateStoryCharacterState(state, cleanUserText, cleanAssistantText, directorUpdate);
         _storyStateStore.AppendMemory(new RoleplayMemoryEntry
         {
             Timestamp = DateTimeOffset.Now,
@@ -64,7 +87,11 @@ public sealed class RoleplayStateUpdater
         });
     }
 
-    private void UpdateStoryCharacterState(StoryState storyState, string userText, string assistantText)
+    private void UpdateStoryCharacterState(
+        StoryState storyState,
+        string userText,
+        string assistantText,
+        RoleplayDirectorUpdate? directorUpdate)
     {
         var config = _configLoader.Load();
         var character = CharacterCatalog.Get(config.App.GhostId);
@@ -86,9 +113,62 @@ public sealed class RoleplayStateUpdater
         characterState.PersonalityDrift["dependency"] = Math.Clamp(characterState.PersonalityDrift.GetValueOrDefault("dependency") + CountAny(text, "도와", "부탁"), 0, 10);
         characterState.PersonalityDrift["honesty"] = Math.Clamp(characterState.PersonalityDrift.GetValueOrDefault("honesty") + CountAny(text, "진실", "솔직", "말해"), 0, 10);
 
-        characterState.CurrentAppearance = BuildCurrentAppearance(storyState, text);
-        characterState.CurrentGoal = BuildCurrentGoal(storyState);
+        ApplyDirectedMetrics(characterState.CurrentEmotion, directorUpdate?.CurrentEmotion, 0, 100, 10);
+        ApplyDirectedMetrics(characterState.RelationshipMetrics, directorUpdate?.RelationshipMetrics, -100, 100, 10);
+        ApplyDirectedMetrics(characterState.PersonalityDrift, directorUpdate?.PersonalityDrift, 0, 10, 2);
+        characterState.RelationshipMetrics["affection"] = storyState.Affection;
+        characterState.RelationshipMetrics["tension"] = storyState.Tension;
+        characterState.CurrentEmotion["affection"] = Math.Clamp(storyState.Affection, 0, 100);
+        characterState.CurrentAppearance = PreferDirectorText(
+            directorUpdate?.CurrentAppearance,
+            BuildCurrentAppearance(storyState, text),
+            500);
+        characterState.CurrentGoal = PreferDirectorText(
+            directorUpdate?.CurrentGoal,
+            BuildCurrentGoal(storyState),
+            400);
         _storyCharacterStore.SaveState(characterState);
+    }
+
+    private static void ApplyDirectedMetrics(
+        Dictionary<string, int> target,
+        IReadOnlyDictionary<string, int>? directed,
+        int minimum,
+        int maximum,
+        int maximumDelta)
+    {
+        if (directed is null)
+        {
+            return;
+        }
+
+        foreach (var (key, value) in directed)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                continue;
+            }
+
+            var normalizedKey = key.Trim().ToLowerInvariant();
+            if (!target.ContainsKey(normalizedKey))
+            {
+                continue;
+            }
+
+            var current = target.GetValueOrDefault(normalizedKey);
+            target[normalizedKey] = ClampDelta(value, current, maximumDelta, minimum, maximum);
+        }
+    }
+
+    private static int ClampDelta(int proposed, int current, int maximumDelta, int minimum, int maximum) =>
+        Math.Clamp(proposed, Math.Max(minimum, current - maximumDelta), Math.Min(maximum, current + maximumDelta));
+
+    private static string PreferDirectorText(string? proposed, string fallback, int maximumLength)
+    {
+        var clean = CleanText(proposed ?? string.Empty);
+        return string.IsNullOrWhiteSpace(clean)
+            ? fallback
+            : TrimToLength(clean, maximumLength);
     }
 
     private static int EstimateTrust(int currentTrust, string text)

@@ -109,7 +109,8 @@ public sealed class ConversationModePolicyTests : IDisposable
         return new PromptAssembler(
             new AdvancedPromptPolicy(sessionLog),
             new CharacterMoodResolver(),
-            new StoryCharacterStore(paths));
+            new StoryCharacterStore(paths),
+            new StoryPlanStore(paths));
     }
 
     private static CharacterProfile CreateCharacter()
