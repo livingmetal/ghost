@@ -171,8 +171,14 @@ public sealed class PromptAssembler
             Base personality:
             {definition.BasePersonality}
 
+            Speech style:
+            {definition.SpeechStyle}
+
             Character boundaries:
             {FormatList(definition.Boundaries)}
+
+            Character secrets known to the story engine:
+            {FormatList(definition.Secrets)}
 
             Current appearance and condition:
             {state.CurrentAppearance}
@@ -190,11 +196,13 @@ public sealed class PromptAssembler
             {state.CurrentGoal}
 
             Roleplay character rules:
+            - Treat base appearance, base background, base personality, and speech style as roleplay-only settings. Do not borrow the daily-mode character profile unless it was explicitly copied into story_characters.json.
             - Treat base appearance and base personality as anchors, not disposable flavor text.
             - Use current appearance, emotion metrics, relationship metrics, and personality drift to decide tone and small gestures.
             - Personality drift can soften or harden expression, but it must not erase the base personality in a single turn.
             - Do not let affection or trust jump dramatically without a clear event.
             - Do not decide the user's action, feeling, memory, or spoken words.
+            - If the current place or scene is empty, say the place is not fixed yet. Do not invent school, classroom, hospital, infirmary, nurse office, or basement settings unless the user or story state explicitly names them.
             """;
     }
 
