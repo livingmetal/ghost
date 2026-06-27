@@ -69,6 +69,16 @@ public sealed class StoryCharacterStore
         SaveManifest(manifest);
     }
 
+    public void SaveGlobalBoundaries(IEnumerable<string> globalBoundaries)
+    {
+        var manifest = LoadManifest();
+        manifest.GlobalBoundaries = globalBoundaries
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Select(item => item.Trim())
+            .ToList();
+        SaveManifest(manifest);
+    }
+
     public void SaveState(StoryCharacterState state)
     {
         var states = LoadStates();
