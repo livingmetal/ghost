@@ -15,7 +15,7 @@ public partial class MainViewModel
         IsStoryMode = enabled;
         RefreshStoryInfoPanel(state);
 
-        if (enabled && !wasEnabled)
+        if (enabled && !wasEnabled && state.ShowOpeningOnActivation)
         {
             ShowRoleplayOpening(state);
         }
@@ -30,6 +30,11 @@ public partial class MainViewModel
     {
         RefreshStoryInfoPanel(state);
         var openingText = _roleplaySessionController.BuildOpeningText(state);
+        if (string.IsNullOrWhiteSpace(openingText))
+        {
+            return;
+        }
+
         StoryMessages.Add(new ChatMessage
         {
             Text = openingText,
