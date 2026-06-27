@@ -8,6 +8,7 @@ public sealed class StoryCharacterDefinition
     public string BaseAppearance { get; set; } = string.Empty;
     public string BaseBackground { get; set; } = string.Empty;
     public string BasePersonality { get; set; } = string.Empty;
+    public string SpeechStyle { get; set; } = string.Empty;
     public List<string> Boundaries { get; set; } = [];
     public List<string> Secrets { get; set; } = [];
 }
