@@ -84,7 +84,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10">
                     <Border Style="{StaticResource Card}" BorderBrush="#4B5563" Background="#F8FAFC"><StackPanel>
                         <TextBlock Style="{StaticResource SectionTitle}" Text="롤플레잉 Info 패널" />
-                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Hint}" Text="스토리 창 상단에 표시되는 Crack형 상태 카드입니다. 저장 후 롤플레잉 창을 다시 열거나 다음 턴에서 반영됩니다." />
+                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Hint}" Text="스토리 창 상단에 표시되는 상태 카드입니다. 저장 후 롤플레잉 창을 다시 열거나 다음 턴에서 반영됩니다." />
                         <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="100" /><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /></Grid.ColumnDefinitions>
                             <StackPanel Margin="0,0,8,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Turn" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding StoryInfoTurnNumber, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
                             <StackPanel Grid.Column="1" Margin="8,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Date" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding StoryInfoDate, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
@@ -96,10 +96,7 @@
                         </Grid>
                         <TextBlock Margin="0,16,0,0" Style="{StaticResource FieldLabel}" Text="Status Text" />
                         <TextBox Margin="0,6,0,0" Height="120" Padding="10" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="{Binding StoryInfoStatusText, UpdateSourceTrigger=PropertyChanged}" />
-                        <StackPanel Margin="0,12,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Style="{StaticResource PresetBtn}" Command="{Binding ReloadStoryInfoCommand}" Content="다시 불러오기" />
-                            <Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0" Command="{Binding SaveStoryInfoCommand}" Content="Info 저장" />
-                        </StackPanel>
+                        <StackPanel Margin="0,12,0,0" Orientation="Horizontal" HorizontalAlignment="Right"><Button Style="{StaticResource PresetBtn}" Command="{Binding ReloadStoryInfoCommand}" Content="다시 불러오기" /><Button Style="{StaticResource PresetBtn}" Margin="6,0,0,0" Command="{Binding SaveStoryInfoCommand}" Content="Info 저장" /></StackPanel>
                     </StackPanel></Border>
                 </StackPanel></ScrollViewer>
             </TabItem>
@@ -108,21 +105,33 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10">
                     <Border Style="{StaticResource Card}" BorderBrush="#4B5563" Background="#F8FAFC"><StackPanel>
                         <TextBlock Style="{StaticResource SectionTitle}" Text="상태 기반 라우팅" />
-                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Hint}" Text="캐릭터 출력, 디렉터 상태판정, 메모리 압축을 각각 다른 모델과 키로 분리합니다." />
+                        <TextBlock Margin="0,3,0,0" Style="{StaticResource Hint}" Text="Writer, Character, Director, Memory를 각각 다른 모델과 키로 분리합니다." />
                         <CheckBox Margin="0,14,0,0" Content="상태 패널 사용" IsChecked="{Binding RoleplayEnableStatePanel}" />
                         <CheckBox Margin="0,8,0,0" Content="디렉터 상태 업데이트 사용" IsChecked="{Binding RoleplayEnableDirectorStateUpdate}" />
                         <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="상태 패널 지표" />
                         <TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayStatePanelMetrics, UpdateSourceTrigger=PropertyChanged}" />
                     </StackPanel></Border>
+
+                    <Border Style="{StaticResource Card}" BorderBrush="#C0AA90" Background="#FBF9F6"><StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Writer 모델" />
+                        <TextBlock Margin="0,2,0,0" Style="{StaticResource Hint}" Text="사전 스토리 구성, Act, Beat, 숨겨진 진실, 엔딩 후보를 생성합니다." />
+                        <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><StackPanel Margin="0,0,10,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Provider" /><ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding RoleplayProviders}" SelectedItem="{Binding RoleplayWriterProvider}" /></StackPanel><StackPanel Grid.Column="1"><TextBlock Style="{StaticResource FieldLabel}" Text="Model" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayWriterModel, UpdateSourceTrigger=PropertyChanged}" /></StackPanel></Grid>
+                        <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayWriterBaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="Writer API 키" /><Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><PasswordBox x:Name="RoleplayWriterApiKeyPasswordBox" Padding="10,8" PasswordChanged="RoleplayWriterApiKeyPasswordBox_OnPasswordChanged" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearRoleplayWriterKeyCommand}" Content="제거" /></Grid>
+                        <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}" Text="{Binding RoleplayWriterKeyStatus}" />
+                        <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /></Grid.ColumnDefinitions><StackPanel Margin="0,0,8,0"><TextBlock Style="{StaticResource FieldLabel}" Text="장르" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding WriterGenre, UpdateSourceTrigger=PropertyChanged}" /></StackPanel><StackPanel Grid.Column="1" Margin="8,0,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="길이" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding WriterStoryLength, UpdateSourceTrigger=PropertyChanged}" /></StackPanel></Grid>
+                        <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><TextBox Padding="8,6" Text="{Binding WriterRomanceLevel, UpdateSourceTrigger=PropertyChanged}" /><TextBox Grid.Column="1" Margin="6,0" Padding="8,6" Text="{Binding WriterMysteryLevel, UpdateSourceTrigger=PropertyChanged}" /><TextBox Grid.Column="2" Margin="6,0" Padding="8,6" Text="{Binding WriterConflictLevel, UpdateSourceTrigger=PropertyChanged}" /><TextBox Grid.Column="3" Margin="6,0" Padding="8,6" Text="{Binding WriterHorrorLevel, UpdateSourceTrigger=PropertyChanged}" /><TextBox Grid.Column="4" Margin="6,0,0,0" Padding="8,6" Text="{Binding WriterComedyLevel, UpdateSourceTrigger=PropertyChanged}" /></Grid>
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource Hint}" Text="로맨스 / 미스터리 / 갈등 / 공포 / 코미디 수준 0~5" />
+                        <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="필수 요소" /><TextBox Margin="0,6,0,0" Height="70" Padding="10" AcceptsReturn="True" TextWrapping="Wrap" Text="{Binding WriterRequiredElements, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="금지 요소" /><TextBox Margin="0,6,0,0" Height="70" Padding="10" AcceptsReturn="True" TextWrapping="Wrap" Text="{Binding WriterForbiddenElements, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Margin="0,12,0,0" HorizontalAlignment="Right" Style="{StaticResource PresetBtn}" Command="{Binding TestRoleplayWriterConnectionCommand}" Content="Writer 테스트" />
+                    </StackPanel></Border>
+
                     <Border Style="{StaticResource Card}" BorderBrush="#AABFAA" Background="#F6FAF6"><StackPanel>
                         <TextBlock Style="{StaticResource SectionTitle}" Text="캐릭터 모델" />
-                        <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,10,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Provider" /><ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding RoleplayProviders}" SelectedItem="{Binding RoleplayCharacterProvider}" /></StackPanel>
-                            <StackPanel Grid.Column="1"><TextBlock Style="{StaticResource FieldLabel}" Text="Model" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayCharacterModel, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
-                        </Grid>
+                        <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><StackPanel Margin="0,0,10,0"><TextBlock Style="{StaticResource FieldLabel}" Text="Provider" /><ComboBox Margin="0,6,0,0" Padding="8,6" ItemsSource="{Binding RoleplayProviders}" SelectedItem="{Binding RoleplayCharacterProvider}" /></StackPanel><StackPanel Grid.Column="1"><TextBlock Style="{StaticResource FieldLabel}" Text="Model" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayCharacterModel, UpdateSourceTrigger=PropertyChanged}" /></StackPanel></Grid>
                         <TextBlock Margin="0,12,0,0" Style="{StaticResource FieldLabel}" Text="Base URL" /><TextBox Margin="0,6,0,0" Padding="10,8" Text="{Binding RoleplayCharacterBaseUrl, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="캐릭터 API 키" />
-                        <Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><PasswordBox x:Name="RoleplayCharacterApiKeyPasswordBox" Padding="10,8" PasswordChanged="RoleplayCharacterApiKeyPasswordBox_OnPasswordChanged" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearRoleplayCharacterKeyCommand}" Content="제거" /></Grid>
+                        <TextBlock Margin="0,14,0,0" Style="{StaticResource FieldLabel}" Text="캐릭터 API 키" /><Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><PasswordBox x:Name="RoleplayCharacterApiKeyPasswordBox" Padding="10,8" PasswordChanged="RoleplayCharacterApiKeyPasswordBox_OnPasswordChanged" /><Button Grid.Column="1" Margin="8,0,0,0" Padding="12,7" Command="{Binding ClearRoleplayCharacterKeyCommand}" Content="제거" /></Grid>
                         <TextBlock Margin="0,5,0,0" Style="{StaticResource Hint}" Text="{Binding RoleplayCharacterKeyStatus}" />
                         <Button Margin="0,12,0,0" HorizontalAlignment="Right" Style="{StaticResource PresetBtn}" Command="{Binding TestRoleplayCharacterConnectionCommand}" Content="캐릭터 테스트" />
                     </StackPanel></Border>
@@ -175,9 +184,7 @@
             </TabItem>
         </TabControl>
 
-        <Border Grid.Row="2" Margin="0,14,0,0" Padding="14,12" CornerRadius="10" Background="#FFFDF8" BorderBrush="#D8D0C3" BorderThickness="1" MinHeight="42">
-            <TextBlock TextWrapping="Wrap" Foreground="#303A45" Text="{Binding StatusMessage}" />
-        </Border>
+        <Border Grid.Row="2" Margin="0,14,0,0" Padding="14,12" CornerRadius="10" Background="#FFFDF8" BorderBrush="#D8D0C3" BorderThickness="1" MinHeight="42"><TextBlock TextWrapping="Wrap" Foreground="#303A45" Text="{Binding StatusMessage}" /></Border>
         <Grid Grid.Row="3" Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <TextBlock VerticalAlignment="Center" Style="{StaticResource Hint}" TextWrapping="Wrap" Text="기본/고급/롤플레잉 키는 분리 저장됩니다. 스토리보드와 Info 값은 story_state.json에 저장됩니다." />
             <StackPanel Grid.Column="1" Orientation="Horizontal"><Button MinWidth="105" Padding="14,8" Command="{Binding TestConnectionCommand}" Content="기본 테스트" /><Button MinWidth="105" Margin="8,0,0,0" Padding="14,8" Command="{Binding TestAdvancedConnectionCommand}" Content="고급 테스트" /><Button MinWidth="90" Margin="8,0,0,0" Padding="14,8" Background="#E96A42" Foreground="White" BorderThickness="0" Command="{Binding SaveCommand}" Content="저장" /></StackPanel>
