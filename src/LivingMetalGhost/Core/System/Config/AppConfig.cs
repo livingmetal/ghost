@@ -65,6 +65,17 @@ public sealed class WindowPlacementSettings
 
 public sealed class RoleplayLlmSettings
 {
+    public LlmSettings Writer { get; set; } = new()
+    {
+        Provider = "Gemini",
+        BaseUrl = "https://generativelanguage.googleapis.com/v1beta/openai/",
+        Model = "gemini-3.1-flash-lite",
+        ApiKeySource = "dpapi:roleplay-writer",
+        Temperature = 0.7,
+        MaxOutputTokens = 4096,
+        TimeoutSeconds = 90
+    };
+
     public LlmSettings Character { get; set; } = new()
     {
         Provider = "Gemini",
@@ -101,6 +112,20 @@ public sealed class RoleplayLlmSettings
     public bool EnableStatePanel { get; set; } = true;
     public bool EnableDirectorStateUpdate { get; set; } = true;
     public string StatePanelMetrics { get; set; } = "affection,trust,tension";
+    public StoryWriterSettings WriterSettings { get; set; } = new();
+}
+
+public sealed class StoryWriterSettings
+{
+    public string Genre { get; set; } = "현대판타지, 심리극";
+    public string StoryLength { get; set; } = "medium";
+    public int RomanceLevel { get; set; } = 2;
+    public int MysteryLevel { get; set; } = 4;
+    public int ConflictLevel { get; set; } = 3;
+    public int HorrorLevel { get; set; } = 1;
+    public int ComedyLevel { get; set; } = 1;
+    public string RequiredElements { get; set; } = string.Empty;
+    public string ForbiddenElements { get; set; } = string.Empty;
 }
 
 public sealed class LlmSettings
