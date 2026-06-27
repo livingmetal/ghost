@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace LivingMetalGhost.Core.Models;
 
 /// <summary>
@@ -18,9 +20,13 @@ public sealed class StoryState
     public int TurnNumber { get; set; }
     public string StoryDate { get; set; } = "03월 05일";
     public string StoryTime { get; set; } = "AM 10:13";
-    public string Location { get; set; } = "명주고등학교 0층실";
-    public int Affection { get; set; } = -188;
-    public string StatusText { get; set; } = "손이 아직 떨리고, 마음이 못 갈피를 잡고 있다.";
+    public string Location { get; set; } = string.Empty;
+    public int Affection { get; set; }
+    public string StatusText { get; set; } = "장소와 상황은 아직 고정되지 않았다.";
+    public bool OpeningShown { get; set; }
+
+    [JsonIgnore]
+    public bool ShowOpeningOnActivation { get; set; }
 
     /// <summary>이야기의 기억 텍스처(전제·자기인식·관계·미해결 질문). 톤에 영향을 주되 결과를 강제하지 않는다.</summary>
     public List<StoryMemoryFact> Facts { get; set; } = [];
