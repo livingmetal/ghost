@@ -20,6 +20,7 @@ public sealed class ConversationService : IRoleplayConversation
     private readonly AdvancedConversationSupport _advancedConversationSupport;
     private readonly ConversationResponseProcessor _responseProcessor;
     private readonly ExternalConversationTurnRecorder _externalTurnRecorder;
+
     public ConversationService(
         AppConfigLoader configLoader,
         ILlmProviderFactory providerFactory,
@@ -44,52 +45,29 @@ public sealed class ConversationService : IRoleplayConversation
         _externalTurnRecorder = externalTurnRecorder;
     }
 
-    public Task<SkillResult> ChatAsync(
-        string text,
-        bool advanced,
-        LlmImageAttachment? image,
-        CancellationToken cancellationToken)
+    public Task<SkillResult> ChatAsync(string text, bool advanced, LlmImageAttachment? image, CancellationToken cancellationToken)
     {
         var mode = advanced ? ConversationMode.Advanced : ConversationMode.Daily;
         return ChatAsync(text, mode, image, cancellationToken);
     }
 
-    public Task<SkillResult> RoleplayAsync(
-        string text,
-        LlmImageAttachment? image,
-        CancellationToken cancellationToken)
+    public Task<SkillResult> RoleplayAsync(string text, LlmImageAttachment? image, CancellationToken cancellationToken)
     {
         return ChatAsync(text, ConversationMode.Story, image, cancellationToken);
     }
 
-    Task<SkillResult> IRoleplayConversation.SendAsync(
-        string text,
-        LlmImageAttachment? image,
-        CancellationToken cancellationToken) =>
+    Task<SkillResult> IRoleplayConversation.SendAsync(string text, LlmImageAttachment? image, CancellationToken cancellationToken) =>
         RoleplayAsync(text, image, cancellationToken);
 
-    Task<SkillResult> IRoleplayConversation.StartIdleAsync(
-        CancellationToken cancellationToken) =>
+    Task<SkillResult> IRoleplayConversation.StartIdleAsync(CancellationToken cancellationToken) =>
         StartStoryIdleAsync(cancellationToken);
 
-    public void RememberExternalTurn(
-        ConversationMode mode,
-        string userText,
-        string assistantText,
-        string source)
+    public void RememberExternalTurn(ConversationMode mode, string userText, string assistantText, string source)
     {
-        _externalTurnRecorder.Record(
-            mode,
-            userText,
-            assistantText,
-            source);
+        _externalTurnRecorder.Record(mode, userText, assistantText, source);
     }
 
-    private async Task<SkillResult> ChatAsync(
-        string text,
-        ConversationMode mode,
-        LlmImageAttachment? image,
-        CancellationToken cancellationToken)
+    private async Task<SkillResult> ChatAsync(string text, ConversationMode mode, LlmImageAttachment? image, CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
         var character = CharacterCatalog.Get(config.App.GhostId);
@@ -99,7 +77,7 @@ public sealed class ConversationService : IRoleplayConversation
         var userTextForProvider = mode == ConversationMode.Story
             ? RoleplayInputFormatter.FormatForPrompt(normalizedText)
             : normalizedText;
-        var llm = mode == ConversationMode.Advanced ? config.AdvancedLlm : config.Llm;
+        var llm = ResolveLlmSettings(config, mode);
         var options = LlmOptions.FromSettings(llm);
         var repositoryContext = mode == ConversationMode.Advanced
             ? _advancedConversationSupport.BuildRepositoryContext(normalizedText)
@@ -107,38 +85,21 @@ public sealed class ConversationService : IRoleplayConversation
         var provider = _providerFactory.Create(options.Provider);
         if (image is not null && !provider.SupportsImageInput(options))
         {
-            throw new InvalidOperationException(
-                $"{provider.Name} 프로바이더는 이미지 입력을 지원하지 않습니다. Gemini 또는 이미지 입력을 지원하는 OpenAI 호환 프로바이더를 선택해 주세요.");
+            throw new InvalidOperationException($"{provider.Name} does not support image input.");
         }
 
         var response = await provider.GenerateAsync(
-            _requestFactory.Create(
-                config,
-                character,
-                mode,
-                storyState,
-                userTextForProvider,
-                options,
-                repositoryContext,
-                image),
+            _requestFactory.Create(config, character, mode, storyState, userTextForProvider, options, repositoryContext, image),
             cancellationToken);
-        var processed = _responseProcessor.Process(
-            response.Text,
-            mode,
-            character.Visual);
+        var processed = _responseProcessor.Process(response.Text, mode, character.Visual);
 
-        _historyStore.Add(
-            mode,
-            "user",
-            ImageInputService.BuildDisplayText(userTextForProvider, image));
+        _historyStore.Add(mode, "user", ImageInputService.BuildDisplayText(userTextForProvider, image));
         _historyStore.Add(mode, "assistant", processed.Text);
         if (mode == ConversationMode.Story)
         {
-            _roleplayStateUpdater.UpdateAfterTurn(
-                userDisplayText,
-                processed.Text,
-                processed.Mood);
-            await _roleplayMemoryDigestService.DigestIfDueAsync(options, cancellationToken);
+            _roleplayStateUpdater.UpdateAfterTurn(userDisplayText, processed.Text, processed.Mood);
+            var memoryOptions = LlmOptions.FromSettings(config.RoleplayLlm.Memory);
+            await _roleplayMemoryDigestService.DigestIfDueAsync(memoryOptions, cancellationToken);
         }
         else if (mode == ConversationMode.Advanced)
         {
@@ -165,26 +126,14 @@ public sealed class ConversationService : IRoleplayConversation
         var config = _configLoader.Load();
         var character = CharacterCatalog.Get(config.App.GhostId);
         var storyState = _storyStateStore.Load();
-        var mode = ConversationMode.Daily;
-        // 먼저 말 걸기는 가벼운 기본 대화이므로 항상 기본 llm 설정을 사용한다.
+        const ConversationMode mode = ConversationMode.Daily;
         var options = LlmOptions.FromSettings(config.Llm);
         var provider = _providerFactory.Create(options.Provider);
-        var userText = "지금 상황에 어울리는 짧은 말 한마디로 먼저 대화를 시작해. " +
-                       "질문, 가벼운 안부, 작업 집중 확인, 휴식 제안 중 하나를 자연스럽게 선택해. " +
-                       "설명이나 따옴표 없이 실제로 사용자에게 말할 문장만 출력해.";
+        var userText = "Start a short proactive conversation in the current character voice. Output only the line to say.";
         var response = await provider.GenerateAsync(
-            _requestFactory.Create(
-                config,
-                character,
-                mode,
-                storyState,
-                userText,
-                options),
+            _requestFactory.Create(config, character, mode, storyState, userText, options),
             cancellationToken);
-        var processed = _responseProcessor.Process(
-            response.Text,
-            mode,
-            character.Visual);
+        var processed = _responseProcessor.Process(response.Text, mode, character.Visual);
 
         _historyStore.Add(mode, "assistant", processed.Text);
 
@@ -197,35 +146,20 @@ public sealed class ConversationService : IRoleplayConversation
         };
     }
 
-    /// <summary>스토리 모드 idle 비트: 사용자 입력 없이 짧은 존재감만 보여준다. 플롯은 진행하지 않는다.</summary>
     public async Task<SkillResult> StartStoryIdleAsync(CancellationToken cancellationToken)
     {
         var config = _configLoader.Load();
         var character = CharacterCatalog.Get(config.App.GhostId);
         var storyState = _storyStateStore.Load();
         const ConversationMode mode = ConversationMode.Story;
-        var options = LlmOptions.FromSettings(config.Llm);
+        var options = LlmOptions.FromSettings(config.RoleplayLlm.Character);
         var provider = _providerFactory.Create(options.Provider);
-        var userText =
-            "지금은 사용자의 입력이 없는 조용한 순간이야. 짧은 '존재감' 비트를 보여줘. " +
-            "**행동/지문**을 한두 개와 짧은 혼잣말 한마디 정도로만 표현해. " +
-            "큰 사건이나 플롯을 진행하지 말고, 사용자의 행동·말·감정을 대신 정하지 마. " +
-            "메뉴, 선택지, 시스템 언급은 금지. 장면을 크게 바꾸지 말고 분위기만 가볍게 살려.";
+        var userText = "Show a very short idle story beat. Do not advance the plot or decide the user's action.";
         var response = await provider.GenerateAsync(
-            _requestFactory.Create(
-                config,
-                character,
-                mode,
-                storyState,
-                userText,
-                options),
+            _requestFactory.Create(config, character, mode, storyState, userText, options),
             cancellationToken);
-        var processed = _responseProcessor.Process(
-            response.Text,
-            mode,
-            character.Visual);
+        var processed = _responseProcessor.Process(response.Text, mode, character.Visual);
 
-        // idle 비트는 연속성을 위해 히스토리에만 남기고 StoryState(장면/요약)는 바꾸지 않는다.
         _historyStore.Add(mode, "assistant", processed.Text);
 
         return new SkillResult
@@ -237,4 +171,13 @@ public sealed class ConversationService : IRoleplayConversation
         };
     }
 
+    private static LlmSettings ResolveLlmSettings(AppConfig config, ConversationMode mode)
+    {
+        return mode switch
+        {
+            ConversationMode.Advanced => config.AdvancedLlm,
+            ConversationMode.Story => config.RoleplayLlm.Character,
+            _ => config.Llm
+        };
+    }
 }
