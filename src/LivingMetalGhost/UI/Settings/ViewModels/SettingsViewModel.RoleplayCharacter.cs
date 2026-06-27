@@ -71,14 +71,14 @@ public partial class SettingsViewModel
         _loadedRoleplayCharacterId = string.Empty;
         EnsureRoleplayCharacterDefinitionLoaded();
         RaiseRoleplayCharacterDefinitionProperties();
-        StatusMessage = "롤플레잉 캐릭터 정의를 다시 불러왔습니다.";
+        StatusMessage = "롤플레잉 매니패스트에서 캐릭터 정의를 다시 불러왔습니다.";
     }
 
     [RelayCommand]
     private void SaveRoleplayCharacterDefinition()
     {
         SaveRoleplayCharacterDefinitionCore();
-        StatusMessage = "롤플레잉 캐릭터 정의를 저장했습니다.";
+        StatusMessage = "롤플레잉 매니패스트에 캐릭터 정의를 저장했습니다.";
     }
 
     [RelayCommand]
@@ -98,7 +98,7 @@ public partial class SettingsViewModel
         DeleteStoryFile("story_state.json");
         DeleteStoryFile("memory.jsonl");
         LoadStoryStateDraft();
-        StatusMessage = "롤플레잉 장면 상태와 대화 기억을 초기화했습니다. 캐릭터 정의는 유지했습니다.";
+        StatusMessage = "롤플레잉 장면 상태와 대화 기억을 초기화했습니다. roleplay_manifest.json은 유지했습니다.";
     }
 
     [RelayCommand]
@@ -125,7 +125,7 @@ public partial class SettingsViewModel
         DeleteStoryFile("story_plan.json");
         DeleteStoryFile("character_state.json");
         LoadStoryStateDraft();
-        StatusMessage = "롤플레잉 런타임 데이터를 초기화했습니다. story_characters.json은 유지했습니다.";
+        StatusMessage = "롤플레잉 런타임 데이터를 초기화했습니다. roleplay_manifest.json은 유지했습니다.";
     }
 
     private void EnsureRoleplayCharacterDefinitionLoaded()
