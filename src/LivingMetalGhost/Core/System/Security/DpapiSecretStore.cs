@@ -9,6 +9,7 @@ public sealed class DpapiSecretStore
 {
     private const string BasicApiKeySource = "dpapi:basic";
     private const string AdvancedApiKeySource = "dpapi:advanced";
+    private const string RoleplayWriterApiKeySource = "dpapi:roleplay-writer";
     private const string RoleplayCharacterApiKeySource = "dpapi:roleplay-character";
     private const string RoleplayDirectorApiKeySource = "dpapi:roleplay-director";
     private const string RoleplayMemoryApiKeySource = "dpapi:roleplay-memory";
@@ -22,6 +23,7 @@ public sealed class DpapiSecretStore
     public bool HasApiKey => File.Exists(_paths.ApiKeyFile);
     public bool HasBasicApiKey => HasApiKeyForSource(BasicApiKeySource);
     public bool HasAdvancedApiKey => HasApiKeyForSource(AdvancedApiKeySource);
+    public bool HasRoleplayWriterApiKey => HasApiKeyForSource(RoleplayWriterApiKeySource);
     public bool HasRoleplayCharacterApiKey => HasApiKeyForSource(RoleplayCharacterApiKeySource);
     public bool HasRoleplayDirectorApiKey => HasApiKeyForSource(RoleplayDirectorApiKeySource);
     public bool HasRoleplayMemoryApiKey => HasApiKeyForSource(RoleplayMemoryApiKeySource);
@@ -39,6 +41,11 @@ public sealed class DpapiSecretStore
     public void SaveAdvancedApiKey(string apiKey)
     {
         SaveApiKey(AdvancedApiKeySource, apiKey);
+    }
+
+    public void SaveRoleplayWriterApiKey(string apiKey)
+    {
+        SaveApiKey(RoleplayWriterApiKeySource, apiKey);
     }
 
     public void SaveRoleplayCharacterApiKey(string apiKey)
@@ -119,6 +126,7 @@ public sealed class DpapiSecretStore
         return NormalizeApiKeySource(apiKeySource) switch
         {
             AdvancedApiKeySource => Path.Combine(_paths.Root, "advanced-api-key.dat"),
+            RoleplayWriterApiKeySource => Path.Combine(_paths.Root, "roleplay-writer-api-key.dat"),
             RoleplayCharacterApiKeySource => Path.Combine(_paths.Root, "roleplay-character-api-key.dat"),
             RoleplayDirectorApiKeySource => Path.Combine(_paths.Root, "roleplay-director-api-key.dat"),
             RoleplayMemoryApiKeySource => Path.Combine(_paths.Root, "roleplay-memory-api-key.dat"),
@@ -136,6 +144,7 @@ public sealed class DpapiSecretStore
         return apiKeySource.Trim().ToLowerInvariant() switch
         {
             "dpapi:advanced" or "advanced" or "advanced-dpapi" => AdvancedApiKeySource,
+            "dpapi:roleplay-writer" or "roleplay-writer" or "story-writer" => RoleplayWriterApiKeySource,
             "dpapi:roleplay-character" or "roleplay-character" or "story-character" => RoleplayCharacterApiKeySource,
             "dpapi:roleplay-director" or "roleplay-director" or "story-director" => RoleplayDirectorApiKeySource,
             "dpapi:roleplay-memory" or "roleplay-memory" or "story-memory" => RoleplayMemoryApiKeySource,
@@ -146,6 +155,7 @@ public sealed class DpapiSecretStore
 
     public static string BasicSource => BasicApiKeySource;
     public static string AdvancedSource => AdvancedApiKeySource;
+    public static string RoleplayWriterSource => RoleplayWriterApiKeySource;
     public static string RoleplayCharacterSource => RoleplayCharacterApiKeySource;
     public static string RoleplayDirectorSource => RoleplayDirectorApiKeySource;
     public static string RoleplayMemorySource => RoleplayMemoryApiKeySource;
