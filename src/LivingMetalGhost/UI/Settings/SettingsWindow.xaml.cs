@@ -23,6 +23,7 @@ public partial class SettingsWindow : Window
         viewModel.Reload();
         ApiKeyPasswordBox.Clear();
         AdvancedApiKeyPasswordBox.Clear();
+        RoleplayWriterApiKeyPasswordBox.Clear();
         RoleplayCharacterApiKeyPasswordBox.Clear();
         RoleplayDirectorApiKeyPasswordBox.Clear();
         RoleplayMemoryApiKeyPasswordBox.Clear();
@@ -42,6 +43,14 @@ public partial class SettingsWindow : Window
         if (!_isLoading && DataContext is SettingsViewModel viewModel)
         {
             viewModel.AdvancedApiKeyInput = AdvancedApiKeyPasswordBox.Password;
+        }
+    }
+
+    private void RoleplayWriterApiKeyPasswordBox_OnPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_isLoading && DataContext is SettingsViewModel viewModel)
+        {
+            viewModel.RoleplayWriterKeyInput = RoleplayWriterApiKeyPasswordBox.Password;
         }
     }
 
