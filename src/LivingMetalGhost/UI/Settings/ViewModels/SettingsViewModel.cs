@@ -112,6 +112,9 @@ public partial class SettingsViewModel : ObservableObject
         }
 
         LoadCharacterProfile(SelectedCharacterId);
+        _loadedRoleplayCharacterId = string.Empty;
+        EnsureRoleplayCharacterDefinitionLoaded();
+        RaiseRoleplayCharacterDefinitionProperties();
         Provider = config.Llm.Provider;
         Model = config.Llm.Model;
         UserTitle = config.App.UserTitle;
@@ -152,6 +155,10 @@ public partial class SettingsViewModel : ObservableObject
         if (_isReloading) return;
         StoreCurrentCharacterDraft();
         LoadCharacterProfile(value);
+        _loadedRoleplayCharacterId = string.Empty;
+        EnsureRoleplayCharacterDefinitionLoaded();
+        RaiseRoleplayCharacterDefinitionProperties();
+        StatusMessage = $"{CharacterCatalog.Get(value).DisplayName} 설정을 불러왔습니다. 기본 모드와 롤플레잉 캐릭터 설정은 각각 따로 저장됩니다.";
     }
 
     [RelayCommand] private void RestoreCharacterTemplate()
@@ -277,7 +284,8 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand] private void Save()
     {
         SaveCore();
-        StatusMessage = "설정을 저장했습니다.";
+        SaveRoleplayCharacterDefinitionCore();
+        StatusMessage = "설정을 저장했습니다. 롤플레잉 캐릭터 정의도 함께 저장했습니다.";
     }
 
     [RelayCommand] private async Task TestConnectionAsync() => await TestConnectionCoreAsync(false);

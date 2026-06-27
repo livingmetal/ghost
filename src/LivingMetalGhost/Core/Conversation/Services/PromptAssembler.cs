@@ -196,7 +196,7 @@ public sealed class PromptAssembler
             {state.CurrentGoal}
 
             Roleplay character rules:
-            - Treat base appearance, base background, base personality, and speech style as roleplay-only settings. Do not borrow the daily-mode character profile unless it was explicitly copied into story_characters.json.
+            - Treat base appearance, base background, base personality, and speech style as roleplay-only settings. Do not borrow the daily-mode character profile unless it was explicitly copied into roleplay_manifest.json.
             - Treat base appearance and base personality as anchors, not disposable flavor text.
             - Use current appearance, emotion metrics, relationship metrics, and personality drift to decide tone and small gestures.
             - Personality drift can soften or harden expression, but it must not erase the base personality in a single turn.
