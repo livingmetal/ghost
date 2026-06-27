@@ -84,11 +84,21 @@ public partial class MainViewModel : ObservableObject
     public void RefreshStoryInfoPanel(StoryState state)
     {
         var config = _configLoader.Load();
+        var labels = config.RoleplayLlm.InfoLabels;
         IsStoryInfoPanelVisible = config.RoleplayLlm.EnableStatePanel;
         var scene = string.IsNullOrWhiteSpace(state.Location) ? state.Scene : state.Location;
         if (string.IsNullOrWhiteSpace(scene)) scene = "장소 미정";
         var status = string.IsNullOrWhiteSpace(state.StatusText) ? state.Mood : state.StatusText;
-        StoryInfoText = $"[No.] #{state.TurnNumber}\n[Date] {state.StoryDate} | {state.StoryTime}\n[Place] {scene}\n\n[Love] {state.Affection}%\n[Info] {status}";
+        StoryInfoText = $"[{SafeLabel(labels.Turn, "No.")}] #{state.TurnNumber}\n" +
+                        $"[{SafeLabel(labels.Date, "Date")}] {state.StoryDate} | {state.StoryTime}\n" +
+                        $"[{SafeLabel(labels.Place, "Place")}] {scene}\n\n" +
+                        $"[{SafeLabel(labels.Affection, "Affection")}] {state.Affection}%\n" +
+                        $"[{SafeLabel(labels.Status, "Info")}] {status}";
+    }
+
+    private static string SafeLabel(string? value, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
     }
 
     public void SelectImage(string filePath, bool storyMode)
